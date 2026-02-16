@@ -1,0 +1,15 @@
+.venv
+__pycache__
+*.pyc
+.git
+.idea
+.DS_Store
+example-files
+alembic/
+alembic.ini
+docker-compose.yml
+.env
+db_push.py
+check_table.py
+simple_migrate.py
+test_connection.py

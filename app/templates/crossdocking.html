@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Hoja de distribución</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            line-height: 1.3;
+            color: #000;
+            background: #fff;
+        }
+
+        h3 { font-size: 12px; text-align: center; margin-bottom: 2px; }
+        h4 { font-size: 10px; text-align: center; margin-bottom: 8px; }
+
+        .page-break { page-break-after: always; }
+        .avoid-break { page-break-inside: avoid; }
+
+        /* Color palette */
+        .hdr-dark { background: #0e5c23 !important; color: #fff !important; }
+        .hdr-dark th, .hdr-dark td { color: #fff !important; }
+        .hdr-med { background: #2e6b34 !important; color: #fff !important; }
+        .hdr-med td { color: #fff !important; }
+        .row-light { background: #d4edda !important; }
+        .row-alt { background: #e8f5e9 !important; }
+        .col-sent { background: #f0ad4e !important; color: #000 !important; }
+        .col-sent-hdr { background: #e6a020 !important; color: #000 !important; }
+
+        /* Tables */
+        .cd-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9px;
+            margin-bottom: 6px;
+        }
+        .cd-table th, .cd-table td {
+            padding: 3px 4px;
+            text-align: center;
+            border: none;
+        }
+        .cd-table th { font-weight: bold; }
+        .text-left { text-align: left !important; }
+        .text-right { text-align: right !important; }
+        .text-bold { font-weight: bold; }
+
+        /* Metadata table */
+        .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            margin-bottom: 12px;
+        }
+        .meta-table td {
+            padding: 1px 4px;
+            border: none;
+        }
+        .meta-label { font-weight: bold; min-width: 160px; }
+
+        /* SP separator */
+        .sp-block { margin-bottom: 10px; }
+
+        /* Labels grid — 6 per page, single column, fixed 3 item rows */
+        .labels-page {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .labels-page-full {
+            height: 260mm;
+        }
+        .labels-page > tbody > tr > td {
+            vertical-align: top;
+            padding: 4px 0;
+            border-bottom: 1px dashed #999;
+        }
+        .labels-page > tbody > tr:last-child > td {
+            border-bottom: none;
+        }
+        .label-block {
+            width: 100%;
+            margin-bottom: 2px;
+            border: 2px solid #0e5c23;
+        }
+        .label-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 10px;
+            padding: 3px 0;
+            background: #0e5c23 !important;
+            color: #fff !important;
+        }
+        .label-meta {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9px;
+        }
+        .label-meta td {
+            padding: 1px 4px;
+            border: none;
+        }
+        .label-meta .lm-label { font-weight: bold; }
+        .label-meta .lm-slot {
+            background: #f0ad4e !important;
+            border: 1px solid #333;
+            padding: 1px 6px;
+            font-weight: bold;
+        }
+        .label-items {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9px;
+        }
+        .label-items th, .label-items td {
+            padding: 2px 4px;
+            text-align: center;
+            border: 1px solid #ccc;
+        }
+        .label-items th {
+            font-weight: bold;
+        }
+        .label-items .desc-col { text-align: left; }
+        .label-meta-row td {
+            border: 1px solid #ccc !important;
+            padding: 1px 4px !important;
+            text-align: left !important;
+            font-size: 9px;
+            background: #d4edda !important;
+        }
+        .label-meta-row td.lm-slot {
+            background: #f0ad4e !important;
+            border: 1px solid #333 !important;
+            padding: 1px 6px !important;
+            font-weight: bold;
+        }
+        .label-caja-row td {
+            border: none !important;
+            padding: 2px 4px !important;
+            text-align: center !important;
+            font-size: 9px;
+            font-weight: bold;
+        }
+        .label-footer-row td {
+            padding: 2px 4px;
+            font-weight: bold;
+            font-size: 9px;
+            border: 1px solid #ccc;
+        }
+
+        /* Faltantes */
+        .faltantes-section { margin-top: 12px; }
+
+        @media print {
+            body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- SECTION 1: DISTRIBUCIÓN POR PUNTO DE VENTA                   -->
+<!-- ============================================================ -->
+<div>
+    <h3>CENTRO DE DISTRIBUCION {{ deliver_to }}</h3>
+    <h4>DISTRIBUCIÓN POR PUNTO DE VENTA</h4>
+
+    <table class="meta-table">
+        <tr>
+            <td class="meta-label">RAZON SOCIAL</td>
+            <td>{{ supplier_name }}</td>
+            <td class="meta-label">CONFIRMACIÓN</td>
+            <td class="text-bold">{{ confirmation }}</td>
+        </tr>
+        <tr>
+            <td class="meta-label">CODIGO PROVEEDOR</td>
+            <td>{{ supplier_internal_code }}</td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td class="meta-label">ORDEN DE COMPRA</td>
+            <td class="text-bold">{{ document_number }}</td>
+            <td class="meta-label">DEPARTAMENTO</td>
+            <td class="text-bold">{{ department }}</td>
+        </tr>
+    </table>
+
+    {% for sp in sale_points %}
+    <div class="sp-block avoid-break">
+        <table class="cd-table">
+            <thead>
+                <tr class="hdr-dark">
+                    <th style="width:70px;">PUNTO DE<br>VENTA</th>
+                    <th style="width:200px;">NOMBRE DEL PUNTO DE VENTA</th>
+                    <th style="width:50px;">ITEM</th>
+                    <th>DESCRIPCION ESPECIFICA DE CADA ARTICULO</th>
+                    <th style="width:60px;">GNL</th>
+                    <th style="width:30px;">U/M</th>
+                    <th style="width:60px;">CANTIDAD<br>PEDIDA</th>
+                    <th style="width:60px;" class="col-sent-hdr">CANTIDAD<br>ENVIADA</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in sp.items %}
+                <tr class="{{ 'row-light' if loop.index is odd else 'row-alt' }}">
+                    <td>{% if loop.first %}{{ sp.store_number }}{% endif %}</td>
+                    <td class="text-left">{% if loop.first %}{{ sp.store_name }}{% endif %}</td>
+                    <td>{{ item.internal_code }}</td>
+                    <td class="text-left">{{ item.description }}</td>
+                    <td>{{ item.original_code }}</td>
+                    <td>{{ item.units_per_box }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td class="col-sent">{{ item.sent }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="hdr-med">
+                    <td colspan="6" class="text-right">Caja</td>
+                    <td>{{ sp.total_boxes }}</td>
+                    <td>{{ loop.index }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="page-break"></div>
+
+<!-- ============================================================ -->
+<!-- SECTION 2: CANTIDAD DE UNIDADES POR ITEM + POR CAJA          -->
+<!-- ============================================================ -->
+<div>
+    <h3>CENTRO DE DISTRIBUCION {{ deliver_to }}</h3>
+    <h4>DISTRIBUCIÓN POR PUNTO DE VENTA</h4>
+
+    <table class="meta-table">
+        <tr>
+            <td class="meta-label">RAZON SOCIAL</td>
+            <td>{{ supplier_name }}</td>
+            <td class="meta-label">CONFIRMACIÓN</td>
+            <td class="text-bold">{{ confirmation }}</td>
+        </tr>
+        <tr>
+            <td class="meta-label">CODIGO PROVEEDOR</td>
+            <td>{{ supplier_internal_code }}</td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td class="meta-label">ORDEN DE COMPRA</td>
+            <td class="text-bold">{{ document_number }}</td>
+            <td class="meta-label">DEPARTAMENTO</td>
+            <td class="text-bold">{{ department }}</td>
+        </tr>
+    </table>
+
+    <h4 style="text-align:center; margin:8px 0 4px;">CANTIDAD DE UNIDADES POR ITEM</h4>
+    <table class="cd-table">
+        <thead>
+            <tr class="hdr-dark">
+                <th style="width:70px;">ITEM</th>
+                <th>DESCRIPCIÓN</th>
+                <th style="width:40px;">U/M</th>
+                <th style="width:70px;">TOTAL<br>BULTOS</th>
+                <th style="width:70px;">TOTAL<br>UNIDADES</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for it in item_summary %}
+            <tr class="{{ 'row-light' if loop.index is odd else 'row-alt' }}">
+                <td>{{ it.internal_code }}</td>
+                <td>{{ it.description }}</td>
+                <td>{{ it.units_per_box }}</td>
+                <td>{{ it.total_boxes }}</td>
+                <td>{{ it.total_units }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="hdr-med">
+                <td colspan="3" class="text-right">TOTAL</td>
+                <td>{{ totals.total_boxes }}</td>
+                <td>{{ totals.total_units }}</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <h4 style="text-align:center; margin:12px 0 4px;">CANTIDAD DE UNIDADES POR CAJA</h4>
+    <table class="cd-table">
+        <thead>
+            <tr class="hdr-dark">
+                <th>Cantidad x caja</th>
+                <th>Cantidad de cajas</th>
+                <th>Total<br>Bultos</th>
+                <th>Total<br>Unidades</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in box_summary %}
+            <tr class="{{ 'row-light' if loop.index is odd else 'row-alt' }}">
+                <td>{{ b.items_per_box }}</td>
+                <td>{{ b.box_count }}</td>
+                <td>{{ b.total_boxes }}</td>
+                <td>{{ b.total_units }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="hdr-med">
+                <td>TOTAL</td>
+                <td>{{ totals.total_sale_points }}</td>
+                <td>{{ totals.total_boxes }}</td>
+                <td>{{ totals.total_units }}</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ============================================================ -->
+<!-- SECTION 3: CROSSDOCKING LABELS (6 per page, single column, 3 item rows) -->
+<!-- ============================================================ -->
+{% for chunk in all_labels | batch(6) %}
+<table class="labels-page {{ 'labels-page-full' if chunk | length == 6 else '' }}">
+    {% for label in chunk %}
+    <tr><td>
+        <div class="label-block">
+            <div class="label-title">CENTRO DE DISTRIBUCION<br>ENTREGA DE CROSS DOCKING</div>
+            <table class="label-items">
+                <colgroup>
+                    <col style="width:18px;">
+                    <col style="width:60px;">
+                    <col>
+                    <col style="width:95px;">
+                    <col style="width:30px;">
+                    <col style="width:55px;">
+                    <col style="width:55px;">
+                    <col style="width:55px;">
+                </colgroup>
+                <tbody>
+                    <tr class="label-meta-row">
+                        <td colspan="2" class="lm-label">Codigo PDV:</td>
+                        <td><b>{{ label.sp.store_number }}</b></td>
+                        <td class="lm-slot" colspan="2">Slot ID: &nbsp; {{ label.sp.slot_id or '' }}</td>
+                        <td class="lm-label" style="text-align:right !important;">Orden:</td>
+                        <td colspan="2" style="text-align:right !important;"><b>{{ document_number }}</b></td>
+                    </tr>
+                    <tr class="label-meta-row">
+                        <td colspan="2" class="lm-label">Nombre PDV:</td>
+                        <td colspan="6"><b>{{ label.sp.store_name }}</b></td>
+                    </tr>
+                    <tr class="hdr-dark">
+                        <td></td>
+                        <td><b>ITEM</b></td>
+                        <td><b>DESCRIPCIÓN</b></td>
+                        <td><b>GNL</b></td>
+                        <td><b>U/M</b></td>
+                        <td><b>Cantidad<br>Pedida</b></td>
+                        <td class="col-sent-hdr"><b>Cantidad<br>Enviada</b></td>
+                        <td><b>Faltante</b></td>
+                    </tr>
+                    {% for i in range(3) %}
+                    {% if i < label.sp.items | length %}
+                    {% set item = label.sp.items[i] %}
+                    <tr class="{{ 'row-light' if loop.index is odd else 'row-alt' }}">
+                        <td>{{ i + 1 }}</td>
+                        <td>{{ item.internal_code }}</td>
+                        <td class="desc-col">{{ item.description }}</td>
+                        <td>{{ item.original_code }}</td>
+                        <td>{{ item.units_per_box }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td class="col-sent">{{ item.sent }}</td>
+                        <td>{{ item.missing }}</td>
+                    </tr>
+                    {% else %}
+                    <tr class="{{ 'row-light' if loop.index is odd else 'row-alt' }}">
+                        <td>{{ i + 1 }}</td>
+                        <td></td>
+                        <td class="desc-col"></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                    <tr class="hdr-med label-footer-row">
+                        <td colspan="5" class="text-right">TOTAL</td>
+                        <td>{{ label.sp.total_boxes }}</td>
+                        <td>{{ label.sp.total_boxes }}</td>
+                        <td>{{ label.sp.items | sum(attribute='missing') }}</td>
+                    </tr>
+                    <tr class="label-caja-row">
+                        <td colspan="2">Caja</td>
+                        <td><b>{{ label.box_num }}</b></td>
+                        <td>DE</td>
+                        <td></td>
+                        <td colspan="3"><b>{{ total_boxes_all }}</b></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </td></tr>
+    {% endfor %}
+</table>
+{% if not loop.last %}
+<div class="page-break"></div>
+{% endif %}
+{% endfor %}
+
+<!-- ============================================================ -->
+<!-- SECTION 4: HOJA DE FALTANTES (conditional)                   -->
+<!-- ============================================================ -->
+{% if faltantes_parciales or faltantes_completos %}
+<div class="page-break"></div>
+<div class="faltantes-section">
+    <h3>CENTRO DE DISTRIBUCION {{ deliver_to }}</h3>
+
+    {% if faltantes_parciales %}
+    <h4 style="margin:8px 0 4px;">HOJA DE FALTANTES PARCIALES</h4>
+    <table class="cd-table">
+        <thead>
+            <tr class="hdr-dark">
+                <th>PUNTO DE VENTA</th>
+                <th class="text-left">NOMBRE</th>
+                <th>ITEM</th>
+                <th class="text-left">DESCRIPCION</th>
+                <th>GNL</th>
+                <th>U/M</th>
+                <th>PEDIDA</th>
+                <th>ENVIADA</th>
+                <th>FALTANTE</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in faltantes_parciales %}
+            <tr class="{{ 'row-light' if loop.index is odd else 'row-alt' }}">
+                <td>{{ f.store_number }}</td>
+                <td class="text-left">{{ f.store_name }}</td>
+                <td>{{ f.internal_code }}</td>
+                <td class="text-left">{{ f.description }}</td>
+                <td>{{ f.original_code }}</td>
+                <td>{{ f.units_per_box }}</td>
+                <td>{{ f.quantity }}</td>
+                <td class="col-sent">{{ f.sent }}</td>
+                <td>{{ f.missing }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if faltantes_completos %}
+    <h4 style="margin:12px 0 4px;">HOJA DE FALTANTES COMPLETOS</h4>
+    <table class="cd-table">
+        <thead>
+            <tr class="hdr-dark">
+                <th>PUNTO DE VENTA</th>
+                <th class="text-left">NOMBRE</th>
+                <th>ITEM</th>
+                <th class="text-left">DESCRIPCION</th>
+                <th>GNL</th>
+                <th>U/M</th>
+                <th>PEDIDA</th>
+                <th>ENVIADA</th>
+                <th>FALTANTE</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in faltantes_completos %}
+            <tr class="{{ 'row-light' if loop.index is odd else 'row-alt' }}">
+                <td>{{ f.store_number }}</td>
+                <td class="text-left">{{ f.store_name }}</td>
+                <td>{{ f.internal_code }}</td>
+                <td class="text-left">{{ f.description }}</td>
+                <td>{{ f.original_code }}</td>
+                <td>{{ f.units_per_box }}</td>
+                <td>{{ f.quantity }}</td>
+                <td class="col-sent">{{ f.sent }}</td>
+                <td>{{ f.missing }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+{% endif %}
+
+</body>
+</html>
