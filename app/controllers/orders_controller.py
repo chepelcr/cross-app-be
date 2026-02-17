@@ -133,7 +133,7 @@ Logical AND and OR conditions can be applied:
                     "Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). "
                     "Use () for OR grouping. Example: clientName:*Test*,orderStatus:pending,orderBy>deliveryDate"
                 ),
-                example="orderStatus:pending,orderBy>deliveryDate",
+                examples=["orderStatus:pending,orderBy>deliveryDate"],
             ),
             page: int = Query(1, ge=1, description="Page number (1-indexed)"),
             pageSize: int = Query(12, ge=1, le=100, description="Items per page"),

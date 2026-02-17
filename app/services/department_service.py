@@ -113,6 +113,24 @@ def update_department(
     return _map_department(department)
 
 
+def update_department_status(
+    department_id_str: str,
+    status: int,
+) -> Optional[DepartmentResponse]:
+    """Update a department's status."""
+    department_id = uuid.UUID(department_id_str)
+
+    with DepartmentRepository() as repo:
+        department = repo.find_by_id(department_id)
+        if not department:
+            return None
+
+        department.status = status
+        department = repo.save(department)
+
+    return _map_department(department)
+
+
 def delete_department(department_id_str: str) -> bool:
     """Soft delete a department."""
     department_id = uuid.UUID(department_id_str)

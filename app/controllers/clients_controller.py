@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from typing import Annotated, Optional
 
-from fastapi import FastAPI, HTTPException, Path, Query
+from fastapi import Body, FastAPI, HTTPException, Path, Query
 
+from app.dtos.requests.client_request_dto import ClientRequestDTO
+from app.dtos.requests.status_request_dto import StatusRequestDTO
 from app.dtos.responses.client_dto import ClientListResponse, ClientResponse
 from app.services import client_service
 
@@ -69,6 +71,70 @@ class ClientsController:
                 import uuid as uuid_mod
 
                 result = client_service.get_client(uuid_mod.UUID(client_id))
+                if not result:
+                    raise HTTPException(status_code=404, detail="Client not found")
+                return result
+            except HTTPException:
+                raise
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid client ID format")
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.post(
+            "/api/organizations/{organization_id}/clients",
+            response_model=ClientResponse,
+            status_code=201,
+            tags=["clients"],
+            summary="Create a new client",
+        )
+        async def create_client(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            body: ClientRequestDTO,
+        ):
+            try:
+                return client_service.create_client(organization_id, body)
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.put(
+            "/api/organizations/{organization_id}/clients/{client_id}",
+            response_model=ClientResponse,
+            tags=["clients"],
+            summary="Update an existing client",
+        )
+        async def update_client(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            client_id: Annotated[str, Path(description="Client UUID")],
+            body: ClientRequestDTO,
+        ):
+            try:
+                result = client_service.update_client(client_id, body)
+                if not result:
+                    raise HTTPException(status_code=404, detail="Client not found")
+                return result
+            except HTTPException:
+                raise
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid client ID format")
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.patch(
+            "/api/organizations/{organization_id}/clients/{client_id}",
+            response_model=ClientResponse,
+            tags=["clients"],
+            summary="Update client status",
+        )
+        async def update_client_status(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            client_id: Annotated[str, Path(description="Client UUID")],
+            body: StatusRequestDTO = Body(...),
+        ):
+            try:
+                result = client_service.update_client_status(client_id, body.status)
                 if not result:
                     raise HTTPException(status_code=404, detail="Client not found")
                 return result

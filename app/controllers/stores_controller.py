@@ -5,6 +5,8 @@ from typing import Annotated, Optional
 from fastapi import Body, FastAPI, HTTPException, Path, Query
 
 from app.dtos import ExcelFileDTO
+from app.dtos.requests.status_request_dto import StatusRequestDTO
+from app.dtos.requests.store_request_dto import StoreRequestDTO
 from app.dtos.responses.store_dto import StoreListResponse, StoreResponse
 from app.services import store_service
 
@@ -101,5 +103,72 @@ class StoresController:
                 return {"message": f"Successfully uploaded {count} stores", "count": count}
             except ValueError as e:
                 raise HTTPException(status_code=422, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.post(
+            "/api/organizations/{organization_id}/clients/{client_id}/stores",
+            response_model=StoreResponse,
+            status_code=201,
+            tags=["stores"],
+            summary="Create a new store",
+        )
+        async def create_store(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            client_id: Annotated[str, Path(description="Client UUID")],
+            body: StoreRequestDTO,
+        ):
+            try:
+                return store_service.create_store(organization_id, client_id, body)
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.put(
+            "/api/organizations/{organization_id}/clients/{client_id}/stores/{store_id}",
+            response_model=StoreResponse,
+            tags=["stores"],
+            summary="Update an existing store",
+        )
+        async def update_store(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            client_id: Annotated[str, Path(description="Client UUID")],
+            store_id: Annotated[str, Path(description="Store UUID")],
+            body: StoreRequestDTO,
+        ):
+            try:
+                result = store_service.update_store(store_id, body)
+                if not result:
+                    raise HTTPException(status_code=404, detail="Store not found")
+                return result
+            except HTTPException:
+                raise
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid store ID format")
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.patch(
+            "/api/organizations/{organization_id}/clients/{client_id}/stores/{store_id}",
+            response_model=StoreResponse,
+            tags=["stores"],
+            summary="Update store status",
+        )
+        async def update_store_status(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            client_id: Annotated[str, Path(description="Client UUID")],
+            store_id: Annotated[str, Path(description="Store UUID")],
+            body: StatusRequestDTO = Body(...),
+        ):
+            try:
+                result = store_service.update_store_status(store_id, body.status)
+                if not result:
+                    raise HTTPException(status_code=404, detail="Store not found")
+                return result
+            except HTTPException:
+                raise
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid store ID format")
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))

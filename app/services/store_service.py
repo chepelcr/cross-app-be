@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import math
 from io import BytesIO
 from typing import Dict, List, Optional
 import uuid
@@ -9,6 +8,7 @@ import uuid
 import openpyxl
 
 from app.dtos import ExcelFileDTO
+from app.dtos.requests.store_request_dto import StoreRequestDTO
 from app.dtos.responses.pagination_dto import PaginationResponse
 from app.dtos.responses.store_dto import StoreListResponse, StoreResponse
 from app.enums.store_search_filters import StoreSearchFilters
@@ -70,6 +70,72 @@ def get_store(store_id: uuid.UUID) -> Optional[StoreResponse]:
         store = repo.find_by_id(store_id)
     if not store:
         return None
+    return _map_store(store)
+
+
+def create_store(
+    company_id: str,
+    client_id_str: str,
+    dto: "StoreRequestDTO",
+) -> StoreResponse:
+    """Create a new store."""
+    client_id = uuid.UUID(client_id_str)
+
+    with StoreRepository() as repo:
+        store = Store(
+            company_id=company_id,
+            client_id=client_id,
+            store_code=dto.store_code,
+            store_name=dto.store_name,
+            slot_id=dto.slot_id,
+            chain=dto.chain,
+        )
+        store = repo.save(store)
+
+    return _map_store(store)
+
+
+def update_store(
+    store_id_str: str,
+    dto: "StoreRequestDTO",
+) -> Optional[StoreResponse]:
+    """Update an existing store."""
+    store_id = uuid.UUID(store_id_str)
+
+    with StoreRepository() as repo:
+        store = repo.find_by_id(store_id)
+        if not store:
+            return None
+
+        if dto.store_code is not None:
+            store.store_code = dto.store_code
+        if dto.store_name is not None:
+            store.store_name = dto.store_name
+        if dto.slot_id is not None:
+            store.slot_id = dto.slot_id
+        if dto.chain is not None:
+            store.chain = dto.chain
+
+        store = repo.save(store)
+
+    return _map_store(store)
+
+
+def update_store_status(
+    store_id_str: str,
+    status: int,
+) -> Optional[StoreResponse]:
+    """Update a store's status."""
+    store_id = uuid.UUID(store_id_str)
+
+    with StoreRepository() as repo:
+        store = repo.find_by_id(store_id)
+        if not store:
+            return None
+
+        store.status = status
+        store = repo.save(store)
+
     return _map_store(store)
 
 

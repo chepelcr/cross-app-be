@@ -25,6 +25,7 @@ class ProductResponse(BaseModel):
     name: Optional[str] = Field(None)
     description: Optional[str] = Field(None)
     units_per_box: Optional[int] = Field(None, alias="unitsPerBox")
+    image_url: Optional[str] = Field(None, alias="imageUrl")
     category: Optional[CategoryResponse] = Field(None)
 
     class Config:

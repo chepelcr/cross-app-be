@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Annotated, Optional
 
-from fastapi import FastAPI, HTTPException, Path, Query
+from fastapi import Body, FastAPI, HTTPException, Path, Query
 
 from app.dtos.requests.department_request_dto import CreateDepartmentDTO, UpdateDepartmentDTO
+from app.dtos.requests.status_request_dto import StatusRequestDTO
 from app.dtos.responses.department_dto import DepartmentListResponse, DepartmentResponse
 from app.services import department_service
 
@@ -118,6 +119,30 @@ class DepartmentsController:
         ):
             try:
                 result = department_service.update_department(department_id, body)
+                if not result:
+                    raise HTTPException(status_code=404, detail="Department not found")
+                return result
+            except HTTPException:
+                raise
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid department ID format")
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.patch(
+            "/api/organizations/{organization_id}/clients/{client_id}/departments/{department_id}",
+            response_model=DepartmentResponse,
+            tags=["departments"],
+            summary="Update department status",
+        )
+        async def update_department_status(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            client_id: Annotated[str, Path(description="Client UUID")],
+            department_id: Annotated[str, Path(description="Department UUID")],
+            body: StatusRequestDTO = Body(...),
+        ):
+            try:
+                result = department_service.update_department_status(department_id, body.status)
                 if not result:
                     raise HTTPException(status_code=404, detail="Department not found")
                 return result

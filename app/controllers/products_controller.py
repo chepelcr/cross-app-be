@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from typing import Annotated, Optional
 
-from fastapi import FastAPI, HTTPException, Path, Query
+from fastapi import Body, FastAPI, HTTPException, Path, Query
 
+from app.dtos.requests.product_request_dto import ProductRequestDTO
+from app.dtos.requests.status_request_dto import StatusRequestDTO
 from app.dtos.responses.product_dto import ProductListResponse, ProductResponse
 from app.services import product_service
 
@@ -75,5 +77,73 @@ class ProductsController:
                 return result
             except HTTPException:
                 raise
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.post(
+            "/api/organizations/{organization_id}/products",
+            response_model=ProductResponse,
+            status_code=201,
+            tags=["products"],
+            summary="Create a new product",
+            description="""Create a new product for an organization.
+
+An optional `image` field can be included with base64-encoded image data.
+Supported image formats: PNG, JPEG, GIF, WEBP. Max size: 5MB.
+""",
+        )
+        async def create_product(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            body: ProductRequestDTO,
+        ):
+            try:
+                return product_service.create_product(organization_id, body)
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.put(
+            "/api/organizations/{organization_id}/products/{product_id}",
+            response_model=ProductResponse,
+            tags=["products"],
+            summary="Update an existing product",
+            description="""Update a product. Only provided fields are updated.
+
+An optional `image` field can be included with base64-encoded image data.
+Supported image formats: PNG, JPEG, GIF, WEBP. Max size: 5MB.
+""",
+        )
+        async def update_product(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            product_id: Annotated[str, Path(description="Product ID")],
+            body: ProductRequestDTO,
+        ):
+            try:
+                return product_service.update_product(organization_id, product_id, body)
+            except LookupError as e:
+                raise HTTPException(status_code=404, detail=str(e))
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.patch(
+            "/api/organizations/{organization_id}/products/{product_id}",
+            response_model=ProductResponse,
+            tags=["products"],
+            summary="Update product status",
+        )
+        async def update_product_status(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            product_id: Annotated[str, Path(description="Product ID")],
+            body: StatusRequestDTO = Body(...),
+        ):
+            try:
+                return product_service.update_product_status(
+                    organization_id, product_id, body.status
+                )
+            except LookupError as e:
+                raise HTTPException(status_code=404, detail=str(e))
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))

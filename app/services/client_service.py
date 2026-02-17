@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import logging
-import math
 from typing import Optional
 import uuid
 
+from app.dtos.requests.client_request_dto import ClientRequestDTO
 from app.dtos.responses.client_dto import ClientListResponse, ClientResponse
 from app.dtos.responses.pagination_dto import PaginationResponse
 from app.enums.client_search_filters import ClientSearchFilters
@@ -61,6 +61,62 @@ def get_client(client_id: uuid.UUID) -> Optional[ClientResponse]:
         client = repo.find_by_id(client_id)
     if not client:
         return None
+    return _map_client(client)
+
+
+def create_client(
+    company_id: str,
+    dto: "ClientRequestDTO",
+) -> ClientResponse:
+    """Create a new client."""
+    with ClientRepository() as repo:
+        client = Client(
+            company_id=company_id,
+            client_name=dto.client_name,
+            client_gln=dto.client_gln,
+        )
+        client = repo.save(client)
+
+    return _map_client(client)
+
+
+def update_client(
+    client_id_str: str,
+    dto: "ClientRequestDTO",
+) -> Optional[ClientResponse]:
+    """Update an existing client."""
+    client_id = uuid.UUID(client_id_str)
+
+    with ClientRepository() as repo:
+        client = repo.find_by_id(client_id)
+        if not client:
+            return None
+
+        if dto.client_name is not None:
+            client.client_name = dto.client_name
+        if dto.client_gln is not None:
+            client.client_gln = dto.client_gln
+
+        client = repo.save(client)
+
+    return _map_client(client)
+
+
+def update_client_status(
+    client_id_str: str,
+    status: int,
+) -> Optional[ClientResponse]:
+    """Update a client's status."""
+    client_id = uuid.UUID(client_id_str)
+
+    with ClientRepository() as repo:
+        client = repo.find_by_id(client_id)
+        if not client:
+            return None
+
+        client.status = status
+        client = repo.save(client)
+
     return _map_client(client)
 
 
