@@ -64,10 +64,10 @@ def get_stores(
     )
 
 
-def get_store(store_id: uuid.UUID) -> Optional[StoreResponse]:
+def get_store(company_id: str, store_id: uuid.UUID) -> Optional[StoreResponse]:
     """Get a single store by ID."""
     with StoreRepository() as repo:
-        store = repo.find_by_id(store_id)
+        store = repo.find_by_id_and_company(store_id, company_id)
     if not store:
         return None
     return _map_store(store)
@@ -96,6 +96,7 @@ def create_store(
 
 
 def update_store(
+    company_id: str,
     store_id_str: str,
     dto: "StoreRequestDTO",
 ) -> Optional[StoreResponse]:
@@ -103,7 +104,7 @@ def update_store(
     store_id = uuid.UUID(store_id_str)
 
     with StoreRepository() as repo:
-        store = repo.find_by_id(store_id)
+        store = repo.find_by_id_and_company(store_id, company_id)
         if not store:
             return None
 
@@ -122,6 +123,7 @@ def update_store(
 
 
 def update_store_status(
+    company_id: str,
     store_id_str: str,
     status: int,
 ) -> Optional[StoreResponse]:
@@ -129,7 +131,7 @@ def update_store_status(
     store_id = uuid.UUID(store_id_str)
 
     with StoreRepository() as repo:
-        store = repo.find_by_id(store_id)
+        store = repo.find_by_id_and_company(store_id, company_id)
         if not store:
             return None
 

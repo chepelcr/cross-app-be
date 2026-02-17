@@ -74,7 +74,7 @@ class StoresController:
             try:
                 import uuid as uuid_mod
 
-                result = store_service.get_store(uuid_mod.UUID(store_id))
+                result = store_service.get_store(organization_id, uuid_mod.UUID(store_id))
                 if not result:
                     raise HTTPException(status_code=404, detail="Store not found")
                 return result
@@ -138,7 +138,7 @@ class StoresController:
             body: StoreRequestDTO,
         ):
             try:
-                result = store_service.update_store(store_id, body)
+                result = store_service.update_store(organization_id, store_id, body)
                 if not result:
                     raise HTTPException(status_code=404, detail="Store not found")
                 return result
@@ -162,7 +162,7 @@ class StoresController:
             body: StatusRequestDTO = Body(...),
         ):
             try:
-                result = store_service.update_store_status(store_id, body.status)
+                result = store_service.update_store_status(organization_id, store_id, body.status)
                 if not result:
                     raise HTTPException(status_code=404, detail="Store not found")
                 return result

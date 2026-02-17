@@ -73,7 +73,7 @@ class DepartmentsController:
             try:
                 import uuid as uuid_mod
 
-                result = department_service.get_department(uuid_mod.UUID(department_id))
+                result = department_service.get_department(organization_id, uuid_mod.UUID(department_id))
                 if not result:
                     raise HTTPException(status_code=404, detail="Department not found")
                 return result
@@ -118,7 +118,7 @@ class DepartmentsController:
             body: UpdateDepartmentDTO,
         ):
             try:
-                result = department_service.update_department(department_id, body)
+                result = department_service.update_department(organization_id, department_id, body)
                 if not result:
                     raise HTTPException(status_code=404, detail="Department not found")
                 return result
@@ -142,7 +142,7 @@ class DepartmentsController:
             body: StatusRequestDTO = Body(...),
         ):
             try:
-                result = department_service.update_department_status(department_id, body.status)
+                result = department_service.update_department_status(organization_id, department_id, body.status)
                 if not result:
                     raise HTTPException(status_code=404, detail="Department not found")
                 return result
@@ -165,7 +165,7 @@ class DepartmentsController:
             department_id: Annotated[str, Path(description="Department UUID")],
         ):
             try:
-                deleted = department_service.delete_department(department_id)
+                deleted = department_service.delete_department(organization_id, department_id)
                 if not deleted:
                     raise HTTPException(status_code=404, detail="Department not found")
                 return None

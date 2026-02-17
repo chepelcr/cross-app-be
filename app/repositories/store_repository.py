@@ -34,6 +34,23 @@ class StoreRepository(DatabaseConnection):
             logger.error(f"Error finding store {store_id}: {e}", exc_info=True)
             raise
 
+    def find_by_id_and_company(self, store_id: uuid.UUID, company_id: str) -> Optional[Store]:
+        try:
+            stmt = (
+                select(Store)
+                .where(
+                    and_(
+                        Store.store_id == store_id,
+                        Store.company_id == company_id,
+                        Store.status == 1,
+                    )
+                )
+            )
+            return self.session.execute(stmt).scalar_one_or_none()
+        except SQLAlchemyError as e:
+            logger.error(f"Error finding store {store_id} for company {company_id}: {e}", exc_info=True)
+            raise
+
     def find_by_client_and_code(self, client_id: uuid.UUID, store_code: str) -> Optional[Store]:
         try:
             stmt = (

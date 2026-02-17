@@ -59,10 +59,10 @@ def get_departments(
     )
 
 
-def get_department(department_id: uuid.UUID) -> Optional[DepartmentResponse]:
+def get_department(company_id: str, department_id: uuid.UUID) -> Optional[DepartmentResponse]:
     """Get a single department by ID."""
     with DepartmentRepository() as repo:
-        department = repo.find_by_id(department_id)
+        department = repo.find_by_id_and_company(department_id, company_id)
     if not department:
         return None
     return _map_department(department)
@@ -90,6 +90,7 @@ def create_department(
 
 
 def update_department(
+    company_id: str,
     department_id_str: str,
     dto: UpdateDepartmentDTO,
 ) -> Optional[DepartmentResponse]:
@@ -97,7 +98,7 @@ def update_department(
     department_id = uuid.UUID(department_id_str)
 
     with DepartmentRepository() as repo:
-        department = repo.find_by_id(department_id)
+        department = repo.find_by_id_and_company(department_id, company_id)
         if not department:
             return None
 
@@ -114,6 +115,7 @@ def update_department(
 
 
 def update_department_status(
+    company_id: str,
     department_id_str: str,
     status: int,
 ) -> Optional[DepartmentResponse]:
@@ -121,7 +123,7 @@ def update_department_status(
     department_id = uuid.UUID(department_id_str)
 
     with DepartmentRepository() as repo:
-        department = repo.find_by_id(department_id)
+        department = repo.find_by_id_and_company(department_id, company_id)
         if not department:
             return None
 
@@ -131,11 +133,14 @@ def update_department_status(
     return _map_department(department)
 
 
-def delete_department(department_id_str: str) -> bool:
+def delete_department(company_id: str, department_id_str: str) -> bool:
     """Soft delete a department."""
     department_id = uuid.UUID(department_id_str)
 
     with DepartmentRepository() as repo:
+        department = repo.find_by_id_and_company(department_id, company_id)
+        if not department:
+            return False
         return repo.soft_delete(department_id)
 
 

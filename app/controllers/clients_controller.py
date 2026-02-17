@@ -70,7 +70,7 @@ class ClientsController:
             try:
                 import uuid as uuid_mod
 
-                result = client_service.get_client(uuid_mod.UUID(client_id))
+                result = client_service.get_client(organization_id, uuid_mod.UUID(client_id))
                 if not result:
                     raise HTTPException(status_code=404, detail="Client not found")
                 return result
@@ -111,7 +111,7 @@ class ClientsController:
             body: ClientRequestDTO,
         ):
             try:
-                result = client_service.update_client(client_id, body)
+                result = client_service.update_client(organization_id, client_id, body)
                 if not result:
                     raise HTTPException(status_code=404, detail="Client not found")
                 return result
@@ -134,7 +134,7 @@ class ClientsController:
             body: StatusRequestDTO = Body(...),
         ):
             try:
-                result = client_service.update_client_status(client_id, body.status)
+                result = client_service.update_client_status(organization_id, client_id, body.status)
                 if not result:
                     raise HTTPException(status_code=404, detail="Client not found")
                 return result

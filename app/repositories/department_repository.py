@@ -35,6 +35,23 @@ class DepartmentRepository(DatabaseConnection):
             logger.error(f"Error finding department {department_id}: {e}", exc_info=True)
             raise
 
+    def find_by_id_and_company(self, department_id: uuid.UUID, company_id: str) -> Optional[Department]:
+        try:
+            stmt = (
+                select(Department)
+                .where(
+                    and_(
+                        Department.department_id == department_id,
+                        Department.company_id == company_id,
+                        Department.status == 1,
+                    )
+                )
+            )
+            return self.session.execute(stmt).scalar_one_or_none()
+        except SQLAlchemyError as e:
+            logger.error(f"Error finding department {department_id} for company {company_id}: {e}", exc_info=True)
+            raise
+
     def find_by_client_and_code(self, client_id: uuid.UUID, department_code: str) -> Optional[Department]:
         try:
             stmt = (

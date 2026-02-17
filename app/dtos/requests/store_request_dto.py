@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class StoreRequestDTO(BaseModel):
@@ -12,3 +12,10 @@ class StoreRequestDTO(BaseModel):
     store_name: Optional[str] = Field(None, alias="storeName")
     slot_id: Optional[str] = Field(None, alias="slotId")
     chain: Optional[str] = Field(None)
+
+    @field_validator("store_code")
+    @classmethod
+    def validate_store_code_on_create(cls, v):
+        if v is None:
+            raise ValueError("store_code is required")
+        return v

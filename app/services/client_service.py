@@ -55,10 +55,10 @@ def get_clients(
     )
 
 
-def get_client(client_id: uuid.UUID) -> Optional[ClientResponse]:
+def get_client(company_id: str, client_id: uuid.UUID) -> Optional[ClientResponse]:
     """Get a single client by ID."""
     with ClientRepository() as repo:
-        client = repo.find_by_id(client_id)
+        client = repo.find_by_id_and_company(client_id, company_id)
     if not client:
         return None
     return _map_client(client)
@@ -81,6 +81,7 @@ def create_client(
 
 
 def update_client(
+    company_id: str,
     client_id_str: str,
     dto: "ClientRequestDTO",
 ) -> Optional[ClientResponse]:
@@ -88,7 +89,7 @@ def update_client(
     client_id = uuid.UUID(client_id_str)
 
     with ClientRepository() as repo:
-        client = repo.find_by_id(client_id)
+        client = repo.find_by_id_and_company(client_id, company_id)
         if not client:
             return None
 
@@ -103,6 +104,7 @@ def update_client(
 
 
 def update_client_status(
+    company_id: str,
     client_id_str: str,
     status: int,
 ) -> Optional[ClientResponse]:
@@ -110,7 +112,7 @@ def update_client_status(
     client_id = uuid.UUID(client_id_str)
 
     with ClientRepository() as repo:
-        client = repo.find_by_id(client_id)
+        client = repo.find_by_id_and_company(client_id, company_id)
         if not client:
             return None
 

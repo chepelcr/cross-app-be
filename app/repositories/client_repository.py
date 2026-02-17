@@ -34,6 +34,23 @@ class ClientRepository(DatabaseConnection):
             logger.error(f"Error finding client {client_id}: {e}", exc_info=True)
             raise
 
+    def find_by_id_and_company(self, client_id: uuid.UUID, company_id: str) -> Optional[Client]:
+        try:
+            stmt = (
+                select(Client)
+                .where(
+                    and_(
+                        Client.client_id == client_id,
+                        Client.company_id == company_id,
+                        Client.status == 1,
+                    )
+                )
+            )
+            return self.session.execute(stmt).scalar_one_or_none()
+        except SQLAlchemyError as e:
+            logger.error(f"Error finding client {client_id} for company {company_id}: {e}", exc_info=True)
+            raise
+
     def find_by_company_and_gln(self, company_id: str, client_gln: str) -> Optional[Client]:
         try:
             stmt = (
