@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from datetime import datetime, date
 from io import BytesIO
+from typing import Optional
 
 import openpyxl
 
@@ -59,15 +61,14 @@ def create_confirmation(
             )
 
         # Validate and extract delivery place + date from orders
-        deliver_to_code, deliver_to_name = _validate_deliver_to(orders, [])
+        store_id = _validate_deliver_to(orders, [])
         earliest_date = _validate_order_dates(orders, [])
 
         confirmation = Confirmation(
             company_id=organization_id,
             confirmation_number=dto.confirmation_number,
             delivery_date=earliest_date or None,
-            deliver_to_code=deliver_to_code,
-            deliver_to_name=deliver_to_name,
+            deliver_to_store_id=store_id,
         )
         confirmation = conf_repo.save(confirmation)
 
@@ -172,11 +173,12 @@ def _send_confirmation_email(confirmation: Confirmation, orders: list[Order]) ->
     """Collect NuevoReporte Excel attachments and send delivery email."""
     delivery_date = confirmation.delivery_date or ""
 
-    # Extract provider number from the first order's supplier_internal_code
+    # Extract provider number from the organization's internal_code
     provider_number = ""
     for order in orders:
-        if order.supplier_internal_code:
-            provider_number = _extract_provider_number(order.supplier_internal_code)
+        org = order.organization
+        if org and org.internal_code:
+            provider_number = _extract_provider_number(org.internal_code)
             break
 
     # Collect NuevoReporte Excel URLs as attachments
@@ -247,30 +249,31 @@ def _parse_date(date_str: str) -> date:
 
 def _validate_deliver_to(
     new_orders: list[Order], existing_orders: list[Order]
-) -> tuple:
-    """Validate all orders share the same delivery place.
+) -> Optional[int]:
+    """Validate all orders share the same delivery store.
 
-    Returns (deliver_to_code, deliver_to_name) from the orders.
+    Returns the deliver_to_store_id from the orders, or None.
     """
     all_orders = list(new_orders) + list(existing_orders)
-    places = set()
-    deliver_to_code = ""
-    deliver_to_name = ""
+    store_ids = set()
+    result_store_id = None
 
     for order in all_orders:
-        code = (order.deliver_to_code or "").strip()
-        if code:
-            places.add(code)
-            deliver_to_code = code
-            deliver_to_name = (order.deliver_to_name or "").strip()
+        if order.deliver_to_store_id:
+            store_ids.add(order.deliver_to_store_id)
+            result_store_id = order.deliver_to_store_id
 
-    if len(places) > 1:
+    if len(store_ids) > 1:
+        codes = []
+        for order in all_orders:
+            if order.deliver_to_store and order.deliver_to_store.store_code:
+                codes.append(order.deliver_to_store.store_code)
         raise ValueError(
             f"All orders in a confirmation must be delivered to the same place. "
-            f"Found different delivery codes: {', '.join(sorted(places))}"
+            f"Found different delivery stores: {', '.join(sorted(set(codes)))}"
         )
 
-    return deliver_to_code, deliver_to_name
+    return result_store_id
 
 
 def _validate_order_dates(new_orders: list[Order], existing_orders: list[Order]) -> str:
@@ -329,10 +332,9 @@ def _link_orders_to_confirmation(
     ]
 
     # Validate delivery place and dates
-    deliver_to_code, deliver_to_name = _validate_deliver_to(orders, existing_orders)
-    if deliver_to_code:
-        confirmation.deliver_to_code = deliver_to_code
-        confirmation.deliver_to_name = deliver_to_name
+    store_id = _validate_deliver_to(orders, existing_orders)
+    if store_id:
+        confirmation.deliver_to_store_id = store_id
 
     earliest_date = _validate_order_dates(orders, existing_orders)
     if earliest_date:

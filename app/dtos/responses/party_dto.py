@@ -30,3 +30,9 @@ class PartyDTO(BaseModel):
         description="Internal party code",
         examples=["SUP-001", "CLI-456"]
     )
+
+    logo_url: Optional[str] = Field(
+        None,
+        description="URL to the party's logo image",
+        examples=["https://cdn.example.com/logos/acme.png"]
+    )

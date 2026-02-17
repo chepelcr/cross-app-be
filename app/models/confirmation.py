@@ -1,6 +1,10 @@
+from __future__ import annotations
+
+import uuid
 from typing import List, Optional
 
-from sqlalchemy import BigInteger, Index, String
+from sqlalchemy import BigInteger, ForeignKey, Index, String
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import AuditMixin, Base
@@ -13,11 +17,15 @@ class Confirmation(Base, AuditMixin):
     company_id: Mapped[str] = mapped_column(String(50), nullable=False)
     confirmation_number: Mapped[str] = mapped_column(String(100), nullable=False)
     delivery_date: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    deliver_to_code: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    deliver_to_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     confirmation_status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, default="processing")
 
+    # Normalized FK
+    deliver_to_store_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("stores.store_id"), nullable=True
+    )
+
     # Relationships
+    deliver_to_store: Mapped[Optional["Store"]] = relationship(foreign_keys=[deliver_to_store_id])
     orders: Mapped[List["Order"]] = relationship(
         back_populates="confirmation"
     )

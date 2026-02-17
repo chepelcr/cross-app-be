@@ -18,27 +18,29 @@ from app.utils.crossdocking_utils import build_summaries
 
 def order_to_response(order: Order) -> OrderResponse:
     """Map an Order entity to an OrderResponse DTO."""
-    lines = [
-        OrderDetailLineResponse(
-            line_number=ln.line_number or 0,
-            internal_code=ln.internal_code or "",
-            code=ln.code or "",
-            client_article_code=ln.client_article_code or "",
-            description=ln.description or "",
-            units_per_box=ln.units_per_box or 0,
-            quantity_ordered=ln.quantity_ordered or 0,
-            units_ordered=ln.units_ordered or 0,
-            unit_price=float(ln.unit_price or 0),
-            discount=float(ln.discount or 0),
-            line_total=float(ln.line_total or 0),
-            tax=float(ln.tax or 0),
-            quantity_dispatched=ln.quantity_dispatched or 0,
-            dispatch_rejection_reason=ln.dispatch_rejection_reason,
-            quantity_received=ln.quantity_received or 0,
-            article_code=ln.article_code or "",
+    lines = []
+    for ln in (order.lines or []):
+        p = ln.product
+        lines.append(
+            OrderDetailLineResponse(
+                line_number=ln.line_number or 0,
+                internal_code=(p.internal_code if p else "") or "",
+                code=(p.code if p else "") or "",
+                client_article_code=(p.client_article_code if p else "") or "",
+                description=(p.description if p else "") or "",
+                units_per_box=(p.units_per_box if p else 0) or 0,
+                quantity_ordered=ln.quantity_ordered or 0,
+                units_ordered=ln.units_ordered or 0,
+                unit_price=float(ln.unit_price or 0),
+                discount=float(ln.discount or 0),
+                line_total=float(ln.line_total or 0),
+                tax=float(ln.tax or 0),
+                quantity_dispatched=ln.quantity_dispatched or 0,
+                dispatch_rejection_reason=ln.dispatch_rejection_reason,
+                quantity_received=ln.quantity_received or 0,
+                article_code=ln.article_code or "",
+            )
         )
-        for ln in (order.lines or [])
-    ]
 
     order_totals = None
     if lines:
@@ -57,6 +59,42 @@ def order_to_response(order: Order) -> OrderResponse:
     if order.crossdocking_sale_points:
         crossdocking = build_crossdocking_data(order)
 
+    # Build client DTO from relationship
+    client_dto = None
+    if order.client:
+        client_dto = PartyDTO(
+            name=order.client.client_name,
+            gln=order.client.client_gln,
+        )
+
+    # Build supplier DTO from organization relationship
+    supplier_dto = None
+    if order.organization:
+        supplier_dto = PartyDTO(
+            name=order.organization.name,
+            gln=order.organization.gln,
+            internal_code=order.organization.internal_code,
+            logo_url=order.organization.logo_url,
+        )
+
+    # Build delivery location from store relationship
+    delivery_location_dto = None
+    if order.deliver_to_store:
+        delivery_location_dto = LocationDTO(
+            code=order.deliver_to_store.store_code,
+            name=order.deliver_to_store.store_name,
+            latitude=order.latitude,
+            longitude=order.longitude,
+        )
+    elif order.latitude or order.longitude:
+        delivery_location_dto = LocationDTO(
+            latitude=order.latitude,
+            longitude=order.longitude,
+        )
+
+    # Department from relationship
+    department_value = order.department_rel.department_code if order.department_rel else None
+
     return OrderResponse(
         order_id=order.order_id,
         company_id=order.company_id,
@@ -69,25 +107,11 @@ def order_to_response(order: Order) -> OrderResponse:
         creation_date=order.creation_date,
         delivery_date=order.delivery_date,
         order_status=order.order_status or "pending",
-        client=PartyDTO(
-            name=order.client_name,
-            gln=order.client_gln,
-            internal_code=None,
-        ) if order.client_name or order.client_gln else None,
-        supplier=PartyDTO(
-            name=order.supplier_name,
-            gln=order.supplier_gln,
-            internal_code=order.supplier_internal_code,
-        ) if order.supplier_name or order.supplier_gln else None,
-        delivery_location=LocationDTO(
-            code=order.deliver_to_code,
-            name=order.deliver_to_name,
-            gln=order.dispatch_gln,
-            latitude=order.latitude,
-            longitude=order.longitude,
-        ) if order.deliver_to_code or order.deliver_to_name or order.dispatch_gln or order.latitude or order.longitude else None,
+        client=client_dto,
+        supplier=supplier_dto,
+        delivery_location=delivery_location_dto,
         event=order.event,
-        department=order.department,
+        department=department_value,
         comment=order.comment,
         line_count=order.line_count,
         total_quantities=order.total_quantities,
@@ -126,25 +150,28 @@ def build_crossdocking_data(order: Order) -> CrossDockingData:
     """Build the CrossDockingData DTO from an Order's sale points."""
     sale_points = []
     for sp in order.crossdocking_sale_points:
-        items = [
-            ItemResponse(
-                internal_code=it.internal_code or "",
-                original_code=it.original_code or "",
-                description=it.description or "",
-                quantity=it.quantity or 0,
-                units_per_box=it.units_per_box or 0,
-                total_units=it.total_units or 0,
-                sent=it.sent or 0,
-                missing=it.missing or 0,
+        store = sp.store
+        items = []
+        for it in (sp.items or []):
+            p = it.product
+            items.append(
+                ItemResponse(
+                    internal_code=(p.internal_code if p else "") or "",
+                    original_code=(p.original_code if p else "") or "",
+                    description=(p.description if p else "") or "",
+                    quantity=it.quantity or 0,
+                    units_per_box=(p.units_per_box if p else 0) or 0,
+                    total_units=it.total_units or 0,
+                    sent=it.sent or 0,
+                    missing=it.missing or 0,
+                )
             )
-            for it in (sp.items or [])
-        ]
         sale_points.append(
             SalePointResponse(
-                store_number=sp.store_number or "",
-                store_name=sp.store_name or "",
+                store_number=(store.store_code if store else "") or "",
+                store_name=(store.store_name if store else "") or "",
                 full_name=sp.full_name or "",
-                slot_id=sp.slot_id or "",
+                slot_id=(store.slot_id if store else "") or "",
                 items=items,
                 total_boxes=sp.total_boxes or 0,
                 total_units=sp.total_units or 0,

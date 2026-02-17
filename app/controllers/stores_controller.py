@@ -1,0 +1,105 @@
+from __future__ import annotations
+
+from typing import Annotated, Optional
+
+from fastapi import Body, FastAPI, HTTPException, Path, Query
+
+from app.dtos import ExcelFileDTO
+from app.dtos.responses.store_dto import StoreListResponse, StoreResponse
+from app.services import store_service
+
+
+class StoresController:
+    def __init__(self, app: FastAPI):
+        self.register_routes(app)
+
+    def register_routes(self, app: FastAPI):
+
+        @app.get(
+            "/api/organizations/{organization_id}/clients/{client_id}/stores",
+            response_model=StoreListResponse,
+            tags=["stores"],
+            summary="Get all stores for a client",
+            description="""Get a paginated list of stores with optional search filters.
+
+**Search filters**
+- `storeCode`: Store code
+- `storeName`: Store name (supports wildcards)
+- `chain`: Chain name (supports wildcards)
+- `slotId`: Slot ID
+
+**Sorting**
+- `orderBy>field` (Ascending)
+- `orderBy<field` (Descending)
+
+**Example:** `storeName:*test*,orderBy>storeCode`
+""",
+        )
+        async def list_stores(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            client_id: Annotated[str, Path(description="Client UUID")],
+            search: Optional[str] = Query(
+                None,
+                description=(
+                    "Search filter string. Syntax: field:value,field2:value2. "
+                    "Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). "
+                    "Example: storeName:*Test*,orderBy>storeCode"
+                ),
+            ),
+            page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+            pageSize: int = Query(12, ge=1, le=100, description="Items per page"),
+        ):
+            try:
+                return store_service.get_stores(
+                    organization_id, client_id, page, pageSize, search
+                )
+            except ValueError as e:
+                raise HTTPException(status_code=422, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.get(
+            "/api/organizations/{organization_id}/clients/{client_id}/stores/{store_id}",
+            response_model=StoreResponse,
+            tags=["stores"],
+            summary="Get a specific store by ID",
+        )
+        async def get_store(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            client_id: Annotated[str, Path(description="Client UUID")],
+            store_id: Annotated[str, Path(description="Store UUID")],
+        ):
+            try:
+                import uuid as uuid_mod
+
+                result = store_service.get_store(uuid_mod.UUID(store_id))
+                if not result:
+                    raise HTTPException(status_code=404, detail="Store not found")
+                return result
+            except HTTPException:
+                raise
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid store ID format")
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.post(
+            "/api/organizations/{organization_id}/clients/{client_id}/stores/upload",
+            tags=["stores"],
+            summary="Upload stores from an Excel file",
+            description="Upload an Excel file with columns: Codigo, Nombre, SLOT ID, Cadena",
+        )
+        async def upload_stores(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            client_id: Annotated[str, Path(description="Client UUID")],
+            body: ExcelFileDTO = Body(...),
+        ):
+            try:
+                count = store_service.upload_stores_excel(
+                    organization_id, client_id, body
+                )
+                return {"message": f"Successfully uploaded {count} stores", "count": count}
+            except ValueError as e:
+                raise HTTPException(status_code=422, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))

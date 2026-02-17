@@ -38,33 +38,50 @@ def render_order_html(order: Order) -> str:
     total_taxes = float(order.taxes or 0)
     grand_total = float(order.grand_total or 0)
 
-    lines = [
-        {
-            "internal_code": ln.internal_code or "",
-            "code": ln.code or "",
-            "description": ln.description or "",
+    lines = []
+    for ln in lines_data:
+        p = ln.product
+        lines.append({
+            "internal_code": (p.internal_code if p else "") or "",
+            "code": (p.code if p else "") or "",
+            "description": (p.description if p else "") or "",
             "quantity_ordered": ln.quantity_ordered or 0,
             "units_ordered": ln.units_ordered or 0,
             "unit_price": float(ln.unit_price or 0),
             "discount": float(ln.discount or 0),
             "tax": float(ln.tax or 0),
             "line_total": float(ln.line_total or 0),
-        }
-        for ln in lines_data
-    ]
+        })
+
+    # Use relationship data
+    org = order.organization
+    supplier_name = org.name if org else ""
+    supplier_internal_code = (org.internal_code if org else "") or ""
+    supplier_logo_url = (org.logo_url if org else "") or ""
+    client_name = order.client.client_name if order.client else ""
+    client_gln = (order.client.client_gln if order.client else "") or ""
+
+    store = order.deliver_to_store
+    if store:
+        deliver_to = f"{store.store_code} {store.store_name}"
+    else:
+        deliver_to = ""
+
+    department_value = order.department_rel.department_code if order.department_rel else ""
 
     template_model = {
-        "supplier_name": order.supplier_name or "",
-        "supplier_internal_code": order.supplier_internal_code or "",
+        "supplier_name": supplier_name,
+        "supplier_internal_code": supplier_internal_code,
+        "supplier_logo_url": supplier_logo_url or "",
         "document_number": order.document_number or "",
         "creation_date_formatted": order.creation_date or "",
         "delivery_date_formatted": order.delivery_date or "",
-        "client_name": order.client_name or "",
-        "client_gln": order.client_gln or "",
-        "deliver_to": f"{order.deliver_to_code} {order.deliver_to_name}" if order.deliver_to_code else (order.deliver_to_name or ""),
+        "client_name": client_name,
+        "client_gln": client_gln,
+        "deliver_to": deliver_to,
         "order_type": order.order_type or "",
         "comment": order.comment or "",
-        "department": order.department or "",
+        "department": department_value,
         "lines": lines,
         "line_count": order.line_count or len(lines_data),
         "total_quantities": order.total_quantities or 0,
@@ -208,13 +225,23 @@ def render_crossdocking_html(order: Order, crossdocking_data) -> str:
                 "missing": it.missing,
             })
 
+    # Use relationship data
+    org = order.organization
+    supplier_name = org.name if org else ""
+    supplier_internal_code = (org.internal_code if org else "") or ""
+
+    store = order.deliver_to_store
+    deliver_to = f"{store.store_code} {store.store_name}" if store else ""
+
+    department_value = order.department_rel.department_code if order.department_rel else ""
+
     context = {
-        "deliver_to": f"{order.deliver_to_code} {order.deliver_to_name}" if order.deliver_to_code else (order.deliver_to_name or ""),
-        "supplier_name": order.supplier_name or "",
-        "supplier_internal_code": order.supplier_internal_code or "",
+        "deliver_to": deliver_to,
+        "supplier_name": supplier_name,
+        "supplier_internal_code": supplier_internal_code,
         "document_number": order.document_number or "",
         "confirmation": order.confirmation_number or order.bgm011 or "",
-        "department": order.department or "",
+        "department": department_value,
         "sale_points": sale_points,
         "item_summary": item_summary,
         "box_summary": box_summary,

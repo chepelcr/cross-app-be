@@ -4,26 +4,20 @@ from enum import Enum
 from typing import Optional, Set
 
 
-ENTITY_ORDER = "Order"
-ENTITY_ALL = {ENTITY_ORDER}
+ENTITY_DEPARTMENT = "Department"
+ENTITY_ALL = {ENTITY_DEPARTMENT}
 
 
-class SearchFilters(Enum):
+class DepartmentSearchFilters(Enum):
     """
-    Search filters for Order entity.
+    Search filters for Department entity.
 
     Format: (entity_field, json_field, is_join, join_field, is_controller, entities, allows_like, allows_between)
     """
 
-    DOCUMENT_NUMBER = ("document_number", "documentNumber", False, None, True, ENTITY_ALL, True, False)
-    CLIENT_NAME = ("client", "clientName", True, "client_name", True, ENTITY_ALL, True, False)
-    SUPPLIER_NAME = ("organization", "supplierName", True, "name", True, ENTITY_ALL, True, False)
-    DELIVERY_DATE = ("delivery_date", "deliveryDate", False, None, True, ENTITY_ALL, False, True)
-    CREATION_DATE = ("creation_date", "creationDate", False, None, True, ENTITY_ALL, False, True)
-    ORDER_STATUS = ("order_status", "orderStatus", False, None, True, ENTITY_ALL, False, False)
-    DELIVER_TO_CODE = ("deliver_to_store", "deliverToCode", True, "store_code", True, ENTITY_ALL, False, False)
-    DELIVER_TO_NAME = ("deliver_to_store", "deliverToName", True, "store_name", True, ENTITY_ALL, True, False)
-    CONFIRMATION_NUMBER = ("confirmation_number", "confirmationNumber", False, None, True, ENTITY_ALL, True, False)
+    DEPARTMENT_CODE = ("department_code", "departmentCode", False, None, True, ENTITY_ALL, False, False)
+    NAME = ("name", "name", False, None, True, ENTITY_ALL, True, False)
+    SUPPLIER_CODE = ("supplier_code", "supplierCode", False, None, True, ENTITY_ALL, False, False)
     ORDER_BY = (None, "orderBy", False, None, False, ENTITY_ALL, False, False)
 
     def __init__(
@@ -75,7 +69,7 @@ class SearchFilters(Enum):
         return self._allows_between
 
     @classmethod
-    def get_filter_by_json_field(cls, json_field: str) -> Optional[SearchFilters]:
+    def get_filter_by_json_field(cls, json_field: str) -> Optional[DepartmentSearchFilters]:
         for f in cls:
             if f.json_field and f.json_field == json_field:
                 return f

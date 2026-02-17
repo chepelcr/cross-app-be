@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Optional
 
 from sqlalchemy import BigInteger, ForeignKey, Index, Numeric, String
@@ -14,11 +16,6 @@ class OrderLine(Base, AuditMixin):
         BigInteger, ForeignKey("crossdocking_orders.order_id", ondelete="CASCADE"), nullable=False
     )
     line_number: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
-    internal_code: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    code: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    client_article_code: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    units_per_box: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True, default=0)
     quantity_ordered: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True, default=0)
     units_ordered: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True, default=0)
     unit_price: Mapped[Optional[float]] = mapped_column(Numeric(18, 5), nullable=True, default=0)
@@ -30,8 +27,14 @@ class OrderLine(Base, AuditMixin):
     quantity_received: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True, default=0)
     article_code: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
+    # Normalized FK
+    product_id: Mapped[Optional[str]] = mapped_column(
+        String, ForeignKey("products.id"), nullable=True
+    )
+
     # Relationships
     order: Mapped["Order"] = relationship(back_populates="lines")
+    product: Mapped[Optional["Product"]] = relationship(foreign_keys=[product_id])
 
     __table_args__ = (
         Index("idx_order_line_order_id", "order_id"),

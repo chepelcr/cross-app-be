@@ -92,6 +92,17 @@ class DatabaseConnection:
             raise
 
     @classmethod
+    def from_session(cls, session: Session):
+        """Create an instance that shares an existing session.
+
+        Used when multiple repositories need to participate in the same
+        transaction (e.g., upserting related entities during order parsing).
+        """
+        instance = cls.__new__(cls)
+        instance.session = session
+        return instance
+
+    @classmethod
     def close_all(cls):
         if cls._engine:
             cls._engine.dispose()

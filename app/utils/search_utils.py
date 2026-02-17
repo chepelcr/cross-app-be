@@ -45,11 +45,9 @@ class SearchUtils:
     # Text fields that always use case-insensitive LIKE
     ALWAYS_LIKE_FIELDS = {"documentNumber", "clientName", "supplierName", "deliverToName", "confirmationNumber"}
 
-    # Fields valid for orderBy
+    # Fields valid for orderBy (only direct columns, not join fields)
     SORTABLE_FIELDS = {
         "documentNumber", "document_number",
-        "clientName", "client_name",
-        "supplierName", "supplier_name",
         "deliveryDate", "delivery_date",
         "creationDate", "creation_date",
         "orderStatus", "order_status",
@@ -59,8 +57,6 @@ class SearchUtils:
 
     SORTABLE_FIELD_MAP = {
         "documentNumber": "document_number",
-        "clientName": "client_name",
-        "supplierName": "supplier_name",
         "deliveryDate": "delivery_date",
         "creationDate": "creation_date",
         "orderStatus": "order_status",
@@ -69,7 +65,10 @@ class SearchUtils:
     }
 
     @classmethod
-    def parse_search_filter(cls, search: str, entity_class: Type) -> tuple:
+    def parse_search_filter(cls, search: str, entity_class: Type, filter_enum_class: Type = None) -> tuple:
+        if filter_enum_class is None:
+            filter_enum_class = SearchFilters
+
         if not search or not search.strip():
             return [], None
 
@@ -85,7 +84,7 @@ class SearchUtils:
                 continue
 
             if token.startswith("orderBy"):
-                order_result = cls._parse_order_by(token, entity_class)
+                order_result = cls._parse_order_by(token, entity_class, filter_enum_class)
                 if order_result:
                     order_by = order_result
                 continue
@@ -98,7 +97,7 @@ class SearchUtils:
                     gt = gt.strip()
                     if not gt:
                         continue
-                    criteria = cls._parse_criteria(gt)
+                    criteria = cls._parse_criteria(gt, filter_enum_class)
                     if criteria:
                         f = cls._build_filter(criteria, entity_class)
                         if f is not None:
@@ -106,7 +105,7 @@ class SearchUtils:
                 if or_filters:
                     grouped_filters.append(or_(*or_filters) if len(or_filters) > 1 else or_filters[0])
             else:
-                criteria = cls._parse_criteria(token)
+                criteria = cls._parse_criteria(token, filter_enum_class)
                 if criteria:
                     f = cls._build_filter(criteria, entity_class)
                     if f is not None:
@@ -146,7 +145,10 @@ class SearchUtils:
         return tokens
 
     @classmethod
-    def _parse_criteria(cls, token: str) -> Optional[SearchCriteria]:
+    def _parse_criteria(cls, token: str, filter_enum_class: Type = None) -> Optional[SearchCriteria]:
+        if filter_enum_class is None:
+            filter_enum_class = SearchFilters
+
         if not token:
             return None
 
@@ -160,7 +162,7 @@ class SearchUtils:
                     if operation:
                         # Check for BETWEEN range separator in value
                         if BETWEEN_RANGE_SEPARATOR in value:
-                            search_filter = SearchFilters.get_filter_by_json_field(field)
+                            search_filter = filter_enum_class.get_filter_by_json_field(field)
                             if search_filter and search_filter.allows_between:
                                 if operation == SearchOperations.NEGATION:
                                     operation = SearchOperations.NEGATION_BETWEEN
@@ -221,6 +223,20 @@ class SearchUtils:
 
     @classmethod
     def _build_filter(cls, criteria: SearchCriteria, entity_class: Type):
+        if criteria.is_join_field and criteria.join_field:
+            rel_name = criteria.entity_field or criteria.field
+            if not hasattr(entity_class, rel_name):
+                return None
+            relationship_attr = getattr(entity_class, rel_name)
+            target_model = relationship_attr.property.mapper.class_
+            if not hasattr(target_model, criteria.join_field):
+                return None
+            target_column = getattr(target_model, criteria.join_field)
+            inner_filter = cls._apply_operation(target_column, criteria.operation, criteria.value, criteria.field)
+            if inner_filter is not None:
+                return relationship_attr.has(inner_filter)
+            return None
+
         field_name = criteria.entity_field or criteria.field
         if not hasattr(entity_class, field_name):
             return None
@@ -281,7 +297,10 @@ class SearchUtils:
             return column == value
 
     @classmethod
-    def _parse_order_by(cls, token: str, entity_class: Type):
+    def _parse_order_by(cls, token: str, entity_class: Type, filter_enum_class: Type = None):
+        if filter_enum_class is None:
+            filter_enum_class = SearchFilters
+
         match = cls._ORDER_BY_PATTERN.match(token)
         if not match:
             return None
@@ -292,7 +311,7 @@ class SearchUtils:
         if field_name not in cls.SORTABLE_FIELDS:
             raise ValueError(f"Cannot sort by field: {field_name}")
 
-        search_filter = SearchFilters.get_filter_by_json_field(field_name)
+        search_filter = filter_enum_class.get_filter_by_json_field(field_name)
         if field_name in cls.SORTABLE_FIELD_MAP:
             mapped = cls.SORTABLE_FIELD_MAP[field_name]
         else:

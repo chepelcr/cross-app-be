@@ -4,26 +4,22 @@ from enum import Enum
 from typing import Optional, Set
 
 
-ENTITY_ORDER = "Order"
-ENTITY_ALL = {ENTITY_ORDER}
+ENTITY_PRODUCT = "Product"
+ENTITY_ALL = {ENTITY_PRODUCT}
 
 
-class SearchFilters(Enum):
+class ProductSearchFilters(Enum):
     """
-    Search filters for Order entity.
+    Search filters for Product entity.
 
     Format: (entity_field, json_field, is_join, join_field, is_controller, entities, allows_like, allows_between)
     """
 
-    DOCUMENT_NUMBER = ("document_number", "documentNumber", False, None, True, ENTITY_ALL, True, False)
-    CLIENT_NAME = ("client", "clientName", True, "client_name", True, ENTITY_ALL, True, False)
-    SUPPLIER_NAME = ("organization", "supplierName", True, "name", True, ENTITY_ALL, True, False)
-    DELIVERY_DATE = ("delivery_date", "deliveryDate", False, None, True, ENTITY_ALL, False, True)
-    CREATION_DATE = ("creation_date", "creationDate", False, None, True, ENTITY_ALL, False, True)
-    ORDER_STATUS = ("order_status", "orderStatus", False, None, True, ENTITY_ALL, False, False)
-    DELIVER_TO_CODE = ("deliver_to_store", "deliverToCode", True, "store_code", True, ENTITY_ALL, False, False)
-    DELIVER_TO_NAME = ("deliver_to_store", "deliverToName", True, "store_name", True, ENTITY_ALL, True, False)
-    CONFIRMATION_NUMBER = ("confirmation_number", "confirmationNumber", False, None, True, ENTITY_ALL, True, False)
+    INTERNAL_CODE = ("internal_code", "internalCode", False, None, True, ENTITY_ALL, False, False)
+    DESCRIPTION = ("description", "description", False, None, True, ENTITY_ALL, True, False)
+    ORIGINAL_CODE = ("original_code", "originalCode", False, None, True, ENTITY_ALL, False, False)
+    CODE = ("code", "code", False, None, True, ENTITY_ALL, False, False)
+    NAME = ("name", "name", False, None, True, ENTITY_ALL, True, False)
     ORDER_BY = (None, "orderBy", False, None, False, ENTITY_ALL, False, False)
 
     def __init__(
@@ -75,7 +71,7 @@ class SearchFilters(Enum):
         return self._allows_between
 
     @classmethod
-    def get_filter_by_json_field(cls, json_field: str) -> Optional[SearchFilters]:
+    def get_filter_by_json_field(cls, json_field: str) -> Optional[ProductSearchFilters]:
         for f in cls:
             if f.json_field and f.json_field == json_field:
                 return f

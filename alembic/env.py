@@ -28,11 +28,57 @@ target_metadata = Base.metadata
 # sharing the same database.
 OUR_TABLES = set(target_metadata.tables.keys())
 
+# Tables shared with BeautyMarket — we only ADD columns/indexes, never drop existing ones.
+SHARED_TABLES = {"organizations", "products", "categories"}
+
 
 def include_name(name, type_, parent_names):
     if type_ == "table":
         return name in OUR_TABLES
     # Always include indexes/constraints that belong to our tables
+    return True
+
+
+def _get_table_name(object_):
+    """Extract table name from various alembic object types."""
+    if hasattr(object_, "table"):
+        t = object_.table
+        return t.name if hasattr(t, "name") else str(t)
+    if hasattr(object_, "parent") and hasattr(object_.parent, "name"):
+        return object_.parent.name
+    return None
+
+
+def include_object(object_, name, type_, reflected, compare_to):
+    """Prevent alembic from modifying existing objects on shared BeautyMarket tables.
+
+    For shared tables we only allow ADDING new columns and indexes.
+    All other changes (drops, alters, constraint changes) are blocked.
+    """
+    table_name = _get_table_name(object_)
+
+    if table_name in SHARED_TABLES:
+        if reflected and compare_to is None:
+            # Object exists in DB but not in model → would be dropped. Block it.
+            return False
+        if not reflected and compare_to is None:
+            # Object exists in model but not in DB → new addition. Allow it.
+            return True
+        if reflected and compare_to is not None:
+            # Object exists in both → would be altered. Block changes on shared tables.
+            return False
+
+    # For unique_constraint and foreign_key_constraint on shared tables
+    if type_ in ("unique_constraint", "foreign_key_constraint"):
+        tname = None
+        if hasattr(object_, "table") and object_.table is not None:
+            tname = object_.table.name if hasattr(object_.table, "name") else str(object_.table)
+        if tname in SHARED_TABLES:
+            if reflected and compare_to is None:
+                return False
+            if reflected and compare_to is not None:
+                return False
+
     return True
 
 
@@ -45,6 +91,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         include_name=include_name,
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -58,6 +105,7 @@ def run_migrations_online() -> None:
             connection=connection,
             target_metadata=target_metadata,
             include_name=include_name,
+            include_object=include_object,
         )
 
         with context.begin_transaction():

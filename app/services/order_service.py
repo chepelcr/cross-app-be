@@ -10,7 +10,12 @@ from app.models.crossdocking_item import CrossDockingItem
 from app.models.crossdocking_sale_point import CrossDockingSalePoint
 from app.models.order import Order
 from app.models.order_line import OrderLine
+from app.repositories.client_repository import ClientRepository
+from app.repositories.department_repository import DepartmentRepository
 from app.repositories.order_repository import OrderRepository
+from app.repositories.organization_repository import OrganizationRepository
+from app.repositories.product_repository import ProductRepository
+from app.repositories.store_repository import StoreRepository
 from app.utils.search_utils import SearchUtils
 from app.services.excel_export_service import create_nuevo_reporte
 from app.services.excel_parser import parse_crossdocking_file
@@ -22,12 +27,23 @@ from app.services.pdf_service import (
     download_from_s3,
     upload_file_to_s3,
 )
-from app.services.store_slot_service import get_slot_map
 from app.utils.crossdocking_utils import decode_excel_file
 
 logger = logging.getLogger(__name__)
 
 EXCEL_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+def _sync_organization(org_repo: OrganizationRepository, organization_id: str, parsed) -> None:
+    """Upsert organization from parsed data."""
+    supplier_name = getattr(parsed, "supplier_name", None) or ""
+    supplier_gln = getattr(parsed, "supplier_gln", None) or ""
+    
+    org_repo.upsert(
+        organization_id=organization_id,
+        name=supplier_name or None,
+        gln=supplier_gln or None,
+    )
 
 
 def process_order_excel(organization_id: str, body: ExcelFileDTO) -> OrderResponse:
@@ -44,46 +60,83 @@ def process_order_excel(organization_id: str, body: ExcelFileDTO) -> OrderRespon
                 f"Order {parsed.document_number} already exists for organization {organization_id}"
             )
 
+        # Upsert normalized entities using shared session
+        org_repo = OrganizationRepository.from_session(repo.session)
+        client_repo = ClientRepository.from_session(repo.session)
+        store_repo = StoreRepository.from_session(repo.session)
+        dept_repo = DepartmentRepository.from_session(repo.session)
+        product_repo = ProductRepository.from_session(repo.session)
+
+        # Sync organization data from external API
+        _sync_organization(org_repo, organization_id, parsed)
+
+        # Upsert client
+        client = client_repo.upsert(
+            company_id=organization_id,
+            client_gln=parsed.client_gln,
+            client_name=parsed.client_name,
+        )
+
+        # Upsert delivery store
+        deliver_to_store = None
+        if parsed.deliver_to_code:
+            deliver_to_store = store_repo.upsert_by_code(
+                company_id=organization_id,
+                client_id=client.client_id,
+                store_code=parsed.deliver_to_code,
+                store_name=parsed.deliver_to_name,
+            )
+
+        # Upsert department
+        department_entity = None
+        if parsed.department:
+            department_entity = dept_repo.upsert_by_code(
+                company_id=organization_id,
+                client_id=client.client_id,
+                department_code=parsed.department,
+                supplier_code=parsed.supplier_internal_code,
+            )
+
         order = Order(
             company_id=organization_id,
             document_number=parsed.document_number,
-            client_name=parsed.client_name,
             creation_date=parsed.creation_date,
             delivery_date=parsed.delivery_date,
             order_status="pending",
-            deliver_to_code=parsed.deliver_to_code,
-            deliver_to_name=parsed.deliver_to_name,
             subtotal=parsed.subtotal,
             discounts=parsed.discounts,
             net_total=parsed.net_total,
             taxes=parsed.taxes,
             grand_total=parsed.grand_total,
             total_quantities=parsed.total_quantities,
-            supplier_name=parsed.supplier_name,
-            client_gln=parsed.client_gln,
             line_count=parsed.line_count,
-            dispatch_gln=parsed.dispatch_gln,
             document_type=parsed.document_type,
-            supplier_gln=parsed.supplier_gln,
-            supplier_internal_code=parsed.supplier_internal_code,
             bgm011=parsed.bgm011,
             order_type=parsed.order_type,
             event=parsed.event,
-            department=parsed.department,
             latitude=parsed.latitude,
             longitude=parsed.longitude,
             comment=parsed.comment,
+            # Normalized FKs
+            client_id=client.client_id,
+            deliver_to_store_id=deliver_to_store.store_id if deliver_to_store else None,
+            department_id=department_entity.department_id if department_entity else None,
         )
 
         for ln in parsed.lines:
+            # Upsert product for each line
+            product = product_repo.upsert_by_internal_code(
+                company_id=organization_id,
+                internal_code=ln.internal_code,
+                description=ln.description,
+                code=ln.code,
+                client_article_code=ln.client_article_code,
+                units_per_box=ln.units_per_box,
+            )
+
             order.lines.append(
                 OrderLine(
                     line_number=ln.line_number,
-                    internal_code=ln.internal_code,
-                    code=ln.code,
-                    client_article_code=ln.client_article_code,
-                    description=ln.description,
-                    units_per_box=ln.units_per_box,
                     quantity_ordered=ln.quantity_ordered,
                     units_ordered=ln.units_ordered,
                     unit_price=ln.unit_price,
@@ -94,6 +147,7 @@ def process_order_excel(organization_id: str, body: ExcelFileDTO) -> OrderRespon
                     dispatch_rejection_reason=ln.dispatch_rejection_reason,
                     quantity_received=ln.quantity_received,
                     article_code=ln.article_code,
+                    product_id=product.id,
                 )
             )
 
@@ -132,13 +186,6 @@ def process_crossdocking_excel(
             f"does not match order '{document_number}'"
         )
 
-    # Look up slot_ids from store_slots reference table
-    slot_map = {}
-    try:
-        slot_map = get_slot_map()
-    except Exception as e:
-        logger.warning(f"Could not load store slot map: {e}")
-
     with OrderRepository() as repo:
         order = repo.find_by_company_and_document(organization_id, document_number)
         if not order:
@@ -153,7 +200,10 @@ def process_crossdocking_excel(
                 "Upload the order details (DETALLES) file first."
             )
 
-        _apply_crossdocking_data(order, parsed, slot_map)
+        store_repo = StoreRepository.from_session(repo.session)
+        product_repo = ProductRepository.from_session(repo.session)
+
+        _apply_crossdocking_data(order, parsed, organization_id, store_repo, product_repo)
         order.order_status = "processing"
         order = repo.save(order)
 
@@ -224,11 +274,27 @@ def reprocess_order(organization_id: str, document_number: str) -> OrderResponse
                 f"Order {document_number} not found for organization {organization_id}"
             )
 
+        org_repo = OrganizationRepository.from_session(repo.session)
+        client_repo = ClientRepository.from_session(repo.session)
+        store_repo = StoreRepository.from_session(repo.session)
+        dept_repo = DepartmentRepository.from_session(repo.session)
+        product_repo = ProductRepository.from_session(repo.session)
+
         # Re-parse order Excel if stored
         if order.excel_url:
             try:
                 excel_bytes = download_from_s3(order.excel_url)
                 parsed = parse_order_detail_file(BytesIO(excel_bytes))
+
+                # Sync organization
+                _sync_organization(org_repo, organization_id, parsed)
+
+                # Upsert normalized entities
+                _upsert_order_entities(
+                    order, parsed, organization_id,
+                    client_repo, store_repo, dept_repo, product_repo,
+                )
+
                 _update_order_from_parsed(order, parsed)
                 order = repo.save(order)
                 logger.info(f"Re-parsed order Excel for {document_number}")
@@ -247,14 +313,7 @@ def reprocess_order(organization_id: str, document_number: str) -> OrderResponse
                 cd_bytes = download_from_s3(order.crossdocking_excel_url)
                 parsed_cd = parse_crossdocking_file(BytesIO(cd_bytes))
 
-                slot_map = {}
-                try:
-                    slot_map = get_slot_map()
-                except Exception as e:
-                    logger.warning(f"Could not load store slot map: {e}")
-
-                _apply_crossdocking_data(order, parsed_cd, slot_map)
-                order.order_status = "processing"
+                _apply_crossdocking_data(order, parsed_cd, organization_id, store_repo, product_repo)
                 order = repo.save(order)
                 logger.info(f"Re-parsed crossdocking Excel for {document_number}")
             except Exception as e:
@@ -322,44 +381,55 @@ def update_order_status(organization_id: str, document_number: str, status_code:
         return order_to_response(order)
 
 
-def _update_order_from_parsed(order: Order, parsed) -> None:
-    """Update order entity fields and lines from a parsed result."""
-    order.client_name = parsed.client_name
-    order.creation_date = parsed.creation_date
-    order.delivery_date = parsed.delivery_date
-    order.deliver_to_code = parsed.deliver_to_code
-    order.deliver_to_name = parsed.deliver_to_name
-    order.subtotal = parsed.subtotal
-    order.discounts = parsed.discounts
-    order.net_total = parsed.net_total
-    order.taxes = parsed.taxes
-    order.grand_total = parsed.grand_total
-    order.total_quantities = parsed.total_quantities
-    order.supplier_name = parsed.supplier_name
-    order.client_gln = parsed.client_gln
-    order.line_count = parsed.line_count
-    order.dispatch_gln = parsed.dispatch_gln
-    order.document_type = parsed.document_type
-    order.supplier_gln = parsed.supplier_gln
-    order.supplier_internal_code = parsed.supplier_internal_code
-    order.bgm011 = parsed.bgm011
-    order.order_type = parsed.order_type
-    order.event = parsed.event
-    order.department = parsed.department
-    order.latitude = parsed.latitude
-    order.longitude = parsed.longitude
-    order.comment = parsed.comment
+def _upsert_order_entities(
+    order: Order,
+    parsed,
+    organization_id: str,
+    client_repo: ClientRepository,
+    store_repo: StoreRepository,
+    dept_repo: DepartmentRepository,
+    product_repo: ProductRepository,
+) -> None:
+    """Upsert normalized entities from parsed data and set FKs on the order."""
+    client = client_repo.upsert(
+        company_id=organization_id,
+        client_gln=parsed.client_gln,
+        client_name=parsed.client_name,
+    )
+    order.client_id = client.client_id
 
+    if parsed.deliver_to_code:
+        store = store_repo.upsert_by_code(
+            company_id=organization_id,
+            client_id=client.client_id,
+            store_code=parsed.deliver_to_code,
+            store_name=parsed.deliver_to_name,
+        )
+        order.deliver_to_store_id = store.store_id
+
+    if parsed.department:
+        dept = dept_repo.upsert_by_code(
+            company_id=organization_id,
+            client_id=client.client_id,
+            department_code=parsed.department,
+            supplier_code=parsed.supplier_internal_code,
+        )
+        order.department_id = dept.department_id
+
+    # Upsert products and set FKs on lines
     order.lines.clear()
     for ln in parsed.lines:
+        product = product_repo.upsert_by_internal_code(
+            company_id=organization_id,
+            internal_code=ln.internal_code,
+            description=ln.description,
+            code=ln.code,
+            client_article_code=ln.client_article_code,
+            units_per_box=ln.units_per_box,
+        )
         order.lines.append(
             OrderLine(
                 line_number=ln.line_number,
-                internal_code=ln.internal_code,
-                code=ln.code,
-                client_article_code=ln.client_article_code,
-                description=ln.description,
-                units_per_box=ln.units_per_box,
                 quantity_ordered=ln.quantity_ordered,
                 units_ordered=ln.units_ordered,
                 unit_price=ln.unit_price,
@@ -370,33 +440,75 @@ def _update_order_from_parsed(order: Order, parsed) -> None:
                 dispatch_rejection_reason=ln.dispatch_rejection_reason,
                 quantity_received=ln.quantity_received,
                 article_code=ln.article_code,
+                product_id=product.id,
             )
         )
 
 
-def _apply_crossdocking_data(order: Order, parsed, slot_map: dict) -> None:
-    """Apply parsed crossdocking data to order's sale points."""
+def _update_order_from_parsed(order: Order, parsed) -> None:
+    """Update order entity fields from a parsed result (without touching lines — handled by _upsert_order_entities)."""
+    order.creation_date = parsed.creation_date
+    order.delivery_date = parsed.delivery_date
+    order.subtotal = parsed.subtotal
+    order.discounts = parsed.discounts
+    order.net_total = parsed.net_total
+    order.taxes = parsed.taxes
+    order.grand_total = parsed.grand_total
+    order.total_quantities = parsed.total_quantities
+    order.line_count = parsed.line_count
+    order.document_type = parsed.document_type
+    order.bgm011 = parsed.bgm011
+    order.order_type = parsed.order_type
+    order.event = parsed.event
+    order.latitude = parsed.latitude
+    order.longitude = parsed.longitude
+    order.comment = parsed.comment
+
+
+def _apply_crossdocking_data(
+    order: Order,
+    parsed,
+    organization_id: str,
+    store_repo: StoreRepository,
+    product_repo: ProductRepository,
+) -> None:
+    """Apply parsed crossdocking data to order's sale points with normalized upserts."""
     order.crossdocking_sale_points.clear()
     for sp_data in parsed.crossdocking.sale_points:
+        # Upsert store for this sale point
+        store = None
+        slot_id = ""
+        if sp_data.store_number and order.client_id:
+            store = store_repo.upsert_by_code(
+                company_id=organization_id,
+                client_id=order.client_id,
+                store_code=sp_data.store_number,
+                store_name=sp_data.store_name,
+            )
+            slot_id = store.slot_id or ""
+
         sp = CrossDockingSalePoint(
-            store_number=sp_data.store_number,
-            store_name=sp_data.store_name,
             full_name=sp_data.full_name,
             total_boxes=sp_data.total_boxes,
             total_units=sp_data.total_units,
-            slot_id=slot_map.get(sp_data.store_number, ""),
+            store_id=store.store_id if store else None,
         )
         for it_data in sp_data.items:
+            # Upsert product for this item
+            product = product_repo.upsert_by_internal_code(
+                company_id=organization_id,
+                internal_code=it_data.internal_code,
+                description=it_data.description,
+                original_code=it_data.original_code,
+                units_per_box=it_data.units_per_box,
+            )
             sp.items.append(
                 CrossDockingItem(
-                    internal_code=it_data.internal_code,
-                    original_code=it_data.original_code,
-                    description=it_data.description,
                     quantity=it_data.quantity,
-                    units_per_box=it_data.units_per_box,
                     total_units=it_data.total_units,
                     sent=it_data.sent,
                     missing=it_data.missing,
+                    product_id=product.id,
                 )
             )
         order.crossdocking_sale_points.append(sp)
