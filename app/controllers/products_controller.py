@@ -71,7 +71,7 @@ class ProductsController:
             product_id: Annotated[str, Path(description="Product ID")],
         ):
             try:
-                result = product_service.get_product(product_id)
+                result = product_service.get_product(organization_id, product_id)
                 if not result:
                     raise HTTPException(status_code=404, detail="Product not found")
                 return result

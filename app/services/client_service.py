@@ -5,7 +5,13 @@ from typing import Optional
 import uuid
 
 from app.dtos.requests.client_request_dto import ClientRequestDTO
-from app.dtos.responses.client_dto import ClientListResponse, ClientResponse
+from app.dtos.responses.client_dto import (
+    ClientListResponse,
+    ClientResponse,
+    IdentificationResponse,
+    PhoneResponse,
+    ResidenceResponse,
+)
 from app.dtos.responses.pagination_dto import PaginationResponse
 from app.enums.client_search_filters import ClientSearchFilters
 from app.models.client import Client
@@ -74,6 +80,19 @@ def create_client(
             company_id=company_id,
             client_name=dto.client_name,
             client_gln=dto.client_gln,
+            identification_type=dto.identification.type if dto.identification else None,
+            identification_code=dto.identification.code if dto.identification else None,
+            identification_number=dto.identification.number if dto.identification else None,
+            business_name=dto.business_name,
+            nationality=dto.nationality,
+            phone_country_code=dto.phone.country_code if dto.phone else None,
+            phone_area_code=dto.phone.area_code if dto.phone else None,
+            phone_number=dto.phone.number if dto.phone else None,
+            phone_description=dto.phone.description if dto.phone else None,
+            state_id=dto.residence.state_id if dto.residence else None,
+            county_id=dto.residence.county_id if dto.residence else None,
+            district_id=dto.residence.district_id if dto.residence else None,
+            address=dto.residence.address if dto.residence else None,
         )
         client = repo.save(client)
 
@@ -97,6 +116,35 @@ def update_client(
             client.client_name = dto.client_name
         if dto.client_gln is not None:
             client.client_gln = dto.client_gln
+        if dto.identification:
+            if dto.identification.type is not None:
+                client.identification_type = dto.identification.type
+            if dto.identification.code is not None:
+                client.identification_code = dto.identification.code
+            if dto.identification.number is not None:
+                client.identification_number = dto.identification.number
+        if dto.business_name is not None:
+            client.business_name = dto.business_name
+        if dto.nationality is not None:
+            client.nationality = dto.nationality
+        if dto.phone:
+            if dto.phone.country_code is not None:
+                client.phone_country_code = dto.phone.country_code
+            if dto.phone.area_code is not None:
+                client.phone_area_code = dto.phone.area_code
+            if dto.phone.number is not None:
+                client.phone_number = dto.phone.number
+            if dto.phone.description is not None:
+                client.phone_description = dto.phone.description
+        if dto.residence:
+            if dto.residence.state_id is not None:
+                client.state_id = dto.residence.state_id
+            if dto.residence.county_id is not None:
+                client.county_id = dto.residence.county_id
+            if dto.residence.district_id is not None:
+                client.district_id = dto.residence.district_id
+            if dto.residence.address is not None:
+                client.address = dto.residence.address
 
         client = repo.save(client)
 
@@ -123,9 +171,40 @@ def update_client_status(
 
 
 def _map_client(client: Client) -> ClientResponse:
+    identification = None
+    if client.identification_number:
+        identification = IdentificationResponse(
+            type=client.identification_type,
+            code=client.identification_code,
+            number=client.identification_number,
+        )
+    
+    phone = None
+    if client.phone_number:
+        phone = PhoneResponse(
+            countryCode=client.phone_country_code,
+            areaCode=client.phone_area_code,
+            number=client.phone_number,
+            description=client.phone_description,
+        )
+    
+    residence = None
+    if client.state_id or client.county_id or client.district_id or client.address:
+        residence = ResidenceResponse(
+            stateId=client.state_id,
+            countyId=client.county_id,
+            districtId=client.district_id,
+            address=client.address,
+        )
+    
     return ClientResponse(
         clientId=str(client.client_id),
         companyId=client.company_id,
         clientName=client.client_name,
         clientGln=client.client_gln,
+        identification=identification,
+        businessName=client.business_name,
+        nationality=client.nationality,
+        phone=phone,
+        residence=residence,
     )

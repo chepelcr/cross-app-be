@@ -53,10 +53,11 @@ def get_products(
             page=page,
             page_size=page_size,
         )
+        data = [_map_product(p) for p in products]
 
     total_pages = (total + page_size - 1) // page_size if total > 0 else 1
     return ProductListResponse(
-        data=[_map_product(p) for p in products],
+        data=data,
         pagination=PaginationResponse(
             page=page,
             pageSize=page_size,
@@ -66,13 +67,13 @@ def get_products(
     )
 
 
-def get_product(product_id: str) -> Optional[ProductResponse]:
+def get_product(organization_id: str, product_id: str) -> Optional[ProductResponse]:
     """Get a single product by ID."""
     with ProductRepository() as repo:
-        product = repo.find_by_id(product_id)
-    if not product:
-        return None
-    return _map_product(product)
+        product = repo.find_by_id_and_company(product_id, organization_id)
+        if not product:
+            return None
+        return _map_product(product)
 
 
 def create_product(organization_id: str, dto: ProductRequestDTO) -> ProductResponse:
@@ -111,11 +112,9 @@ def update_product(
 ) -> ProductResponse:
     """Update an existing product."""
     with ProductRepository() as repo:
-        product = repo.find_by_id(product_id)
+        product = repo.find_by_id_and_company(product_id, organization_id)
         if not product:
             raise LookupError(f"Product '{product_id}' not found")
-        if product.organization_id != organization_id:
-            raise LookupError(f"Product '{product_id}' not found for organization {organization_id}")
 
         if dto.internal_code is not None:
             product.internal_code = dto.internal_code
@@ -151,11 +150,9 @@ def update_product_status(
 ) -> ProductResponse:
     """Update a product's active status."""
     with ProductRepository() as repo:
-        product = repo.find_by_id(product_id)
+        product = repo.find_by_id_and_company(product_id, organization_id)
         if not product:
             raise LookupError(f"Product '{product_id}' not found")
-        if product.organization_id != organization_id:
-            raise LookupError(f"Product '{product_id}' not found for organization {organization_id}")
 
         product.is_active = status == 1
         repo.save(product)
@@ -214,6 +211,7 @@ def _map_product(product: Product) -> ProductResponse:
         name=product.name,
         description=product.description,
         unitsPerBox=product.units_per_box,
+        price=product.price,
         imageUrl=product.image_url,
         category=category,
     )

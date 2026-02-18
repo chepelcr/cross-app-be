@@ -21,20 +21,21 @@ class ProductRepository(DatabaseConnection):
     def __init__(self):
         super().__init__()
 
-    def find_by_id(self, product_id: str) -> Optional[Product]:
+    def find_by_id_and_company(self, product_id: str, company_id: str) -> Optional[Product]:
         try:
             stmt = (
                 select(Product)
                 .where(
                     and_(
                         Product.id == product_id,
+                        Product.organization_id == company_id,
                         Product.is_active == True,
                     )
                 )
             )
             return self.session.execute(stmt).scalar_one_or_none()
         except SQLAlchemyError as e:
-            logger.error(f"Error finding product {product_id}: {e}", exc_info=True)
+            logger.error(f"Error finding product {product_id} for company {company_id}: {e}", exc_info=True)
             raise
 
     def find_by_company_and_internal_code(self, company_id: str, internal_code: str) -> Optional[Product]:
@@ -130,6 +131,7 @@ class ProductRepository(DatabaseConnection):
         client_article_code: str = None,
         code: str = None,
         units_per_box: int = None,
+        price: float = None,
     ) -> Product:
         try:
             existing = self.find_by_company_and_internal_code(company_id, internal_code)
@@ -145,6 +147,8 @@ class ProductRepository(DatabaseConnection):
                     existing.code = code
                 if units_per_box is not None:
                     existing.units_per_box = units_per_box
+                if price is not None and price > 0 and existing.price == 0:
+                    existing.price = price
                 self.session.flush()
                 return existing
 
@@ -155,7 +159,7 @@ class ProductRepository(DatabaseConnection):
                 organization_id=company_id,
                 name=description or internal_code,
                 description=description or internal_code,
-                price=0,
+                price=price if price is not None else 0,
                 category_id=category_id,
                 is_active=True,
                 internal_code=internal_code,

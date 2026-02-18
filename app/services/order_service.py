@@ -132,6 +132,7 @@ def process_order_excel(organization_id: str, body: ExcelFileDTO) -> OrderRespon
                 code=ln.code,
                 client_article_code=ln.client_article_code,
                 units_per_box=ln.units_per_box,
+                price=ln.unit_price,
             )
 
             order.lines.append(
@@ -426,6 +427,7 @@ def _upsert_order_entities(
             code=ln.code,
             client_article_code=ln.client_article_code,
             units_per_box=ln.units_per_box,
+            price=ln.unit_price,
         )
         order.lines.append(
             OrderLine(

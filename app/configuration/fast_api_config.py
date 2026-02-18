@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
+from app.controllers.categories_controller import CategoriesController
 from app.controllers.clients_controller import ClientsController
 from app.controllers.confirmations_controller import ConfirmationsController
 from app.controllers.departments_controller import DepartmentsController
@@ -13,6 +14,7 @@ class FastApiConfig:
     def __init__(self):
         self.app = self._create_app()
         self._configure_cors()
+        CategoriesController(self.app)
         ClientsController(self.app)
         ConfirmationsController(self.app)
         DepartmentsController(self.app)

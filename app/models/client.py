@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import List, Optional
 
-from sqlalchemy import Index, String
+from sqlalchemy import Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -19,6 +19,27 @@ class Client(Base, AuditMixin):
     company_id: Mapped[str] = mapped_column(String(50), nullable=False)
     client_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     client_gln: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    
+    # Identification
+    identification_type: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    identification_code: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    identification_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    
+    # Business info
+    business_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    nationality: Mapped[Optional[str]] = mapped_column(String(3), nullable=True)
+    
+    # Phone
+    phone_country_code: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    phone_area_code: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    phone_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    phone_description: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    
+    # Residence
+    state_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    county_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    district_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Relationships
     stores: Mapped[List["Store"]] = relationship(back_populates="client", cascade="all, delete-orphan")
