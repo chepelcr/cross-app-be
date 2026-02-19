@@ -17,6 +17,9 @@ class ClientSearchFilters(Enum):
 
     CLIENT_NAME = ("client_name", "clientName", False, None, True, ENTITY_ALL, True, False)
     CLIENT_GLN = ("client_gln", "clientGln", False, None, True, ENTITY_ALL, False, False)
+    STATUS = ("status", "status", False, None, True, ENTITY_ALL, False, False)
+    NATIONALITY = ("nationality", "nationality", False, None, True, ENTITY_ALL, False, False)
+    ID_NUMBER = ("identification_number", "idNumber", False, None, True, ENTITY_ALL, False, False)
     ORDER_BY = (None, "orderBy", False, None, False, ENTITY_ALL, False, False)
 
     def __init__(

@@ -26,13 +26,20 @@ class ClientsController:
 **Search filters**
 - `clientName`: Client name (supports wildcards)
 - `clientGln`: Client GLN code
+- `status`: Client status (0=Pending, 1=Active, 2=Inactive, 3=Deleted)
+- `nationality`: Client nationality code (e.g., CR, US)
+- `idNumber`: Identification number
 
 **Sorting**
 - `orderBy>field` (Ascending)
 - `orderBy<field` (Descending)
-- Sortable fields: `clientName`, `clientGln`, `createdOn`, `updatedOn`
+- Sortable fields: `clientName`, `clientGln`, `status`, `nationality`, `createdOn`, `updatedOn`
 
-**Example:** `clientName:*corp*,orderBy>clientName`
+**Examples:**
+- Search by name: `clientName:*corp*`
+- Search pending clients: `status:0`
+- Search by nationality and ID: `nationality:CR,idNumber:123456789`
+- Combined: `status:0,nationality:CR,orderBy>clientName`
 """,
         )
         async def list_clients(
@@ -86,7 +93,8 @@ class ClientsController:
             response_model=ClientResponse,
             status_code=201,
             tags=["clients"],
-            summary="Create a new client",
+            summary="Create a new client or reactivate deleted one",
+            description="""Create a new client. If a deleted client exists with the same company_id, client_gln, and nationality, it will be reactivated and updated with the new information.""",
         )
         async def create_client(
             organization_id: Annotated[str, Path(description="Organization identifier")],
@@ -104,6 +112,7 @@ class ClientsController:
             response_model=ClientResponse,
             tags=["clients"],
             summary="Update an existing client",
+            description="""Update an existing client. Cannot update deleted clients (status=3). Use POST to reactivate deleted clients.""",
         )
         async def update_client(
             organization_id: Annotated[str, Path(description="Organization identifier")],
@@ -127,6 +136,13 @@ class ClientsController:
             response_model=ClientResponse,
             tags=["clients"],
             summary="Update client status",
+            description="""Update client status. Cannot update deleted clients (status=3). Use POST to reactivate deleted clients.
+
+**Status codes:**
+- `1`: Active
+- `2`: Inactive
+- `3`: Deleted
+""",
         )
         async def update_client_status(
             organization_id: Annotated[str, Path(description="Organization identifier")],

@@ -74,27 +74,56 @@ def create_client(
     company_id: str,
     dto: "ClientRequestDTO",
 ) -> ClientResponse:
-    """Create a new client."""
+    """Create a new client or reactivate deleted one."""
     with ClientRepository() as repo:
-        client = Client(
-            company_id=company_id,
-            client_name=dto.client_name,
-            client_gln=dto.client_gln,
-            identification_type=dto.identification.type if dto.identification else None,
-            identification_code=dto.identification.code if dto.identification else None,
-            identification_number=dto.identification.number if dto.identification else None,
-            business_name=dto.business_name,
-            nationality=dto.nationality,
-            phone_country_code=dto.phone.country_code if dto.phone else None,
-            phone_area_code=dto.phone.area_code if dto.phone else None,
-            phone_number=dto.phone.number if dto.phone else None,
-            phone_description=dto.phone.description if dto.phone else None,
-            state_id=dto.residence.state_id if dto.residence else None,
-            county_id=dto.residence.county_id if dto.residence else None,
-            district_id=dto.residence.district_id if dto.residence else None,
-            address=dto.residence.address if dto.residence else None,
-        )
-        client = repo.save(client)
+        # Check if deleted client exists with same unique key
+        existing = None
+        if dto.client_gln and dto.nationality:
+            existing = repo.find_by_unique_key(company_id, dto.client_gln, dto.nationality)
+        
+        if existing:
+            # Reactivate and update deleted client
+            existing.client_name = dto.client_name
+            existing.client_gln = dto.client_gln
+            existing.status = 1
+            existing.identification_type = dto.identification.type if dto.identification else None
+            existing.identification_code = dto.identification.code if dto.identification else None
+            existing.identification_number = dto.identification.number if dto.identification else None
+            existing.business_name = dto.business_name
+            existing.nationality = dto.nationality
+            existing.email = dto.email
+            existing.phone_country_code = dto.phone.country_code if dto.phone else None
+            existing.phone_area_code = dto.phone.area_code if dto.phone else None
+            existing.phone_number = dto.phone.number if dto.phone else None
+            existing.phone_description = dto.phone.description if dto.phone else None
+            existing.state_id = dto.residence.state_id if dto.residence else None
+            existing.county_id = dto.residence.county_id if dto.residence else None
+            existing.district_id = dto.residence.district_id if dto.residence else None
+            existing.address = dto.residence.address if dto.residence else None
+            client = repo.save(existing)
+        else:
+            # Create new client
+            client = Client(
+                company_id=company_id,
+                client_name=dto.client_name,
+                client_gln=dto.client_gln,
+                status=1,
+                identification_type=dto.identification.type if dto.identification else None,
+                identification_code=dto.identification.code if dto.identification else None,
+                identification_number=dto.identification.number if dto.identification else None,
+                business_name=dto.business_name,
+                nationality=dto.nationality,
+                email=dto.email,
+                phone_country_code=dto.phone.country_code if dto.phone else None,
+                phone_area_code=dto.phone.area_code if dto.phone else None,
+                phone_number=dto.phone.number if dto.phone else None,
+                phone_description=dto.phone.description if dto.phone else None,
+                state_id=dto.residence.state_id if dto.residence else None,
+                county_id=dto.residence.county_id if dto.residence else None,
+                district_id=dto.residence.district_id if dto.residence else None,
+                address=dto.residence.address if dto.residence else None,
+            )
+            client = repo.save(client)
 
     return _map_client(client)
 
@@ -104,13 +133,16 @@ def update_client(
     client_id_str: str,
     dto: "ClientRequestDTO",
 ) -> Optional[ClientResponse]:
-    """Update an existing client."""
+    """Update an existing client. Cannot update deleted clients."""
     client_id = uuid.UUID(client_id_str)
 
     with ClientRepository() as repo:
         client = repo.find_by_id_and_company(client_id, company_id)
         if not client:
             return None
+        
+        if client.status == 3:
+            raise ValueError("Cannot update deleted client. Use POST to reactivate.")
 
         if dto.client_name is not None:
             client.client_name = dto.client_name
@@ -127,6 +159,8 @@ def update_client(
             client.business_name = dto.business_name
         if dto.nationality is not None:
             client.nationality = dto.nationality
+        if dto.email is not None:
+            client.email = dto.email
         if dto.phone:
             if dto.phone.country_code is not None:
                 client.phone_country_code = dto.phone.country_code
@@ -146,6 +180,9 @@ def update_client(
             if dto.residence.address is not None:
                 client.address = dto.residence.address
 
+        if client.status == 0:
+            client.status = 1
+
         client = repo.save(client)
 
     return _map_client(client)
@@ -156,13 +193,16 @@ def update_client_status(
     client_id_str: str,
     status: int,
 ) -> Optional[ClientResponse]:
-    """Update a client's status."""
+    """Update a client's status. Cannot update deleted clients."""
     client_id = uuid.UUID(client_id_str)
 
     with ClientRepository() as repo:
         client = repo.find_by_id_and_company(client_id, company_id)
         if not client:
             return None
+        
+        if client.status == 3:
+            raise ValueError("Cannot update deleted client. Use POST to reactivate.")
 
         client.status = status
         client = repo.save(client)
@@ -202,6 +242,7 @@ def _map_client(client: Client) -> ClientResponse:
         companyId=client.company_id,
         clientName=client.client_name,
         clientGln=client.client_gln,
+        status=client.status,
         identification=identification,
         businessName=client.business_name,
         nationality=client.nationality,

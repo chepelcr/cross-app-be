@@ -41,9 +41,11 @@ class ClientResponse(BaseModel):
     company_id: str = Field(..., alias="companyId")
     client_name: Optional[str] = Field(None, alias="clientName")
     client_gln: Optional[str] = Field(None, alias="clientGln")
+    status: int = Field(...)
     identification: Optional[IdentificationResponse] = Field(None)
     business_name: Optional[str] = Field(None, alias="businessName")
     nationality: Optional[str] = Field(None)
+    email: Optional[str] = Field(None)
     phone: Optional[PhoneResponse] = Field(None)
     residence: Optional[ResidenceResponse] = Field(None)
 

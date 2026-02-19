@@ -39,6 +39,7 @@ class ClientRequestDTO(BaseModel):
     identification: Optional[IdentificationRequestDTO] = Field(None)
     business_name: Optional[str] = Field(None, alias="businessName", max_length=255)
     nationality: Optional[str] = Field(None, min_length=2, max_length=3)
+    email: Optional[str] = Field(None, max_length=255)
     phone: Optional[PhoneRequestDTO] = Field(None)
     residence: Optional[ResidenceRequestDTO] = Field(None)
 

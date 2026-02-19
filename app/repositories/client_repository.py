@@ -42,13 +42,33 @@ class ClientRepository(DatabaseConnection):
                     and_(
                         Client.client_id == client_id,
                         Client.company_id == company_id,
-                        Client.status == 1,
+                        Client.status.in_([0, 1, 2]),
                     )
                 )
             )
             return self.session.execute(stmt).scalar_one_or_none()
         except SQLAlchemyError as e:
             logger.error(f"Error finding client {client_id} for company {company_id}: {e}", exc_info=True)
+            raise
+
+    def find_by_unique_key(self, company_id: str, client_gln: str, nationality: str) -> Optional[Client]:
+        try:
+            stmt = (
+                select(Client)
+                .where(
+                    and_(
+                        Client.company_id == company_id,
+                        Client.client_gln == client_gln,
+                        Client.nationality == nationality,
+                    )
+                )
+            )
+            return self.session.execute(stmt).scalar_one_or_none()
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error finding client by unique key for company {company_id}: {e}",
+                exc_info=True,
+            )
             raise
 
     def find_by_company_and_gln(self, company_id: str, client_gln: str) -> Optional[Client]:
@@ -59,7 +79,7 @@ class ClientRepository(DatabaseConnection):
                     and_(
                         Client.company_id == company_id,
                         Client.client_gln == client_gln,
-                        Client.status == 1,
+                        Client.status.in_([0, 1, 2]),
                     )
                 )
             )
@@ -79,7 +99,7 @@ class ClientRepository(DatabaseConnection):
                     and_(
                         Client.company_id == company_id,
                         Client.client_name == client_name,
-                        Client.status == 1,
+                        Client.status.in_([0, 1, 2]),
                     )
                 )
             )
@@ -102,7 +122,7 @@ class ClientRepository(DatabaseConnection):
         try:
             base_conditions = [
                 Client.company_id == company_id,
-                Client.status == 1,
+                Client.status.in_([0, 1, 2]),
             ]
             if search_filters:
                 base_conditions.extend(search_filters)
@@ -154,6 +174,7 @@ class ClientRepository(DatabaseConnection):
                 company_id=company_id,
                 client_name=client_name,
                 client_gln=client_gln,
+                status=0,
             )
             self.session.add(client)
             self.session.flush()

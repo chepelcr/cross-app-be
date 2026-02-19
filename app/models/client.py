@@ -19,6 +19,7 @@ class Client(Base, AuditMixin):
     company_id: Mapped[str] = mapped_column(String(50), nullable=False)
     client_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     client_gln: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    status: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     
     # Identification
     identification_type: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
@@ -28,6 +29,7 @@ class Client(Base, AuditMixin):
     # Business info
     business_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     nationality: Mapped[Optional[str]] = mapped_column(String(3), nullable=True)
+    email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     
     # Phone
     phone_country_code: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
@@ -46,6 +48,6 @@ class Client(Base, AuditMixin):
     departments: Mapped[List["Department"]] = relationship(back_populates="client", cascade="all, delete-orphan")
 
     __table_args__ = (
-        Index("idx_client_company_gln", "company_id", "client_gln", unique=True),
+        Index("idx_client_company_gln_nationality", "company_id", "client_gln", "nationality", unique=True),
         Index("idx_client_company_id", "company_id"),
     )
