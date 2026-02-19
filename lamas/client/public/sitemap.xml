@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <!-- Homepage -->
+  <url>
+    <loc>https://jcampos.dev/</loc>
+    <lastmod>2025-01-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://jcampos.dev/es"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jcampos.dev/en"/>
+  </url>
+  
+  <!-- Spanish Pages -->
+  <url>
+    <loc>https://jcampos.dev/es</loc>
+    <lastmod>2025-01-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://jcampos.dev/es"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jcampos.dev/en"/>
+  </url>
+  
+  <url>
+    <loc>https://jcampos.dev/es/about</loc>
+    <lastmod>2025-01-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
+    <loc>https://jcampos.dev/es/projects</loc>
+    <lastmod>2025-01-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
+    <loc>https://jcampos.dev/es/contact</loc>
+    <lastmod>2025-01-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- English Pages -->
+  <url>
+    <loc>https://jcampos.dev/en</loc>
+    <lastmod>2025-01-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://jcampos.dev/es"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jcampos.dev/en"/>
+  </url>
+  
+  <url>
+    <loc>https://jcampos.dev/en/about</loc>
+    <lastmod>2025-01-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
+    <loc>https://jcampos.dev/en/projects</loc>
+    <lastmod>2025-01-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
+    <loc>https://jcampos.dev/en/contact</loc>
+    <lastmod>2025-01-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Video Transcription Project Pages -->
+  <url>
+    <loc>https://jcampos.dev/video-transcription/es</loc>
+    <lastmod>2025-01-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://jcampos.dev/video-transcription/es"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jcampos.dev/video-transcription/en"/>
+  </url>
+  
+  <url>
+    <loc>https://jcampos.dev/video-transcription/en</loc>
+    <lastmod>2025-01-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://jcampos.dev/video-transcription/es"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jcampos.dev/video-transcription/en"/>
+  </url>
+  
+  <!-- Linux Commands Project Page -->
+  <url>
+    <loc>https://jcampos.dev/Comandos-linux/</loc>
+    <lastmod>2025-01-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+</urlset>

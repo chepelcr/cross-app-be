@@ -1,0 +1,237 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Light mode colors */
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(222, 84%, 4.9%);
+  --muted: hsl(210, 40%, 96%);
+  --muted-foreground: hsl(215.4, 16.3%, 46.9%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(222, 84%, 4.9%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(222, 84%, 4.9%);
+  --border: hsl(214.3, 31.8%, 91.4%);
+  --input: hsl(214.3, 31.8%, 91.4%);
+  --primary: hsl(84, 81%, 44%);
+  --primary-foreground: hsl(0, 0%, 98%);
+  --secondary: hsl(210, 40%, 96%);
+  --secondary-foreground: hsl(222.2, 84%, 4.9%);
+  --accent: hsl(84, 81%, 44%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 60.2%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(84, 81%, 44%);
+  --radius: 0.5rem;
+  --navy: hsl(210, 40%, 96%);
+  --slate: hsl(0, 0%, 100%);
+}
+
+.dark {
+  /* Dark mode colors */
+  --background: hsl(222, 30%, 14%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(217, 20%, 25%);
+  --muted-foreground: hsl(0, 0%, 64%);
+  --popover: hsl(222, 30%, 14%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(217, 33%, 22%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(217, 20%, 35%);
+  --input: hsl(217, 20%, 35%);
+  --primary: hsl(84, 81%, 44%);
+  --primary-foreground: hsl(222, 30%, 14%);
+  --secondary: hsl(217, 20%, 25%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(84, 81%, 44%);
+  --accent-foreground: hsl(222, 30%, 14%);
+  --destructive: hsl(0, 62.8%, 60.2%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(84, 81%, 44%);
+  --radius: 0.5rem;
+  --navy: hsl(222, 30%, 14%);
+  --slate: hsl(217, 20%, 25%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  /* Enhanced smooth theme transitions */
+  *,
+  *::before,
+  *::after {
+    transition: background-color 0.8s cubic-bezier(0.23, 1, 0.32, 1),
+                color 0.8s cubic-bezier(0.23, 1, 0.32, 1),
+                border-color 0.8s cubic-bezier(0.23, 1, 0.32, 1),
+                box-shadow 0.8s cubic-bezier(0.23, 1, 0.32, 1),
+                fill 0.8s cubic-bezier(0.23, 1, 0.32, 1),
+                stroke 0.8s cubic-bezier(0.23, 1, 0.32, 1),
+                background-image 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  
+  /* Language transition effects */
+  .language-transitioning {
+    animation: slideOutRight 0.3s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+  }
+  
+  .slide-in {
+    animation: slideInLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  
+  @keyframes slideOutRight {
+    0% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      filter: blur(0px);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(50px) scale(0.95);
+      filter: blur(2px);
+    }
+  }
+  
+  @keyframes slideInLeft {
+    0% {
+      opacity: 0;
+      transform: translateX(-50px) scale(0.95);
+      filter: blur(2px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      filter: blur(0px);
+    }
+  }
+  
+  /* Background fade overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      45deg,
+      var(--background) 0%,
+      var(--background) 50%,
+      transparent 100%
+    );
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1000;
+    transition: opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  
+  body.theme-transitioning::before {
+    opacity: 0.15;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+
+  code {
+    font-family: 'Fira Code', monospace;
+  }
+}
+
+@layer components {
+  .bg-navy {
+    background-color: var(--navy);
+  }
+  
+  .bg-slate {
+    background-color: var(--slate);
+  }
+  
+  .text-accent {
+    color: var(--accent);
+  }
+  
+  .bg-accent {
+    background-color: var(--accent);
+  }
+  
+  .border-accent {
+    border-color: var(--accent);
+  }
+  
+  .hover\:bg-accent:hover {
+    background-color: var(--accent);
+  }
+  
+  .hover\:text-accent:hover {
+    color: var(--accent);
+  }
+  
+  .hover\:border-accent:hover {
+    border-color: var(--accent);
+  }
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, 
+    hsl(var(--navy)) 0%, 
+    hsl(var(--slate)) 25%, 
+    hsl(var(--navy)) 50%, 
+    hsl(var(--slate)) 75%, 
+    hsl(var(--navy)) 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  transition: background 0.8s cubic-bezier(0.23, 1, 0.32, 1) !important;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.section-spacing {
+  @apply py-20;
+}
+
+.container-spacing {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.card-hover {
+  @apply transition-all duration-300 hover:border-accent hover:shadow-lg;
+}
+
+.skill-badge {
+  @apply bg-accent bg-opacity-20 text-accent px-3 py-1 rounded-full text-sm font-medium;
+}
+
+.timeline-line::before {
+  content: '';
+  @apply absolute left-8 top-0 bottom-0 w-0.5 bg-accent hidden md:block;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
