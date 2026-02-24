@@ -55,30 +55,37 @@ def render_order_html(order: Order) -> str:
 
     # Use relationship data
     org = order.organization
-    supplier_name = org.name if org else ""
-    supplier_internal_code = (org.internal_code if org else "") or ""
+    supplier_name = (org.name if org else "") or ""
     supplier_logo_url = (org.logo_url if org else "") or ""
-    client_name = order.client.client_name if order.client else ""
+    client_name = (order.client.client_name if order.client else "") or ""
     client_gln = (order.client.client_gln if order.client else "") or ""
+
+    dept = order.department_rel
+    dept_code = (dept.department_code if dept else "") or ""
+    dept_name = (dept.name if dept else "") or ""
+    # vendor number (NUM_VENDEDOR) lives on the department
+    supplier_internal_code = (dept.supplier_code if dept else "") or (org.internal_code if org else "") or ""
+    department_value = f"{dept_code} - {dept_name}" if dept_code and dept_name else dept_code
 
     store = order.deliver_to_store
     if store:
         deliver_to = f"{store.store_code} {store.store_name}"
+        deliver_to_gln = store.gln or ""
     else:
         deliver_to = ""
-
-    department_value = order.department_rel.department_code if order.department_rel else ""
+        deliver_to_gln = ""
 
     template_model = {
         "supplier_name": supplier_name,
         "supplier_internal_code": supplier_internal_code,
-        "supplier_logo_url": supplier_logo_url or "",
+        "supplier_logo_url": supplier_logo_url,
         "document_number": order.document_number or "",
         "creation_date_formatted": order.creation_date or "",
         "delivery_date_formatted": order.delivery_date or "",
         "client_name": client_name,
         "client_gln": client_gln,
         "deliver_to": deliver_to,
+        "deliver_to_gln": deliver_to_gln,
         "order_type": order.order_type or "",
         "comment": order.comment or "",
         "department": department_value,
@@ -227,16 +234,26 @@ def render_crossdocking_html(order: Order, crossdocking_data) -> str:
 
     # Use relationship data
     org = order.organization
-    supplier_name = org.name if org else ""
-    supplier_internal_code = (org.internal_code if org else "") or ""
+    supplier_name = (org.name if org else "") or ""
+
+    dept = order.department_rel
+    dept_code = (dept.department_code if dept else "") or ""
+    dept_name = (dept.name if dept else "") or ""
+    # vendor number (NUM_VENDEDOR) lives on the department
+    supplier_internal_code = (dept.supplier_code if dept else "") or (org.internal_code if org else "") or ""
+    department_value = f"{dept_code} - {dept_name}" if dept_code and dept_name else dept_code
 
     store = order.deliver_to_store
-    deliver_to = f"{store.store_code} {store.store_name}" if store else ""
-
-    department_value = order.department_rel.department_code if order.department_rel else ""
+    if store:
+        deliver_to = f"{store.store_code} {store.store_name}"
+        deliver_to_gln = store.gln or ""
+    else:
+        deliver_to = ""
+        deliver_to_gln = ""
 
     context = {
         "deliver_to": deliver_to,
+        "deliver_to_gln": deliver_to_gln,
         "supplier_name": supplier_name,
         "supplier_internal_code": supplier_internal_code,
         "document_number": order.document_number or "",

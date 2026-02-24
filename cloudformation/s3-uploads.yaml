@@ -1,15 +1,15 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'CloudFront distribution and S3 bucket for crossdocking file uploads'
+Description: 'CloudFront distribution and S3 bucket for jmarkets file uploads'
 
 Parameters:
   BucketName:
     Type: String
-    Default: 'crossdocking-uploads-jcampos-dev'
+    Default: 'jmarkets-uploads-jcampos-dev'
     Description: 'Name for the S3 bucket'
   
   DomainName:
     Type: String
-    Default: 'crossdocking-uploads.jcampos.dev'
+    Default: 'jmarkets-uploads.jcampos.dev'
     Description: 'Custom domain name'
   
   HostedZoneId:

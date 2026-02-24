@@ -1,12 +1,13 @@
-FROM public.ecr.aws/lambda/python:3.9-arm64
+FROM public.ecr.aws/lambda/python:3.9
 
 # UTF-8 configuration
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
 # Install wkhtmltopdf dependencies and wkhtmltopdf itself (AL2 uses yum)
-RUN yum -y install wget fontconfig freetype libX11 libXext libXrender libjpeg-turbo libpng \
-    && wget -q https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox-0.12.6-1.amazonlinux2.aarch64.rpm -O /tmp/wkhtmltox.rpm \
+RUN yum -y swap openssl-snapsafe-libs openssl-libs \
+    && yum -y install wget fontconfig freetype libX11 libXext libXrender libjpeg-turbo libpng \
+    && wget -q https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox-0.12.6-1.amazonlinux2.x86_64.rpm -O /tmp/wkhtmltox.rpm \
     && yum -y install /tmp/wkhtmltox.rpm \
     && rm -f /tmp/wkhtmltox.rpm \
     && yum clean all

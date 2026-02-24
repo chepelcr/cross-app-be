@@ -2,6 +2,7 @@
 
 STACK_NAME="crossdocking-s3-stack"
 PROFILE="J-CAMPOS"
+REGION="us-east-1"
 DOMAIN="jcampos.dev"
 
 echo "🚀 Deploying S3 Bucket Stack"
@@ -25,6 +26,7 @@ aws cloudformation deploy \
     --stack-name $STACK_NAME \
     --parameter-overrides \
         HostedZoneId="$HOSTED_ZONE_ID" \
+    --region $REGION \
     --profile $PROFILE
 
 if [ $? -ne 0 ]; then

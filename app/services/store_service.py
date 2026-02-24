@@ -146,8 +146,8 @@ def upload_stores_excel(company_id: str, client_id_str: str, body: ExcelFileDTO)
     file = decode_excel_file(body)
     client_id = uuid.UUID(client_id_str)
 
-    wb = openpyxl.load_workbook(file, read_only=True, data_only=True)
-    ws = wb.active
+    wb = openpyxl.load_workbook(file, read_only=True, data_only=True, keep_vba=True)
+    ws = wb["PUNTOS DE VENTA"] if "PUNTOS DE VENTA" in wb.sheetnames else wb.active
 
     rows = list(ws.iter_rows(min_row=1, values_only=True))
     if not rows:
@@ -218,4 +218,5 @@ def _map_store(store: Store) -> StoreResponse:
         storeName=store.store_name,
         slotId=store.slot_id,
         chain=store.chain,
+        gln=store.gln,
     )

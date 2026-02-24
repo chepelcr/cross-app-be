@@ -175,8 +175,8 @@
         <tr>
             <td class="meta-label">CODIGO PROVEEDOR</td>
             <td>{{ supplier_internal_code }}</td>
-            <td></td>
-            <td></td>
+            <td class="meta-label">GLN ENTREGA</td>
+            <td>{{ deliver_to_gln }}</td>
         </tr>
         <tr>
             <td class="meta-label">ORDEN DE COMPRA</td>
@@ -246,8 +246,8 @@
         <tr>
             <td class="meta-label">CODIGO PROVEEDOR</td>
             <td>{{ supplier_internal_code }}</td>
-            <td></td>
-            <td></td>
+            <td class="meta-label">GLN ENTREGA</td>
+            <td>{{ deliver_to_gln }}</td>
         </tr>
         <tr>
             <td class="meta-label">ORDEN DE COMPRA</td>
@@ -419,7 +419,7 @@
 {% if faltantes_parciales or faltantes_completos %}
 <div class="page-break"></div>
 <div class="faltantes-section">
-    <h3>CENTRO DE DISTRIBUCION {{ deliver_to }}</h3>
+    <h3>CENTRO DE DISTRIBUCION {{ deliver_to }}{% if deliver_to_gln %} &nbsp;(GLN: {{ deliver_to_gln }}){% endif %}</h3>
 
     {% if faltantes_parciales %}
     <h4 style="margin:8px 0 4px;">HOJA DE FALTANTES PARCIALES</h4>

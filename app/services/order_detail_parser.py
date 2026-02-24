@@ -41,7 +41,16 @@ def _format_date(value) -> str:
         return ""
     if hasattr(value, "strftime"):
         return value.strftime("%d/%m/%Y")
-    return str(value).strip()
+    s = str(value).strip()
+    # Handle ISO datetime strings like '2026-02-02T04:23:00.0000000'
+    if "T" in s:
+        try:
+            from datetime import datetime
+            dt = datetime.fromisoformat(s[:19])
+            return dt.strftime("%d/%m/%Y")
+        except (ValueError, TypeError):
+            pass
+    return s
 
 
 def _split_deliver_to(deliver_to: str) -> tuple[str, str]:

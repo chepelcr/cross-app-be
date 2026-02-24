@@ -24,6 +24,7 @@ class Store(Base, AuditMixin):
     store_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     slot_id: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     chain: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    gln: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
     # Relationships
     client: Mapped["Client"] = relationship(back_populates="stores")

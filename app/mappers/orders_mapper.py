@@ -12,6 +12,7 @@ from app.dtos import (
     SalePointResponse,
     CrossDockingAttachmentsDTO,
 )
+from app.dtos.responses.department_dto import DepartmentDTO
 from app.models.order import Order
 from app.utils.crossdocking_utils import build_summaries
 
@@ -68,12 +69,14 @@ def order_to_response(order: Order) -> OrderResponse:
         )
 
     # Build supplier DTO from organization relationship
+    # vendor number (NUM_VENDEDOR) is stored as department.supplier_code
     supplier_dto = None
     if order.organization:
+        dept_vendor = order.department_rel.supplier_code if order.department_rel else None
         supplier_dto = PartyDTO(
             name=order.organization.name,
             gln=order.organization.gln,
-            internal_code=order.organization.internal_code,
+            internal_code=dept_vendor or order.organization.internal_code,
             logo_url=order.organization.logo_url,
         )
 
@@ -93,7 +96,14 @@ def order_to_response(order: Order) -> OrderResponse:
         )
 
     # Department from relationship
-    department_value = order.department_rel.department_code if order.department_rel else None
+    department_value = None
+    if order.department_rel:
+        dept = order.department_rel
+        department_value = DepartmentDTO(
+            department_code=dept.department_code,
+            name=dept.name,
+            supplier_code=dept.supplier_code,
+        )
 
     return OrderResponse(
         order_id=order.order_id,

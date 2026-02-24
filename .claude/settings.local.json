@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(cd:*)",
+      "Bash(aws cloudfront:*)",
+      "Bash(python:*)",
+      "Bash(head:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}

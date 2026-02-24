@@ -165,7 +165,7 @@ class ClientRepository(DatabaseConnection):
             if existing:
                 if client_name is not None:
                     existing.client_name = client_name
-                if client_gln is not None:
+                if client_gln:
                     existing.client_gln = client_gln
                 self.session.flush()
                 return existing
@@ -173,7 +173,7 @@ class ClientRepository(DatabaseConnection):
             client = Client(
                 company_id=company_id,
                 client_name=client_name,
-                client_gln=client_gln,
+                client_gln=client_gln or None,
                 status=0,
             )
             self.session.add(client)

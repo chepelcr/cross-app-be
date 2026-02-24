@@ -1,9 +1,11 @@
 """Order DTO - Main order information."""
+"""Order DTO - Main order information."""
 
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 
 from .crossdocking_data_dto import CrossDockingDataDTO
+from .department_dto import DepartmentDTO
 from .order_detail_line_dto import OrderDetailLineResponse
 from .order_detail_totals_dto import OrderDetailTotals
 from .party_dto import PartyDTO
@@ -120,10 +122,9 @@ class OrderResponse(BaseModel):
         examples=["EVENT-001", "PROMO-2024"]
     )
     
-    department: Optional[str] = Field(
+    department: Optional[DepartmentDTO] = Field(
         None,
-        description="Department",
-        examples=["Sales", "Warehouse", "Logistics"]
+        description="Department"
     )
     
     comment: Optional[str] = Field(

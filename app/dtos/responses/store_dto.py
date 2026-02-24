@@ -15,6 +15,7 @@ class StoreResponse(BaseModel):
     store_name: Optional[str] = Field(None, alias="storeName")
     slot_id: Optional[str] = Field(None, alias="slotId")
     chain: Optional[str] = Field(None)
+    gln: Optional[str] = Field(None)
 
     class Config:
         populate_by_name = True

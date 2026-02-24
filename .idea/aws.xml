@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="accountSettings">
-    <option name="activeProfile" value="profile:default" />
+    <option name="activeProfile" value="profile:J-CAMPOS" />
     <option name="activeRegion" value="us-east-1" />
     <option name="recentlyUsedProfiles">
       <list>
+        <option value="profile:J-CAMPOS" />
         <option value="profile:default" />
+        <option value="profile:user1" />
       </list>
     </option>
     <option name="recentlyUsedRegions">
@@ -13,5 +15,8 @@
         <option value="us-east-1" />
       </list>
     </option>
+  </component>
+  <component name="explorerToolWindow">
+    <option name="selectedTab" value="Explorer" />
   </component>
 </project>

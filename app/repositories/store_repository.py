@@ -125,6 +125,7 @@ class StoreRepository(DatabaseConnection):
         store_name: str = None,
         slot_id: str = None,
         chain: str = None,
+        gln: str = None,
     ) -> Store:
         try:
             existing = self.find_by_client_and_code(client_id, store_code)
@@ -136,6 +137,8 @@ class StoreRepository(DatabaseConnection):
                     existing.slot_id = slot_id
                 if chain is not None:
                     existing.chain = chain
+                if gln:
+                    existing.gln = gln
                 self.session.flush()
                 return existing
 
@@ -146,6 +149,7 @@ class StoreRepository(DatabaseConnection):
                 store_name=store_name,
                 slot_id=slot_id,
                 chain=chain,
+                gln=gln or None,
             )
             self.session.add(store)
             self.session.flush()

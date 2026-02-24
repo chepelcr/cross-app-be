@@ -85,6 +85,7 @@ def process_order_excel(organization_id: str, body: ExcelFileDTO) -> OrderRespon
                 client_id=client.client_id,
                 store_code=parsed.deliver_to_code,
                 store_name=parsed.deliver_to_name,
+                gln=parsed.dispatch_gln or None,
             )
 
         # Upsert department
@@ -405,6 +406,7 @@ def _upsert_order_entities(
             client_id=client.client_id,
             store_code=parsed.deliver_to_code,
             store_name=parsed.deliver_to_name,
+            gln=parsed.dispatch_gln or None,
         )
         order.deliver_to_store_id = store.store_id
 
