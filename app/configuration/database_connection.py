@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from typing import Optional
 
 import psycopg
@@ -64,7 +65,8 @@ class DatabaseConnection:
 
         logger.info(f"Loading DB credentials from Secrets Manager: {secret_name}")
         import boto3
-        client = boto3.client("secretsmanager")
+        region = os.environ.get("AWS_DEFAULT_REGION") or os.environ.get("AWS_REGION", "us-east-1")
+        client = boto3.client("secretsmanager", region_name=region)
         response = client.get_secret_value(SecretId=secret_name)
         creds = json.loads(response["SecretString"])
 

@@ -24,9 +24,6 @@ from typing import Any, Dict, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# SSM is only attempted when running inside Lambda
-_IN_LAMBDA = bool(os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
-
 
 class AppConfig:
     _instance: Optional["AppConfig"] = None
@@ -63,12 +60,13 @@ class AppConfig:
             else None
         ) or f"/jcampos/{stage_lower}/cd-backend"
 
-        logger.debug(f"AppConfig initialized: base_path={self._base_path}, lambda={_IN_LAMBDA}")
+        logger.debug(f"AppConfig initialized: base_path={self._base_path}")
 
     def _get_ssm_client(self):
         if self._ssm_client is None:
             import boto3
-            self._ssm_client = boto3.client("ssm")
+            region = os.environ.get("AWS_DEFAULT_REGION") or os.environ.get("AWS_REGION", "us-east-1")
+            self._ssm_client = boto3.client("ssm", region_name=region)
         return self._ssm_client
 
     def _dot_to_ssm_path(self, key: str) -> str:
@@ -84,10 +82,7 @@ class AppConfig:
                 return int(value)
             return value
 
-        # 2. SSM Parameter Store (Lambda only)
-        if not _IN_LAMBDA:
-            return default
-
+        # 2. SSM Parameter Store (fallback whenever env var is not set)
         instance = cls()
         now = time.time()
         cached = instance._cache.get(key)
@@ -105,6 +100,6 @@ class AppConfig:
                 return int(val)
             return val
         except Exception as e:
-            logger.debug(f"SSM parameter not found: {ssm_path} — {e}")
+            logger.warning(f"SSM parameter not found: {ssm_path} — {e}")
             instance._cache[key] = (None, now)
             return default

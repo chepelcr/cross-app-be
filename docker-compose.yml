@@ -5,7 +5,9 @@ services:
       platforms:
         - linux/amd64
     platform: linux/amd64
-    env_file: .env
+    environment:
+      - AWS_PROFILE=J-CAMPOS
+      - AWS_DEFAULT_REGION=us-east-1
     ports:
       - "8000:8000"
     volumes:
