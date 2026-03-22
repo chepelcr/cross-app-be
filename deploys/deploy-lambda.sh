@@ -2,57 +2,47 @@
 set -e
 
 ENVIRONMENT=${1:-dev}
-REGION=${2:-us-east-1}
-PROFILE="J-CAMPOS"
+PROFILE=${2:-J-CAMPOS}
+REGION=${3:-us-east-1}
 
-ECR_REPO="cd-backend-ecr"
-FUNCTION_NAME="cd-backend-${ENVIRONMENT}-lambda"
+STACK_NAME="cd-backend-${ENVIRONMENT}-lambda"
 
-echo "Deploying cd-backend for environment: $ENVIRONMENT in region: $REGION"
+echo "Deploy Lambda SAM stack"
+echo "Environment  -> $ENVIRONMENT"
+echo "Profile      -> $PROFILE"
+echo ""
 
-# Validate AWS credentials
-echo "Checking AWS credentials..."
-aws sts get-caller-identity --profile $PROFILE > /dev/null 2>&1 || {
-    echo "AWS credentials expired or invalid."
-    exit 1
-}
-echo "AWS credentials valid"
+# ── SAM CLI via local venv ─────────────────────────────────────────────────────
+VENV_DIR=".venv-sam"
+if [ ! -f "${VENV_DIR}/bin/sam" ] && [ ! -f "${VENV_DIR}/Scripts/sam" ]; then
+  echo "Installing aws-sam-cli in ${VENV_DIR}..."
+  py -3 -m venv "$VENV_DIR" 2>/dev/null || python3 -m venv "$VENV_DIR"
+  source "${VENV_DIR}/Scripts/activate" 2>/dev/null || source "${VENV_DIR}/bin/activate"
+  pip install --quiet aws-sam-cli
+else
+  source "${VENV_DIR}/Scripts/activate" 2>/dev/null || source "${VENV_DIR}/bin/activate"
+fi
+echo "SAM CLI: $(sam --version)"
+echo ""
 
-ACCOUNT_ID=$(aws sts get-caller-identity --profile $PROFILE --query Account --output text)
+# ── Handle stuck stacks ────────────────────────────────────────────────────────
+STACK_STATUS=$(aws cloudformation describe-stacks \
+    --stack-name "$STACK_NAME" --region "$REGION" --profile "$PROFILE" \
+    --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "DOES_NOT_EXIST")
 
-# Create ECR repository if it doesn't exist
-echo "Creating ECR repository if needed..."
-aws ecr describe-repositories --repository-names $ECR_REPO --region $REGION --profile $PROFILE > /dev/null 2>&1 || \
-aws ecr create-repository --repository-name $ECR_REPO --region $REGION --profile $PROFILE > /dev/null 2>&1
+if [[ "$STACK_STATUS" =~ ^(ROLLBACK_FAILED|ROLLBACK_COMPLETE|DELETE_FAILED|UPDATE_ROLLBACK_COMPLETE|UPDATE_ROLLBACK_FAILED|CREATE_FAILED)$ ]]; then
+  echo "Stack in $STACK_STATUS — deleting before redeploy..."
+  aws cloudformation delete-stack --stack-name "$STACK_NAME" --region "$REGION" --profile "$PROFILE"
+  aws cloudformation wait stack-delete-complete --stack-name "$STACK_NAME" --region "$REGION" --profile "$PROFILE" || true
+fi
 
-# Login to ECR
-echo "Logging into ECR..."
-aws ecr get-login-password --region $REGION --profile $PROFILE \
-    | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com > /dev/null 2>&1
-
-# Build Docker image
-echo "Building Docker image..."
-docker buildx build --platform linux/amd64 -t $ECR_REPO:latest .
-
-# Tag and push
-echo "Pushing Docker image to ECR..."
-docker tag $ECR_REPO:latest $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$ECR_REPO:latest
-docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$ECR_REPO:latest > /dev/null 2>&1
-
-# Deploy SAM stack
-echo "Deploying SAM stack..."
+# ── SAM deploy (image already in ECR via CodePipeline) ────────────────────────
+echo "Deploying SAM stack: $STACK_NAME"
 sam deploy \
-    --config-env $ENVIRONMENT \
-    --profile $PROFILE \
+    --config-env "$ENVIRONMENT" \
+    --profile "$PROFILE" \
     --resolve-image-repos \
     --no-fail-on-empty-changeset
 
-# Update Lambda function code
-echo "Updating Lambda function code..."
-aws lambda update-function-code \
-    --function-name $FUNCTION_NAME \
-    --image-uri "$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$ECR_REPO:latest" \
-    --region $REGION \
-    --profile $PROFILE > /dev/null 2>&1 || true
-
-echo "Deployment completed: $FUNCTION_NAME"
+echo ""
+echo "Done: $STACK_NAME"

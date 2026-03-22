@@ -21,10 +21,14 @@ aws ecr get-login-password --region "$REGION" \
 aws ecr describe-repositories --repository-names "$ECR_REPO" --region "$REGION" > /dev/null 2>&1 || \
   aws ecr create-repository --repository-name "$ECR_REPO" --region "$REGION" > /dev/null
 
-# Build and push
+# Build and push — provenance=false required for Lambda image compatibility
 echo "[BUILD] cd-backend → $FULL_URI"
-docker build --platform linux/amd64 -t "$FULL_URI" .
-docker push "$FULL_URI"
+docker buildx build \
+  --platform linux/amd64 \
+  --provenance=false \
+  --sbom=false \
+  --push \
+  -t "$FULL_URI" .
 echo "[OK] cd-backend"
 
 echo ""

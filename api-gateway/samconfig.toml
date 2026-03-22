@@ -1,0 +1,28 @@
+version = 0.1
+
+[dev]
+[dev.global.parameters]
+stack_name        = "jcampos-dev-cd-backend-api-gateway"
+s3_bucket         = "cd-backend-dev-sam-deployments"
+s3_prefix         = "cd-backend-api-gateway"
+region            = "us-east-1"
+confirm_changeset = false
+capabilities      = "CAPABILITY_IAM"
+
+[stag]
+[stag.global.parameters]
+stack_name        = "jcampos-stag-cd-backend-api-gateway"
+s3_bucket         = "cd-backend-stag-sam-deployments"
+s3_prefix         = "cd-backend-api-gateway"
+region            = "us-east-1"
+confirm_changeset = false
+capabilities      = "CAPABILITY_IAM"
+
+[prod]
+[prod.global.parameters]
+stack_name        = "jcampos-prod-cd-backend-api-gateway"
+s3_bucket         = "cd-backend-prod-sam-deployments"
+s3_prefix         = "cd-backend-api-gateway"
+region            = "us-east-1"
+confirm_changeset = false
+capabilities      = "CAPABILITY_IAM"

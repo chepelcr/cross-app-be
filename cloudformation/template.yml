@@ -61,11 +61,11 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
         - !ImportValue
-          'Fn::Sub': "${Environment}-ssm-parameter-policy-arn"
+          'Fn::Sub': "jcampos-${Environment}-ssm-parameter-policy-arn"
         - !ImportValue
-          'Fn::Sub': "${Environment}-decrypt-policy-arn"
+          'Fn::Sub': "jcampos-${Environment}-decrypt-policy-arn"
         - !ImportValue
-          'Fn::Sub': "${Environment}-ecr-policy-arn"
+          'Fn::Sub': "jcampos-${Environment}-ecr-policy-arn"
 
   CrossDockingBackendLogGroup:
     Type: AWS::Logs::LogGroup
