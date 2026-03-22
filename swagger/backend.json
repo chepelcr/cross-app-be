@@ -1,0 +1,6614 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Cross-Docking API",
+    "description": "API for managing cross-docking orders",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/organizations/{organization_id}/categories": {
+      "get": {
+        "tags": [
+          "categories"
+        ],
+        "summary": "Get all categories for an organization",
+        "operationId": "list_categories_api_organizations__organization_id__categories_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number (1-indexed)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 12,
+              "title": "Pagesize"
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "categories"
+        ],
+        "summary": "Create a new category",
+        "description": "Create a new category for an organization.\n\nOptional `image1` and `image2` fields can be included with base64-encoded image data.\nSupported image formats: PNG, JPEG, GIF, WEBP. Max size: 5MB per image.",
+        "operationId": "create_category_api_organizations__organization_id__categories_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__dtos__responses__category_dto__CategoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/categories/{category_id}": {
+      "get": {
+        "tags": [
+          "categories"
+        ],
+        "summary": "Get a specific category by ID",
+        "operationId": "get_category_api_organizations__organization_id__categories__category_id__get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "category_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Category ID",
+              "title": "Category Id"
+            },
+            "description": "Category ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__dtos__responses__category_dto__CategoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "categories"
+        ],
+        "summary": "Update an existing category",
+        "description": "Update a category. Only provided fields are updated.\n\nOptional `image1` and `image2` fields can be included with base64-encoded image data.\nSupported image formats: PNG, JPEG, GIF, WEBP. Max size: 5MB per image.",
+        "operationId": "update_category_api_organizations__organization_id__categories__category_id__put",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "category_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Category ID",
+              "title": "Category Id"
+            },
+            "description": "Category ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__dtos__responses__category_dto__CategoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "categories"
+        ],
+        "summary": "Update category status",
+        "operationId": "update_category_status_api_organizations__organization_id__categories__category_id__patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "category_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Category ID",
+              "title": "Category Id"
+            },
+            "description": "Category ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__dtos__responses__category_dto__CategoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "categories"
+        ],
+        "summary": "Delete a category",
+        "operationId": "delete_category_api_organizations__organization_id__categories__category_id__delete",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "category_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Category ID",
+              "title": "Category Id"
+            },
+            "description": "Category ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/clients": {
+      "get": {
+        "tags": [
+          "clients"
+        ],
+        "summary": "Get all clients for an organization",
+        "description": "Get a paginated list of clients with optional search filters.\n\n**Search filters**\n- `clientName`: Client name (supports wildcards)\n- `clientGln`: Client GLN code\n- `status`: Client status (0=Pending, 1=Active, 2=Inactive, 3=Deleted)\n- `nationality`: Client nationality code (e.g., CR, US)\n- `idNumber`: Identification number\n\n**Sorting**\n- `orderBy>field` (Ascending)\n- `orderBy<field` (Descending)\n- Sortable fields: `clientName`, `clientGln`, `status`, `nationality`, `createdOn`, `updatedOn`\n\n**Examples:**\n- Search by name: `clientName:*corp*`\n- Search pending clients: `status:0`\n- Search by nationality and ID: `nationality:CR,idNumber:123456789`\n- Combined: `status:0,nationality:CR,orderBy>clientName`",
+        "operationId": "list_clients_api_organizations__organization_id__clients_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: clientName:*Test*,orderBy>clientName",
+              "title": "Search"
+            },
+            "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: clientName:*Test*,orderBy>clientName"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number (1-indexed)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 12,
+              "title": "Pagesize"
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "clients"
+        ],
+        "summary": "Create a new client or reactivate deleted one",
+        "description": "Create a new client. If a deleted client exists with the same company_id, client_gln, and nationality, it will be reactivated and updated with the new information.",
+        "operationId": "create_client_api_organizations__organization_id__clients_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/clients/{client_id}": {
+      "get": {
+        "tags": [
+          "clients"
+        ],
+        "summary": "Get a specific client by ID",
+        "operationId": "get_client_api_organizations__organization_id__clients__client_id__get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client UUID",
+              "title": "Client Id"
+            },
+            "description": "Client UUID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "clients"
+        ],
+        "summary": "Update an existing client",
+        "description": "Update an existing client. Cannot update deleted clients (status=3). Use POST to reactivate deleted clients.",
+        "operationId": "update_client_api_organizations__organization_id__clients__client_id__put",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client UUID",
+              "title": "Client Id"
+            },
+            "description": "Client UUID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "clients"
+        ],
+        "summary": "Update client status",
+        "description": "Update client status. Cannot update deleted clients (status=3). Use POST to reactivate deleted clients.\n\n**Status codes:**\n- `1`: Active\n- `2`: Inactive\n- `3`: Deleted",
+        "operationId": "update_client_status_api_organizations__organization_id__clients__client_id__patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client UUID",
+              "title": "Client Id"
+            },
+            "description": "Client UUID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/confirmations": {
+      "post": {
+        "tags": [
+          "confirmations"
+        ],
+        "summary": "Create a confirmation and link orders",
+        "operationId": "create_confirmation_api_organizations__organization_id__confirmations_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConfirmationDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "confirmations"
+        ],
+        "summary": "List confirmations for an organization",
+        "operationId": "list_confirmations_api_organizations__organization_id__confirmations_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 12,
+              "title": "Pagesize"
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmationListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/confirmations/{confirmation_number}": {
+      "put": {
+        "tags": [
+          "confirmations"
+        ],
+        "summary": "Update confirmation details and/or add more orders",
+        "operationId": "update_confirmation_api_organizations__organization_id__confirmations__confirmation_number__put",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "confirmation_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Confirmation number",
+              "title": "Confirmation Number"
+            },
+            "description": "Confirmation number"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConfirmationDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "confirmations"
+        ],
+        "summary": "Get a confirmation by number",
+        "operationId": "get_confirmation_api_organizations__organization_id__confirmations__confirmation_number__get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "confirmation_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Confirmation number",
+              "title": "Confirmation Number"
+            },
+            "description": "Confirmation number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/confirmations/{confirmation_number}/status": {
+      "patch": {
+        "tags": [
+          "confirmations"
+        ],
+        "summary": "Update status of confirmation and its orders (3=shipped triggers email)",
+        "operationId": "update_confirmation_status_api_organizations__organization_id__confirmations__confirmation_number__status_patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "confirmation_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Confirmation number",
+              "title": "Confirmation Number"
+            },
+            "description": "Confirmation number"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/confirmations/{confirmation_number}/orders/{document_number}": {
+      "delete": {
+        "tags": [
+          "confirmations"
+        ],
+        "summary": "Remove an order from a confirmation",
+        "operationId": "remove_order_from_confirmation_api_organizations__organization_id__confirmations__confirmation_number__orders__document_number__delete",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "confirmation_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Confirmation number",
+              "title": "Confirmation Number"
+            },
+            "description": "Confirmation number"
+          },
+          {
+            "name": "document_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Order document number",
+              "title": "Document Number"
+            },
+            "description": "Order document number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/clients/{client_id}/departments": {
+      "get": {
+        "tags": [
+          "departments"
+        ],
+        "summary": "Get all departments for a client",
+        "description": "Get a paginated list of departments with optional search filters.\n\n**Search filters**\n- `departmentCode`: Department code\n- `name`: Department name (supports wildcards)\n- `supplierCode`: Supplier code\n\n**Sorting**\n- `orderBy>field` (Ascending)\n- `orderBy<field` (Descending)\n- Sortable fields: `departmentCode`, `name`, `supplierCode`, `createdOn`, `updatedOn`\n\n**Example:** `name:*warehouse*,orderBy>name`",
+        "operationId": "list_departments_api_organizations__organization_id__clients__client_id__departments_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client UUID",
+              "title": "Client Id"
+            },
+            "description": "Client UUID"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: name:*warehouse*,orderBy>name",
+              "title": "Search"
+            },
+            "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: name:*warehouse*,orderBy>name"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number (1-indexed)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 12,
+              "title": "Pagesize"
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "departments"
+        ],
+        "summary": "Create a new department",
+        "operationId": "create_department_api_organizations__organization_id__clients__client_id__departments_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client UUID",
+              "title": "Client Id"
+            },
+            "description": "Client UUID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDepartmentDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/clients/{client_id}/departments/{department_id}": {
+      "get": {
+        "tags": [
+          "departments"
+        ],
+        "summary": "Get a specific department by ID",
+        "operationId": "get_department_api_organizations__organization_id__clients__client_id__departments__department_id__get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client UUID",
+              "title": "Client Id"
+            },
+            "description": "Client UUID"
+          },
+          {
+            "name": "department_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Department UUID",
+              "title": "Department Id"
+            },
+            "description": "Department UUID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "departments"
+        ],
+        "summary": "Update an existing department",
+        "operationId": "update_department_api_organizations__organization_id__clients__client_id__departments__department_id__put",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client UUID",
+              "title": "Client Id"
+            },
+            "description": "Client UUID"
+          },
+          {
+            "name": "department_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Department UUID",
+              "title": "Department Id"
+            },
+            "description": "Department UUID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDepartmentDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "departments"
+        ],
+        "summary": "Update department status",
+        "operationId": "update_department_status_api_organizations__organization_id__clients__client_id__departments__department_id__patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client UUID",
+              "title": "Client Id"
+            },
+            "description": "Client UUID"
+          },
+          {
+            "name": "department_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Department UUID",
+              "title": "Department Id"
+            },
+            "description": "Department UUID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "departments"
+        ],
+        "summary": "Soft delete a department",
+        "operationId": "delete_department_api_organizations__organization_id__clients__client_id__departments__department_id__delete",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client UUID",
+              "title": "Client Id"
+            },
+            "description": "Client UUID"
+          },
+          {
+            "name": "department_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Department UUID",
+              "title": "Department Id"
+            },
+            "description": "Department UUID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/orders/parse": {
+      "post": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Parse and save an order details (DETALLES) Excel file",
+        "operationId": "parse_and_save_order_api_organizations__organization_id__orders_parse_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExcelDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/orders/{document_number}/crossdocking/parse": {
+      "post": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Parse and save a crossdocking Excel file for an existing order",
+        "operationId": "parse_and_save_crossdocking_api_organizations__organization_id__orders__document_number__crossdocking_parse_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "document_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Order document number",
+              "title": "Document Number"
+            },
+            "description": "Order document number"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExcelAndColorDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/orders/{document_number}/reprocess": {
+      "post": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Reprocess order: re-parse Excel files and regenerate all outputs",
+        "operationId": "reprocess_order_api_organizations__organization_id__orders__document_number__reprocess_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "document_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Order document number",
+              "title": "Document Number"
+            },
+            "description": "Order document number"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/SelectColorDTO"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/orders": {
+      "get": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Get all orders for an organization",
+        "description": "Get a paginated list of orders with optional search filters.\n\n**Search operators**\n- `:` = Equal\n- `!` = Not equal\n- `<` = Less than\n- `>` = Greater than\n- `~` = Like (contains)\n\n**Between (BETWEEN)**\n- `field:value1~value2` = Between values (e.g. `deliveryDate:01/02/2025~28/02/2025`)\n- `field!value1~value2` = Not between values\n\n**Search filters**\n- `documentNumber`: Document number (supports wildcards)\n- `clientName`: Client name (supports wildcards)\n- `supplierName`: Supplier name (supports wildcards)\n- `deliveryDate`: Delivery date — dd/mm/yyyy (supports between)\n- `creationDate`: Creation date — dd/mm/yyyy (supports between)\n- `orderStatus`: Order status (pending, processing, shipped, delivered, cancelled)\n- `deliverToCode`: Delivery place code\n- `deliverToName`: Delivery place name (supports wildcards)\n- `confirmationNumber`: Confirmation number (supports wildcards)\n\n**Separators**\nFilters are individual conditions separated by commas (,).\nLogical AND and OR conditions can be applied:\n- AND: All conditions separated by commas and outside parentheses are combined with AND\n- OR: To apply OR conditions, group them inside parentheses\n\n**Examples**\n- `clientName:*corp*,orderStatus:pending` → Orders where client name contains \"corp\" **and** status is pending\n- `(orderStatus:pending,orderStatus:processing)` → Orders with status pending **or** processing\n- `clientName:*test*,(orderStatus:pending,orderStatus:shipped)` → Client name contains \"test\" **and** (status pending **or** shipped)\n- `deliveryDate:01/02/2025~28/02/2025` → Orders with delivery date between Feb 1 and Feb 28\n\n**Wildcards**\n- `*ana*` = Contains (e.g. `clientName:*ana*` → Ariana, Melania)\n- `Al*` = Starts with (e.g. `clientName:Al*` → Alberto, Alana)\n- `*el` = Ends with (e.g. `clientName:*el` → Daniel, Miguel)\n\n**Note:** Fields that support wildcards (`documentNumber`, `clientName`, `supplierName`, `deliverToName`, `confirmationNumber`) automatically apply case-insensitive contains matching even without `*` wildcards.\n\n**Sorting**\n- `orderBy>field` (Ascending)\n- `orderBy<field` (Descending)\n- Sortable fields: `documentNumber`, `clientName`, `supplierName`, `deliveryDate`, `creationDate`, `orderStatus`, `createdOn`, `updatedOn`\n\n**Example with sorting:** `orderStatus:pending,orderBy>deliveryDate`",
+        "operationId": "get_orders_api_organizations__organization_id__orders_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Use () for OR grouping. Example: clientName:*Test*,orderStatus:pending,orderBy>deliveryDate",
+              "examples": [
+                "orderStatus:pending,orderBy>deliveryDate"
+              ],
+              "title": "Search"
+            },
+            "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Use () for OR grouping. Example: clientName:*Test*,orderStatus:pending,orderBy>deliveryDate"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number (1-indexed)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 12,
+              "title": "Pagesize"
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/orders/{document_number}": {
+      "get": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Get a specific order by document number (includes crossdocking if uploaded)",
+        "operationId": "get_order_by_number_api_organizations__organization_id__orders__document_number__get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "document_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Order document number",
+              "title": "Document Number"
+            },
+            "description": "Order document number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Update order status",
+        "operationId": "update_order_status_api_organizations__organization_id__orders__document_number__patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "document_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Order document number",
+              "title": "Document Number"
+            },
+            "description": "Order document number"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/products": {
+      "get": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Get all products for an organization",
+        "description": "Get a paginated list of products with optional search filters.\n\n**Search filters**\n- `description`: Product description (supports wildcards)\n- `code`: Product code lookup in codes JSONB array\n  - Format with code type: `code:01-123415` (searches for codeTypeId \"01\" and number \"123415\")\n  - Format without code type: `code:123415` (searches all code types for number \"123415\")\n- `name`: Product name (supports wildcards)\n- `categoryId`: Filter by category ID (exact match)\n- `categoryName`: Filter by category name (supports wildcards)\n- `status`: Filter by product status (1=Active, 2=Inactive, 3=Deleted)\n- `price`: Filter by net price (supports between with `~`)\n  - Single value: `price:100` (exact match)\n  - Range: `price:50~150` (between 50 and 150)\n  - Greater than: `price>100`\n  - Less than: `price<100`\n- `salePrice`: Filter by sale price (supports between with `~`)\n  - Single value: `salePrice:100` (exact match)\n  - Range: `salePrice:50~150` (between 50 and 150)\n  - Greater than: `salePrice>100`\n  - Less than: `salePrice<100`\n\n**Sorting**\n- `orderBy>field` (Ascending)\n- `orderBy<field` (Descending)\n- Sortable fields: `description`, `name`, `price`, `salePrice`, `createdOn`, `updatedOn`\n\n**Examples:**\n- `name:*shampoo*,orderBy>name` - Products with \"shampoo\" in name, sorted by name\n- `categoryId:cat-123` - Products in specific category\n- `categoryName:*electronics*,status:1` - Active products in electronics category\n- `status:2` - Inactive products\n- `status:1` - Active products only\n- `price:50~150` - Products with net price between 50 and 150\n- `salePrice:50~150` - Products with sale price between 50 and 150\n- `price>100,orderBy>price` - Products over 100, sorted by net price\n- `categoryName:*beauty*,salePrice<50,orderBy>salePrice` - Beauty products under 50, sorted by sale price",
+        "operationId": "list_products_api_organizations__organization_id__products_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: name:*shampoo*,orderBy>internalCode",
+              "title": "Search"
+            },
+            "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: name:*shampoo*,orderBy>internalCode"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number (1-indexed)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 12,
+              "title": "Pagesize"
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Create a new product",
+        "description": "Create a new product for an organization.\n\nAn optional `image` field can be included with base64-encoded image data.\nSupported image formats: PNG, JPEG, GIF, WEBP. Max size: 5MB.",
+        "operationId": "create_product_api_organizations__organization_id__products_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/products/{product_id}": {
+      "get": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Get a specific product by ID",
+        "operationId": "get_product_api_organizations__organization_id__products__product_id__get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "product_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Product ID",
+              "title": "Product Id"
+            },
+            "description": "Product ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Update an existing product",
+        "description": "Update a product. Only provided fields are updated.\n\nAn optional `image` field can be included with base64-encoded image data.\nSupported image formats: PNG, JPEG, GIF, WEBP. Max size: 5MB.",
+        "operationId": "update_product_api_organizations__organization_id__products__product_id__put",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "product_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Product ID",
+              "title": "Product Id"
+            },
+            "description": "Product ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/codes/{hacienda_code}/products/{code}": {
+      "get": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Get a specific product by Hacienda code type and code number",
+        "description": "Get a product by searching the codes JSONB array.\n\n**Hacienda Code Types:**\n- `01`: Vendor code\n- `02`: Buyer code\n- `03`: Manufacturer code\n- `04`: Internal code\n- `99`: Other\n\n**Example:** `/api/organizations/org-123/codes/01/products/VENDOR-001`",
+        "operationId": "get_product_by_code_api_organizations__organization_id__codes__hacienda_code__products__code__get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "hacienda_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Hacienda code type (01=Vendor, 02=Buyer, 03=Manufacturer, 04=Internal, 99=Other)",
+              "title": "Hacienda Code"
+            },
+            "description": "Hacienda code type (01=Vendor, 02=Buyer, 03=Manufacturer, 04=Internal, 99=Other)"
+          },
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Product code number",
+              "title": "Code"
+            },
+            "description": "Product code number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/products/parse": {
+      "post": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Parse and import products from Excel file",
+        "description": "Upload Excel file to create or update products in bulk.\n\n**Excel Format:**\nRequired headers: COD_ARTIC, COD_BARRA, COD_INTERNO, DESCRIPCION, CANTIDAD_CAJA, UNIDAD_MEDIDA, PRECIO, CATEGORIA\n\n**Behavior:**\n- Creates new products if no matching code is found\n- Updates category for existing products (preserves prices and other data)\n- Processes each row independently (one failure doesn't affect others)\n- Returns list of all successfully created/updated products\n\n**Product Matching:**\nProducts are matched by codes in priority order:\n1. COD_INTERNO (Internal code - type 04)\n2. COD_BARRA (Barcode - type 03)\n3. COD_ARTIC (Vendor code - type 01)\n\n**Category Handling:**\n- If category exists (case-insensitive match), uses existing category\n- If category doesn't exist, creates new category\n- If category is empty, uses default \"uncategorized\" category",
+        "operationId": "parse_products_excel_api_organizations__organization_id__products_parse_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExcelDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/products/{product_id}/status": {
+      "patch": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Update product status",
+        "description": "Update the status of a product (1=Active, 2=Inactive, 3=Deleted)",
+        "operationId": "update_product_status_api_organizations__organization_id__products__product_id__status_patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "product_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Product ID",
+              "title": "Product Id"
+            },
+            "description": "Product ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductStatusRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/clients/{client_id}/stores": {
+      "get": {
+        "tags": [
+          "stores"
+        ],
+        "summary": "Get all stores for a client",
+        "description": "Get a paginated list of stores with optional search filters.\n\n**Search filters**\n- `storeCode`: Store code\n- `storeName`: Store name (supports wildcards)\n- `chain`: Chain name (supports wildcards)\n- `slotId`: Slot ID\n\n**Sorting**\n- `orderBy>field` (Ascending)\n- `orderBy<field` (Descending)\n\n**Example:** `storeName:*test*,orderBy>storeCode`",
+        "operationId": "list_stores_api_organizations__organization_id__clients__client_id__stores_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client UUID",
+              "title": "Client Id"
+            },
+            "description": "Client UUID"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: storeName:*Test*,orderBy>storeCode",
+              "title": "Search"
+            },
+            "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: storeName:*Test*,orderBy>storeCode"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number (1-indexed)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 12,
+              "title": "Pagesize"
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "stores"
+        ],
+        "summary": "Create a new store",
+        "operationId": "create_store_api_organizations__organization_id__clients__client_id__stores_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client UUID",
+              "title": "Client Id"
+            },
+            "description": "Client UUID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoreRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/clients/{client_id}/stores/{store_id}": {
+      "get": {
+        "tags": [
+          "stores"
+        ],
+        "summary": "Get a specific store by ID",
+        "operationId": "get_store_api_organizations__organization_id__clients__client_id__stores__store_id__get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client UUID",
+              "title": "Client Id"
+            },
+            "description": "Client UUID"
+          },
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Store UUID",
+              "title": "Store Id"
+            },
+            "description": "Store UUID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "stores"
+        ],
+        "summary": "Update an existing store",
+        "operationId": "update_store_api_organizations__organization_id__clients__client_id__stores__store_id__put",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client UUID",
+              "title": "Client Id"
+            },
+            "description": "Client UUID"
+          },
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Store UUID",
+              "title": "Store Id"
+            },
+            "description": "Store UUID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoreRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "stores"
+        ],
+        "summary": "Update store status",
+        "operationId": "update_store_status_api_organizations__organization_id__clients__client_id__stores__store_id__patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client UUID",
+              "title": "Client Id"
+            },
+            "description": "Client UUID"
+          },
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Store UUID",
+              "title": "Store Id"
+            },
+            "description": "Store UUID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/clients/{client_id}/stores/upload": {
+      "post": {
+        "tags": [
+          "stores"
+        ],
+        "summary": "Upload stores from an Excel file",
+        "description": "Upload an Excel file with columns: Codigo, Nombre, SLOT ID, Cadena",
+        "operationId": "upload_stores_api_organizations__organization_id__clients__client_id__stores_upload_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client UUID",
+              "title": "Client Id"
+            },
+            "description": "Client UUID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExcelDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CabysInputDTO": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "integer",
+            "title": "Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "type"
+        ],
+        "title": "CabysInputDTO",
+        "description": "Frontend sends full CABYS record so the backend can upsert the catalog."
+      },
+      "CabysResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "integer",
+            "title": "Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "type"
+        ],
+        "title": "CabysResponse"
+      },
+      "CategoryListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/app__dtos__responses__category_dto__CategoryResponse"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "CategoryListResponse"
+      },
+      "CategoryRequestDTO": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "backgroundColor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backgroundcolor"
+          },
+          "buttonColor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Buttoncolor"
+          },
+          "image1": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImageDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "image2": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImageDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sortOrder": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sortorder"
+          }
+        },
+        "type": "object",
+        "title": "CategoryRequestDTO"
+      },
+      "ClientListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ClientResponse"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "ClientListResponse"
+      },
+      "ClientRequestDTO": {
+        "properties": {
+          "clientName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientname"
+          },
+          "clientGln": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientgln"
+          },
+          "identification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdentificationRequestDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "businessName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Businessname"
+          },
+          "nationality": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 3,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nationality"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PhoneRequestDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "residence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResidenceRequestDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ClientRequestDTO"
+      },
+      "ClientResponse": {
+        "properties": {
+          "clientId": {
+            "type": "string",
+            "title": "Clientid"
+          },
+          "companyId": {
+            "type": "string",
+            "title": "Companyid"
+          },
+          "clientName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientname"
+          },
+          "clientGln": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientgln"
+          },
+          "status": {
+            "type": "integer",
+            "title": "Status"
+          },
+          "identification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdentificationResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "businessName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Businessname"
+          },
+          "nationality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nationality"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PhoneResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "residence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResidenceResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "clientId",
+          "companyId",
+          "status"
+        ],
+        "title": "ClientResponse"
+      },
+      "ConfirmationListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ConfirmationResponse"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pagination"
+        ],
+        "title": "ConfirmationListResponse"
+      },
+      "ConfirmationOrderSummary": {
+        "properties": {
+          "order_id": {
+            "type": "integer",
+            "title": "Order Id",
+            "description": "Internal order identifier"
+          },
+          "document_number": {
+            "type": "string",
+            "title": "Document Number",
+            "description": "Order document number"
+          },
+          "delivery_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Date",
+            "description": "Order delivery date"
+          },
+          "deliver_to_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deliver To Code",
+            "description": "Delivery destination code"
+          },
+          "deliver_to_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deliver To Name",
+            "description": "Delivery destination name"
+          },
+          "order_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Status",
+            "description": "Order status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "order_id",
+          "document_number"
+        ],
+        "title": "ConfirmationOrderSummary"
+      },
+      "ConfirmationResponse": {
+        "properties": {
+          "confirmation_id": {
+            "type": "integer",
+            "title": "Confirmation Id",
+            "description": "Internal confirmation identifier"
+          },
+          "company_id": {
+            "type": "string",
+            "title": "Company Id",
+            "description": "Company identifier"
+          },
+          "confirmation_number": {
+            "type": "string",
+            "title": "Confirmation Number",
+            "description": "User-provided confirmation number"
+          },
+          "delivery_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Date",
+            "description": "Delivery date"
+          },
+          "deliver_to_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deliver To Code",
+            "description": "Delivery destination code"
+          },
+          "deliver_to_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deliver To Name",
+            "description": "Delivery destination name"
+          },
+          "confirmation_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmation Status",
+            "description": "Confirmation status (pending, processing, shipped, delivered, cancelled)"
+          },
+          "orders": {
+            "items": {
+              "$ref": "#/components/schemas/ConfirmationOrderSummary"
+            },
+            "type": "array",
+            "title": "Orders",
+            "description": "Orders linked to this confirmation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "confirmation_id",
+          "company_id",
+          "confirmation_number"
+        ],
+        "title": "ConfirmationResponse"
+      },
+      "CreateConfirmationDTO": {
+        "properties": {
+          "confirmation_number": {
+            "type": "string",
+            "title": "Confirmation Number",
+            "description": "User-provided confirmation number"
+          },
+          "document_numbers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Document Numbers",
+            "description": "List of order document numbers to link to this confirmation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "confirmation_number",
+          "document_numbers"
+        ],
+        "title": "CreateConfirmationDTO"
+      },
+      "CreateDepartmentDTO": {
+        "properties": {
+          "departmentCode": {
+            "type": "string",
+            "title": "Departmentcode"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "supplierCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suppliercode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "departmentCode"
+        ],
+        "title": "CreateDepartmentDTO"
+      },
+      "CrossDockingAttachmentsDTO": {
+        "properties": {
+          "pdf_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pdf Url",
+            "description": "URL to PDF document"
+          },
+          "excel_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excel Url",
+            "description": "URL to Excel document"
+          }
+        },
+        "type": "object",
+        "title": "CrossDockingAttachmentsDTO",
+        "description": "Crossdocking document attachments."
+      },
+      "CrossDockingBoxSummaryDTO": {
+        "properties": {
+          "items_per_box": {
+            "type": "integer",
+            "title": "Items Per Box",
+            "description": "Items per box"
+          },
+          "box_count": {
+            "type": "integer",
+            "title": "Box Count",
+            "description": "Box count"
+          },
+          "total_boxes": {
+            "type": "integer",
+            "title": "Total Boxes",
+            "description": "Total boxes"
+          },
+          "total_units": {
+            "type": "integer",
+            "title": "Total Units",
+            "description": "Total units"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items_per_box",
+          "box_count",
+          "total_boxes",
+          "total_units"
+        ],
+        "title": "CrossDockingBoxSummaryDTO",
+        "description": "Crossdocking box summary."
+      },
+      "CrossDockingDataDTO": {
+        "properties": {
+          "attachments": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CrossDockingAttachmentsDTO"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Crossdocking document attachments"
+          },
+          "sale_points": {
+            "items": {
+              "$ref": "#/components/schemas/CrossDockingSalePointDTO"
+            },
+            "type": "array",
+            "title": "Sale Points",
+            "description": "Sale points distribution"
+          },
+          "item_summary": {
+            "items": {
+              "$ref": "#/components/schemas/CrossDockingItemSummaryDTO"
+            },
+            "type": "array",
+            "title": "Item Summary",
+            "description": "Item summary"
+          },
+          "box_summary": {
+            "items": {
+              "$ref": "#/components/schemas/CrossDockingBoxSummaryDTO"
+            },
+            "type": "array",
+            "title": "Box Summary",
+            "description": "Box summary"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/CrossDockingTotalsDTO",
+            "description": "Crossdocking totals"
+          }
+        },
+        "type": "object",
+        "required": [
+          "totals"
+        ],
+        "title": "CrossDockingDataDTO",
+        "description": "Crossdocking distribution data."
+      },
+      "CrossDockingItemDTO": {
+        "properties": {
+          "internal_code": {
+            "type": "string",
+            "title": "Internal Code",
+            "description": "Internal product code"
+          },
+          "original_code": {
+            "type": "string",
+            "title": "Original Code",
+            "description": "Original product code"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Product description"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity",
+            "description": "Quantity ordered"
+          },
+          "units_per_box": {
+            "type": "integer",
+            "title": "Units Per Box",
+            "description": "Units per box"
+          },
+          "total_units": {
+            "type": "integer",
+            "title": "Total Units",
+            "description": "Total units"
+          },
+          "sent": {
+            "type": "integer",
+            "title": "Sent",
+            "description": "Quantity sent"
+          },
+          "missing": {
+            "type": "integer",
+            "title": "Missing",
+            "description": "Quantity missing"
+          }
+        },
+        "type": "object",
+        "required": [
+          "internal_code",
+          "original_code",
+          "description",
+          "quantity",
+          "units_per_box",
+          "total_units",
+          "sent",
+          "missing"
+        ],
+        "title": "CrossDockingItemDTO",
+        "description": "Crossdocking item."
+      },
+      "CrossDockingItemSummaryDTO": {
+        "properties": {
+          "internal_code": {
+            "type": "string",
+            "title": "Internal Code",
+            "description": "Internal product code"
+          },
+          "original_code": {
+            "type": "string",
+            "title": "Original Code",
+            "description": "Original product code"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Product description"
+          },
+          "units_per_box": {
+            "type": "integer",
+            "title": "Units Per Box",
+            "description": "Units per box"
+          },
+          "total_boxes": {
+            "type": "integer",
+            "title": "Total Boxes",
+            "description": "Total boxes"
+          },
+          "total_units": {
+            "type": "integer",
+            "title": "Total Units",
+            "description": "Total units"
+          }
+        },
+        "type": "object",
+        "required": [
+          "internal_code",
+          "original_code",
+          "description",
+          "units_per_box",
+          "total_boxes",
+          "total_units"
+        ],
+        "title": "CrossDockingItemSummaryDTO",
+        "description": "Crossdocking item summary."
+      },
+      "CrossDockingSalePointDTO": {
+        "properties": {
+          "store_number": {
+            "type": "string",
+            "title": "Store Number",
+            "description": "Store number"
+          },
+          "store_name": {
+            "type": "string",
+            "title": "Store Name",
+            "description": "Store name"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name",
+            "description": "Full store name"
+          },
+          "slot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slot Id",
+            "description": "Slot identifier"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CrossDockingItemDTO"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Items for this sale point"
+          },
+          "total_boxes": {
+            "type": "integer",
+            "title": "Total Boxes",
+            "description": "Total boxes"
+          },
+          "total_units": {
+            "type": "integer",
+            "title": "Total Units",
+            "description": "Total units"
+          }
+        },
+        "type": "object",
+        "required": [
+          "store_number",
+          "store_name",
+          "full_name",
+          "total_boxes",
+          "total_units"
+        ],
+        "title": "CrossDockingSalePointDTO",
+        "description": "Crossdocking sale point."
+      },
+      "CrossDockingTotalsDTO": {
+        "properties": {
+          "total_sale_points": {
+            "type": "integer",
+            "title": "Total Sale Points",
+            "description": "Total sale points"
+          },
+          "total_line_items": {
+            "type": "integer",
+            "title": "Total Line Items",
+            "description": "Total line items"
+          },
+          "total_boxes": {
+            "type": "integer",
+            "title": "Total Boxes",
+            "description": "Total boxes"
+          },
+          "total_units": {
+            "type": "integer",
+            "title": "Total Units",
+            "description": "Total units"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_sale_points",
+          "total_line_items",
+          "total_boxes",
+          "total_units"
+        ],
+        "title": "CrossDockingTotalsDTO",
+        "description": "Crossdocking totals."
+      },
+      "DepartmentDTO": {
+        "properties": {
+          "departmentCode": {
+            "type": "string",
+            "title": "Departmentcode"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "supplierCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suppliercode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "departmentCode"
+        ],
+        "title": "DepartmentDTO",
+        "description": "Lightweight department info embedded in order responses."
+      },
+      "DepartmentListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/DepartmentResponse"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "DepartmentListResponse"
+      },
+      "DepartmentResponse": {
+        "properties": {
+          "departmentId": {
+            "type": "string",
+            "title": "Departmentid"
+          },
+          "companyId": {
+            "type": "string",
+            "title": "Companyid"
+          },
+          "clientId": {
+            "type": "string",
+            "title": "Clientid"
+          },
+          "departmentCode": {
+            "type": "string",
+            "title": "Departmentcode"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "supplierCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suppliercode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "departmentId",
+          "companyId",
+          "clientId",
+          "departmentCode"
+        ],
+        "title": "DepartmentResponse"
+      },
+      "ExcelAndColorDTO": {
+        "properties": {
+          "data": {
+            "type": "string",
+            "title": "Data",
+            "description": "Base64-encoded file data"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "File name without extension"
+          },
+          "contentType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contenttype",
+            "description": "Excel MIME type",
+            "default": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReportColorScheme"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Color scheme for generated reports (green, orange, blue, green_alt). Defaults to green."
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "ExcelAndColorDTO",
+        "description": "DTO for Excel file uploads with optional color scheme for report generation."
+      },
+      "ExcelDTO": {
+        "properties": {
+          "data": {
+            "type": "string",
+            "title": "Data",
+            "description": "Base64-encoded file data"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "File name without extension"
+          },
+          "contentType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contenttype",
+            "description": "Excel MIME type",
+            "default": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "ExcelDTO",
+        "description": "DTO for Excel file uploads."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "IdentificationRequestDTO": {
+        "properties": {
+          "type": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 9
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          }
+        },
+        "type": "object",
+        "title": "IdentificationRequestDTO"
+      },
+      "IdentificationResponse": {
+        "properties": {
+          "type": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          }
+        },
+        "type": "object",
+        "title": "IdentificationResponse"
+      },
+      "ImageDTO": {
+        "properties": {
+          "data": {
+            "type": "string",
+            "title": "Data",
+            "description": "Base64-encoded file data"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Filename (e.g., file.ext)"
+          },
+          "contentType": {
+            "type": "string",
+            "title": "Contenttype",
+            "description": "Image MIME type (e.g., image/png, image/jpeg, image/gif, image/webp)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "contentType"
+        ],
+        "title": "ImageDTO",
+        "description": "DTO for image file uploads."
+      },
+      "LocationDTO": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code",
+            "description": "Location code",
+            "examples": [
+              "7422",
+              "1001"
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Location name",
+            "examples": [
+              "CEDI COYOL",
+              "Warehouse A"
+            ]
+          },
+          "gln": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gln",
+            "description": "Global Location Number",
+            "examples": [
+              "1234567890123"
+            ]
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude",
+            "description": "Latitude coordinate",
+            "examples": [
+              "9.9281",
+              "10.0000"
+            ]
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude",
+            "description": "Longitude coordinate",
+            "examples": [
+              "-84.0907",
+              "-85.0000"
+            ]
+          }
+        },
+        "type": "object",
+        "title": "LocationDTO",
+        "description": "Location information.\n\nRepresents a physical location with code, name, and coordinates."
+      },
+      "OrderAttachmentsDTO": {
+        "properties": {
+          "pdf_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pdf Url",
+            "description": "URL to PDF document"
+          },
+          "excel_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excel Url",
+            "description": "URL to Excel document"
+          },
+          "nuevo_reporte_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuevo Reporte Url",
+            "description": "URL to Nuevo Reporte Excel document"
+          }
+        },
+        "type": "object",
+        "title": "OrderAttachmentsDTO",
+        "description": "Order document attachments."
+      },
+      "OrderDetailLineResponse": {
+        "properties": {
+          "line_number": {
+            "type": "integer",
+            "title": "Line Number",
+            "description": "Line number in the order",
+            "examples": [
+              1,
+              2,
+              3
+            ]
+          },
+          "internal_code": {
+            "type": "string",
+            "title": "Internal Code",
+            "description": "Internal product code",
+            "examples": [
+              "INT-001",
+              "PROD-123"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "Product code",
+            "examples": [
+              "PROD-001",
+              "SKU-456"
+            ]
+          },
+          "client_article_code": {
+            "type": "string",
+            "title": "Client Article Code",
+            "description": "Client's article code",
+            "examples": [
+              "CLIENT-001",
+              "ART-789"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Product description",
+            "examples": [
+              "Product Name",
+              "Item Description"
+            ]
+          },
+          "units_per_box": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Units Per Box",
+            "description": "Number of units per box",
+            "examples": [
+              12,
+              24,
+              50
+            ]
+          },
+          "quantity_ordered": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Quantity Ordered",
+            "description": "Quantity ordered (in boxes)",
+            "examples": [
+              10,
+              20,
+              50
+            ]
+          },
+          "units_ordered": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Units Ordered",
+            "description": "Total units ordered",
+            "examples": [
+              120,
+              480,
+              2500
+            ]
+          },
+          "unit_price": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Unit Price",
+            "description": "Price per unit",
+            "examples": [
+              10.5,
+              25.99,
+              100.0
+            ]
+          },
+          "discount": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Discount",
+            "description": "Discount amount",
+            "examples": [
+              0.0,
+              5.5,
+              10.0
+            ]
+          },
+          "line_total": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Line Total",
+            "description": "Total amount for this line",
+            "examples": [
+              100.0,
+              500.5,
+              1000.0
+            ]
+          },
+          "tax": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Tax",
+            "description": "Tax amount for this line",
+            "examples": [
+              13.0,
+              65.07,
+              130.0
+            ]
+          },
+          "quantity_dispatched": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Quantity Dispatched",
+            "description": "Quantity dispatched (in boxes)",
+            "examples": [
+              10,
+              20,
+              50
+            ]
+          },
+          "dispatch_rejection_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dispatch Rejection Reason",
+            "description": "Reason for dispatch rejection if applicable",
+            "examples": [
+              "Out of stock",
+              "Damaged goods",
+              null
+            ]
+          },
+          "quantity_received": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Quantity Received",
+            "description": "Quantity received (in boxes)",
+            "examples": [
+              10,
+              20,
+              50
+            ]
+          },
+          "article_code": {
+            "type": "string",
+            "title": "Article Code",
+            "description": "Article code",
+            "examples": [
+              "ART-001",
+              "ARTICLE-456"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "line_number",
+          "internal_code",
+          "code",
+          "client_article_code",
+          "description",
+          "units_per_box",
+          "quantity_ordered",
+          "units_ordered",
+          "unit_price",
+          "discount",
+          "line_total",
+          "tax",
+          "quantity_dispatched",
+          "quantity_received",
+          "article_code"
+        ],
+        "title": "OrderDetailLineResponse",
+        "description": "Order detail line item.\n\nRepresents a single product line in an order with quantities,\npricing, and dispatch/receipt information."
+      },
+      "OrderDetailTotals": {
+        "properties": {
+          "total_lines": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Lines",
+            "description": "Total number of lines in the order",
+            "examples": [
+              5,
+              10,
+              25
+            ]
+          },
+          "total_quantity_ordered": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Quantity Ordered",
+            "description": "Total quantity ordered across all lines (in boxes)",
+            "examples": [
+              100,
+              250,
+              500
+            ]
+          },
+          "total_units_ordered": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Units Ordered",
+            "description": "Total units ordered across all lines",
+            "examples": [
+              1200,
+              6000,
+              12500
+            ]
+          },
+          "total_quantity_dispatched": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Quantity Dispatched",
+            "description": "Total quantity dispatched across all lines (in boxes)",
+            "examples": [
+              100,
+              250,
+              500
+            ]
+          },
+          "total_quantity_received": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Quantity Received",
+            "description": "Total quantity received across all lines (in boxes)",
+            "examples": [
+              100,
+              250,
+              500
+            ]
+          },
+          "subtotal": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Subtotal",
+            "description": "Subtotal amount",
+            "examples": [
+              1000.0,
+              5000.5,
+              10000.0
+            ]
+          },
+          "net_total": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Net Total",
+            "description": "Net total (subtotal - discounts)",
+            "examples": [
+              950.0,
+              4950.5,
+              9900.0
+            ]
+          },
+          "grand_total": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Grand Total",
+            "description": "Grand total (net_total + taxes)",
+            "examples": [
+              1000.0,
+              5000.5,
+              10000.0
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_lines",
+          "total_quantity_ordered",
+          "total_units_ordered",
+          "total_quantity_dispatched",
+          "total_quantity_received",
+          "subtotal",
+          "net_total",
+          "grand_total"
+        ],
+        "title": "OrderDetailTotals",
+        "description": "Order detail totals.\n\nAggregated totals for all line items in an order including\nquantities ordered, dispatched, received, and financial total."
+      },
+      "OrderListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/OrderResponse"
+            },
+            "type": "array",
+            "title": "Data",
+            "description": "List of orders"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationResponse",
+            "description": "Pagination information"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pagination"
+        ],
+        "title": "OrderListResponse",
+        "description": "Order list response.\n\nPaginated list of orders with pagination metadata.\nUsed for order listing endpoints with pagination support."
+      },
+      "OrderResponse": {
+        "properties": {
+          "order_id": {
+            "type": "integer",
+            "title": "Order Id",
+            "description": "Internal order identifier",
+            "examples": [
+              1,
+              100,
+              5000
+            ]
+          },
+          "company_id": {
+            "type": "string",
+            "title": "Company Id",
+            "description": "Company identifier",
+            "examples": [
+              "COMP-001",
+              "ABC123"
+            ]
+          },
+          "document_number": {
+            "type": "string",
+            "title": "Document Number",
+            "description": "Order document number",
+            "examples": [
+              "ORD-2024-001",
+              "PO-123456"
+            ]
+          },
+          "document_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Type",
+            "description": "Document type code",
+            "examples": [
+              "PO",
+              "SO",
+              "TO"
+            ]
+          },
+          "bgm011": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bgm011",
+            "description": "BGM 011 code (EDI reference)",
+            "examples": [
+              "220",
+              "231"
+            ]
+          },
+          "confirmation_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmation Id",
+            "description": "Confirmation group identifier"
+          },
+          "confirmation_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmation Number",
+            "description": "User-provided confirmation number"
+          },
+          "order_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Type",
+            "description": "Order type",
+            "examples": [
+              "Standard",
+              "Crossdocking",
+              "Direct"
+            ]
+          },
+          "creation_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creation Date",
+            "description": "Order creation date",
+            "examples": [
+              "2024-01-15",
+              "2024-03-20"
+            ]
+          },
+          "delivery_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Date",
+            "description": "Expected delivery date",
+            "examples": [
+              "2024-01-20",
+              "2024-03-25"
+            ]
+          },
+          "order_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Status",
+            "description": "Order status (pending, processing, shipped, delivered, cancelled)",
+            "default": "pending",
+            "examples": [
+              "pending",
+              "processing",
+              "shipped",
+              "delivered",
+              "cancelled"
+            ]
+          },
+          "client": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartyDTO"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Client information"
+          },
+          "supplier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartyDTO"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Supplier information"
+          },
+          "delivery_location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationDTO"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Delivery location information"
+          },
+          "event": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event",
+            "description": "Event identifier",
+            "examples": [
+              "EVENT-001",
+              "PROMO-2024"
+            ]
+          },
+          "department": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DepartmentDTO"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Department"
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment",
+            "description": "Additional comments",
+            "examples": [
+              "Urgent delivery",
+              "Handle with care"
+            ]
+          },
+          "line_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Count",
+            "description": "Number of line items",
+            "default": 0,
+            "examples": [
+              5,
+              10,
+              25
+            ]
+          },
+          "total_quantities": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Quantities",
+            "description": "Total quantities (boxes)",
+            "default": 0,
+            "examples": [
+              10,
+              50,
+              100
+            ]
+          },
+          "subtotal": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subtotal",
+            "description": "Subtotal amount",
+            "default": 0,
+            "examples": [
+              1000.0,
+              5000.0,
+              10000.0
+            ]
+          },
+          "discounts": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discounts",
+            "description": "Total discounts applied",
+            "default": 0,
+            "examples": [
+              0.0,
+              50.0,
+              100.0
+            ]
+          },
+          "net_total": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Net Total",
+            "description": "Net total (subtotal - discounts)",
+            "default": 0,
+            "examples": [
+              950.0,
+              4950.0,
+              9900.0
+            ]
+          },
+          "taxes": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taxes",
+            "description": "Total taxes",
+            "default": 0,
+            "examples": [
+              0.0,
+              130.0,
+              500.0
+            ]
+          },
+          "grand_total": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grand Total",
+            "description": "Grand total (net_total + taxes)",
+            "default": 0,
+            "examples": [
+              1000.0,
+              5000.0,
+              10000.0
+            ]
+          },
+          "attachments": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderAttachmentsDTO"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Document attachments (PDF, Excel)"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/OrderDetailLineResponse"
+            },
+            "type": "array",
+            "title": "Lines",
+            "description": "Order line items"
+          },
+          "order_totals": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderDetailTotals"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Order totals summary"
+          },
+          "crossdocking": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CrossDockingDataDTO"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Crossdocking information if applicable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "order_id",
+          "company_id",
+          "document_number"
+        ],
+        "title": "OrderResponse",
+        "description": "Order response.\n\nRepresents a complete order with header information, line items,\ncrossdocking data, and totals. Used for both single order retrieval\nand order list responses.\n\nOrder Types:\n    - Standard order\n    - Crossdocking order\n    - Direct delivery order\n\nDocument Types:\n    - Purchase order\n    - Sales order\n    - Transfer order"
+      },
+      "PaginationResponse": {
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Page",
+            "description": "Current page number (0-indexed)",
+            "examples": [
+              0,
+              1,
+              2
+            ]
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Pagesize",
+            "description": "Number of items per page",
+            "examples": [
+              10,
+              20,
+              50
+            ]
+          },
+          "totalElements": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Totalelements",
+            "description": "Total number of elements across all pages",
+            "examples": [
+              100,
+              250,
+              1000
+            ]
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Totalpages",
+            "description": "Total number of pages",
+            "examples": [
+              10,
+              13,
+              20
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "page",
+          "pageSize",
+          "totalElements",
+          "totalPages"
+        ],
+        "title": "PaginationResponse",
+        "description": "Pagination information.\n\nContains pagination metadata for paginated list responses\nincluding current page, page size, and total counts."
+      },
+      "PartyDTO": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Party name",
+            "examples": [
+              "Acme Corp",
+              "Supplier Inc"
+            ]
+          },
+          "gln": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gln",
+            "description": "Global Location Number",
+            "examples": [
+              "1234567890123"
+            ]
+          },
+          "internal_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Internal Code",
+            "description": "Internal party code",
+            "examples": [
+              "SUP-001",
+              "CLI-456"
+            ]
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url",
+            "description": "URL to the party's logo image",
+            "examples": [
+              "https://cdn.example.com/logos/acme.png"
+            ]
+          }
+        },
+        "type": "object",
+        "title": "PartyDTO",
+        "description": "Party information (Client/Supplier).\n\nRepresents a business party with identification and contact details."
+      },
+      "PhoneRequestDTO": {
+        "properties": {
+          "countryCode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Countrycode"
+          },
+          "areaCode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Areacode"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "title": "PhoneRequestDTO"
+      },
+      "PhoneResponse": {
+        "properties": {
+          "countryCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Countrycode"
+          },
+          "areaCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Areacode"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "title": "PhoneResponse"
+      },
+      "ProductCodeDTO": {
+        "properties": {
+          "codeTypeId": {
+            "type": "string",
+            "title": "Codetypeid"
+          },
+          "number": {
+            "type": "string",
+            "title": "Number"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "codeTypeId",
+          "number"
+        ],
+        "title": "ProductCodeDTO"
+      },
+      "ProductCodeResponse": {
+        "properties": {
+          "codeTypeId": {
+            "type": "string",
+            "title": "Codetypeid"
+          },
+          "number": {
+            "type": "string",
+            "title": "Number"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "codeTypeId",
+          "number"
+        ],
+        "title": "ProductCodeResponse"
+      },
+      "ProductDiscountDTO": {
+        "properties": {
+          "discountTypeId": {
+            "type": "string",
+            "title": "Discounttypeid"
+          },
+          "percentage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentage"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "isAmount": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isamount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "discountTypeId"
+        ],
+        "title": "ProductDiscountDTO",
+        "description": "Discount input — no 'amount' field; discount amounts are backend-calculated."
+      },
+      "ProductDiscountResponse": {
+        "properties": {
+          "discountTypeId": {
+            "type": "string",
+            "title": "Discounttypeid"
+          },
+          "percentage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentage"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "isAmount": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isamount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "discountTypeId"
+        ],
+        "title": "ProductDiscountResponse"
+      },
+      "ProductListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ProductResponse"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "ProductListResponse"
+      },
+      "ProductRequestDTO": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "unitsPerBox": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unitsperbox"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "categoryId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Categoryid"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImageDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cabys": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CabysInputDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unitId": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unitid"
+          },
+          "commercialUnitMeasure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commercialunitmeasure"
+          },
+          "isPackaged": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ispackaged"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "unitPrice": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unitprice"
+          },
+          "customsPart": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customspart"
+          },
+          "codes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ProductCodeDTO"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Codes"
+          },
+          "discounts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ProductDiscountDTO"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discounts"
+          },
+          "taxes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ProductTaxDTO"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taxes"
+          },
+          "baseAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseamount"
+          }
+        },
+        "type": "object",
+        "title": "ProductRequestDTO"
+      },
+      "ProductResponse": {
+        "properties": {
+          "productId": {
+            "type": "string",
+            "title": "Productid"
+          },
+          "companyId": {
+            "type": "string",
+            "title": "Companyid"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "unitsPerBox": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unitsperbox"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "imageUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imageurl"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/app__dtos__responses__product_dto__CategoryResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cabys": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CabysResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unitId": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unitid"
+          },
+          "commercialUnitMeasure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commercialunitmeasure"
+          },
+          "isPackaged": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ispackaged"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "unitPrice": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unitprice"
+          },
+          "customsPart": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customspart"
+          },
+          "codes": {
+            "items": {
+              "$ref": "#/components/schemas/ProductCodeResponse"
+            },
+            "type": "array",
+            "title": "Codes"
+          },
+          "discounts": {
+            "items": {
+              "$ref": "#/components/schemas/ProductDiscountResponse"
+            },
+            "type": "array",
+            "title": "Discounts"
+          },
+          "taxes": {
+            "items": {
+              "$ref": "#/components/schemas/ProductTaxResponse"
+            },
+            "type": "array",
+            "title": "Taxes"
+          },
+          "baseAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseamount"
+          },
+          "salePrice": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saleprice"
+          }
+        },
+        "type": "object",
+        "required": [
+          "productId",
+          "companyId"
+        ],
+        "title": "ProductResponse"
+      },
+      "ProductStatusRequestDTO": {
+        "properties": {
+          "status": {
+            "type": "integer",
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Status",
+            "description": "Product status (1=Active, 2=Inactive, 3=Deleted)",
+            "examples": [
+              1,
+              2
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "ProductStatusRequestDTO",
+        "description": "Product status update request."
+      },
+      "ProductTaxDTO": {
+        "properties": {
+          "taxTypeId": {
+            "type": "string",
+            "title": "Taxtypeid"
+          },
+          "taxRate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxRateDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "taxFactor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxFactorDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "otherTaxType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Othertaxtype"
+          },
+          "specialFields": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxSpecialFieldsDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isAmount": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isamount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "taxTypeId"
+        ],
+        "title": "ProductTaxDTO",
+        "description": "Tax input — no 'amount' field; tax amounts are backend-calculated."
+      },
+      "ProductTaxResponse": {
+        "properties": {
+          "taxTypeId": {
+            "type": "string",
+            "title": "Taxtypeid"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "taxRate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxRateResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "taxFactor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxFactorResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "otherTaxType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Othertaxtype"
+          },
+          "specialFields": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxSpecialFieldsResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isAmount": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isamount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "taxTypeId"
+        ],
+        "title": "ProductTaxResponse"
+      },
+      "ReportColorScheme": {
+        "type": "string",
+        "enum": [
+          "green",
+          "orange",
+          "blue",
+          "green_alt"
+        ],
+        "title": "ReportColorScheme"
+      },
+      "ResidenceRequestDTO": {
+        "properties": {
+          "stateId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stateid"
+          },
+          "countyId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Countyid"
+          },
+          "districtId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Districtid"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          }
+        },
+        "type": "object",
+        "title": "ResidenceRequestDTO"
+      },
+      "ResidenceResponse": {
+        "properties": {
+          "stateId": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stateid"
+          },
+          "countyId": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Countyid"
+          },
+          "districtId": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Districtid"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          }
+        },
+        "type": "object",
+        "title": "ResidenceResponse"
+      },
+      "SelectColorDTO": {
+        "properties": {
+          "color": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReportColorScheme"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Color scheme for the generated reports (green, orange, blue, green_alt). If not provided, retains the stored color for this order."
+          }
+        },
+        "type": "object",
+        "title": "SelectColorDTO",
+        "description": "Request body for selecting a report color scheme (used in reprocess)."
+      },
+      "StatusRequestDTO": {
+        "properties": {
+          "status": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Status",
+            "description": "Order status (1=pending, 2=processing, 3=shipped, 4=delivered, 5=cancelled)",
+            "examples": [
+              4,
+              5
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "StatusRequestDTO",
+        "description": "Status update request."
+      },
+      "StoreListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/StoreResponse"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "StoreListResponse"
+      },
+      "StoreRequestDTO": {
+        "properties": {
+          "storeCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storecode"
+          },
+          "storeName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storename"
+          },
+          "slotId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slotid"
+          },
+          "chain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chain"
+          }
+        },
+        "type": "object",
+        "title": "StoreRequestDTO"
+      },
+      "StoreResponse": {
+        "properties": {
+          "storeId": {
+            "type": "string",
+            "title": "Storeid"
+          },
+          "companyId": {
+            "type": "string",
+            "title": "Companyid"
+          },
+          "clientId": {
+            "type": "string",
+            "title": "Clientid"
+          },
+          "storeCode": {
+            "type": "string",
+            "title": "Storecode"
+          },
+          "storeName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storename"
+          },
+          "slotId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slotid"
+          },
+          "chain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chain"
+          },
+          "gln": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gln"
+          }
+        },
+        "type": "object",
+        "required": [
+          "storeId",
+          "companyId",
+          "clientId",
+          "storeCode"
+        ],
+        "title": "StoreResponse"
+      },
+      "TaxAmountDTO": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "amount"
+        ],
+        "title": "TaxAmountDTO"
+      },
+      "TaxAmountResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "amount"
+        ],
+        "title": "TaxAmountResponse"
+      },
+      "TaxFactorDTO": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "factor": {
+            "type": "number",
+            "title": "Factor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "factor"
+        ],
+        "title": "TaxFactorDTO"
+      },
+      "TaxFactorResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "factor": {
+            "type": "number",
+            "title": "Factor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "factor"
+        ],
+        "title": "TaxFactorResponse"
+      },
+      "TaxRateDTO": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "percentage": {
+            "type": "number",
+            "title": "Percentage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "percentage"
+        ],
+        "title": "TaxRateDTO"
+      },
+      "TaxRateResponse": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "percentage": {
+            "type": "number",
+            "title": "Percentage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "percentage"
+        ],
+        "title": "TaxRateResponse"
+      },
+      "TaxSpecialFieldsDTO": {
+        "properties": {
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "percentage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentage"
+          },
+          "proportion": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proportion"
+          },
+          "volumeConsumption": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Volumeconsumption"
+          },
+          "taxAmount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxAmountDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "TaxSpecialFieldsDTO"
+      },
+      "TaxSpecialFieldsResponse": {
+        "properties": {
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "percentage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentage"
+          },
+          "proportion": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proportion"
+          },
+          "volumeConsumption": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Volumeconsumption"
+          },
+          "taxAmount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxAmountResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "TaxSpecialFieldsResponse"
+      },
+      "UpdateConfirmationDTO": {
+        "properties": {
+          "document_numbers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Document Numbers",
+            "description": "Additional order document numbers to link to this confirmation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_numbers"
+        ],
+        "title": "UpdateConfirmationDTO"
+      },
+      "UpdateDepartmentDTO": {
+        "properties": {
+          "departmentCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Departmentcode"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "supplierCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suppliercode"
+          }
+        },
+        "type": "object",
+        "title": "UpdateDepartmentDTO"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "app__dtos__responses__category_dto__CategoryResponse": {
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "title": "Categoryid"
+          },
+          "organizationId": {
+            "type": "string",
+            "title": "Organizationid"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "backgroundColor": {
+            "type": "string",
+            "title": "Backgroundcolor"
+          },
+          "buttonColor": {
+            "type": "string",
+            "title": "Buttoncolor"
+          },
+          "image1Url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image1Url"
+          },
+          "image2Url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image2Url"
+          },
+          "isActive": {
+            "type": "boolean",
+            "title": "Isactive"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "title": "Sortorder"
+          }
+        },
+        "type": "object",
+        "required": [
+          "categoryId",
+          "organizationId",
+          "name",
+          "slug",
+          "description",
+          "backgroundColor",
+          "buttonColor",
+          "isActive",
+          "sortOrder"
+        ],
+        "title": "CategoryResponse"
+      },
+      "app__dtos__responses__product_dto__CategoryResponse": {
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "title": "Categoryid"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "categoryId"
+        ],
+        "title": "CategoryResponse"
+      }
+    }
+  }
+}

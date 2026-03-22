@@ -55,15 +55,14 @@ Parameters:
 
   WkhtmltopdfPath:
     Type: String
-    Description: Absolute path to wkhtmltopdf binary (optional — defaults to /usr/local/bin/wkhtmltopdf)
-    Default: ""
+    Description: Absolute path to wkhtmltopdf binary
+    Default: "/usr/local/bin/wkhtmltopdf"
 
 # ---------------------------------------------------------------------------
 # Conditions — skip optional params when no value is provided
 # ---------------------------------------------------------------------------
 Conditions:
   HasCloudfrontDistributionId: !Not [!Equals [!Ref CloudfrontDistributionId, ""]]
-  HasWkhtmltopdfPath:          !Not [!Equals [!Ref WkhtmltopdfPath, ""]]
 
 # ---------------------------------------------------------------------------
 # Resources  — one SSM parameter per entry
@@ -162,10 +161,9 @@ Resources:
       Value: !Ref CloudfrontDistributionId
       Description: CloudFront distribution ID for cache invalidation
 
-  # /jcampos/{env}/cd-backend/path/to/wkhtmltopdf  (optional)
+  # /jcampos/{env}/cd-backend/path/to/wkhtmltopdf
   WkhtmltopdfPathParam:
     Type: AWS::SSM::Parameter
-    Condition: HasWkhtmltopdfPath
     Properties:
       Name: !Sub "/jcampos/${Environment}/cd-backend/path/to/wkhtmltopdf"
       Type: String

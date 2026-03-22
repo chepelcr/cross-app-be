@@ -1,0 +1,1213 @@
+{
+  "base_url": "https://orders-api.jcampos.dev",
+  "auth": "Authorization: Bearer <cognito-id-token>",
+  "cognito_pool_arn_export": "jmarkets-cognito-UserPoolArn",
+  "services": [
+    {
+      "name": "backend",
+      "endpoints": [
+        {
+          "path": "/api/organizations/{organization_id}/categories",
+          "method": "GET",
+          "operation_id": "list_categories_api_organizations__organization_id__categories_get",
+          "summary": "Get all categories for an organization",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            }
+          ],
+          "query_params": [
+            {
+              "name": "page",
+              "type": "integer",
+              "required": false,
+              "description": "Page number (1-indexed)"
+            },
+            {
+              "name": "pageSize",
+              "type": "integer",
+              "required": false,
+              "description": "Items per page"
+            }
+          ],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/categories",
+          "method": "POST",
+          "operation_id": "create_category_api_organizations__organization_id__categories_post",
+          "summary": "Create a new category",
+          "description": "Create a new category for an organization.\n\nOptional `image1` and `image2` fields can be included with base64-encoded image data.\nSupported image formats: PNG, JPEG, GIF, WEBP. Max size: 5MB per image.",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/categories/{category_id}",
+          "method": "GET",
+          "operation_id": "get_category_api_organizations__organization_id__categories__category_id__get",
+          "summary": "Get a specific category by ID",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "category_id",
+              "type": "string",
+              "required": true,
+              "description": "Category ID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/categories/{category_id}",
+          "method": "PUT",
+          "operation_id": "update_category_api_organizations__organization_id__categories__category_id__put",
+          "summary": "Update an existing category",
+          "description": "Update a category. Only provided fields are updated.\n\nOptional `image1` and `image2` fields can be included with base64-encoded image data.\nSupported image formats: PNG, JPEG, GIF, WEBP. Max size: 5MB per image.",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "category_id",
+              "type": "string",
+              "required": true,
+              "description": "Category ID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/categories/{category_id}",
+          "method": "PATCH",
+          "operation_id": "update_category_status_api_organizations__organization_id__categories__category_id__patch",
+          "summary": "Update category status",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "category_id",
+              "type": "string",
+              "required": true,
+              "description": "Category ID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/categories/{category_id}",
+          "method": "DELETE",
+          "operation_id": "delete_category_api_organizations__organization_id__categories__category_id__delete",
+          "summary": "Delete a category",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "category_id",
+              "type": "string",
+              "required": true,
+              "description": "Category ID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients",
+          "method": "GET",
+          "operation_id": "list_clients_api_organizations__organization_id__clients_get",
+          "summary": "Get all clients for an organization",
+          "description": "Get a paginated list of clients with optional search filters.\n\n**Search filters**\n- `clientName`: Client name (supports wildcards)\n- `clientGln`: Client GLN code\n- `status`: Client status (0=Pending, 1=Active, 2=Inactive, 3=Deleted)\n- `nationality`: Client nationality code (e.g., CR, US)\n- `idNumber`: Identification number\n\n**Sorting**\n- `orderBy>field` (Ascending)\n- `orderBy<field` (Descending)\n- Sortable fields: `clientName`, `clientGln`, `status`, `nationality`, `createdOn`, `updatedOn`\n\n**Examples:**\n- Search by name: `clientName:*corp*`\n- Search pending clients: `status:0`\n- Search by nationality and ID: `nationality:CR,idNumber:123456789`\n- Combined: `status:0,nationality:CR,orderBy>clientName`",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            }
+          ],
+          "query_params": [
+            {
+              "name": "search",
+              "type": "string",
+              "required": false,
+              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: clientName:*Test*,orderBy>clientName"
+            },
+            {
+              "name": "page",
+              "type": "integer",
+              "required": false,
+              "description": "Page number (1-indexed)"
+            },
+            {
+              "name": "pageSize",
+              "type": "integer",
+              "required": false,
+              "description": "Items per page"
+            }
+          ],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients",
+          "method": "POST",
+          "operation_id": "create_client_api_organizations__organization_id__clients_post",
+          "summary": "Create a new client or reactivate deleted one",
+          "description": "Create a new client. If a deleted client exists with the same company_id, client_gln, and nationality, it will be reactivated and updated with the new information.",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients/{client_id}",
+          "method": "GET",
+          "operation_id": "get_client_api_organizations__organization_id__clients__client_id__get",
+          "summary": "Get a specific client by ID",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "client_id",
+              "type": "string",
+              "required": true,
+              "description": "Client UUID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients/{client_id}",
+          "method": "PUT",
+          "operation_id": "update_client_api_organizations__organization_id__clients__client_id__put",
+          "summary": "Update an existing client",
+          "description": "Update an existing client. Cannot update deleted clients (status=3). Use POST to reactivate deleted clients.",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "client_id",
+              "type": "string",
+              "required": true,
+              "description": "Client UUID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients/{client_id}",
+          "method": "PATCH",
+          "operation_id": "update_client_status_api_organizations__organization_id__clients__client_id__patch",
+          "summary": "Update client status",
+          "description": "Update client status. Cannot update deleted clients (status=3). Use POST to reactivate deleted clients.\n\n**Status codes:**\n- `1`: Active\n- `2`: Inactive\n- `3`: Deleted",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "client_id",
+              "type": "string",
+              "required": true,
+              "description": "Client UUID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients/{client_id}/departments",
+          "method": "GET",
+          "operation_id": "list_departments_api_organizations__organization_id__clients__client_id__departments_get",
+          "summary": "Get all departments for a client",
+          "description": "Get a paginated list of departments with optional search filters.\n\n**Search filters**\n- `departmentCode`: Department code\n- `name`: Department name (supports wildcards)\n- `supplierCode`: Supplier code\n\n**Sorting**\n- `orderBy>field` (Ascending)\n- `orderBy<field` (Descending)\n- Sortable fields: `departmentCode`, `name`, `supplierCode`, `createdOn`, `updatedOn`\n\n**Example:** `name:*warehouse*,orderBy>name`",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "client_id",
+              "type": "string",
+              "required": true,
+              "description": "Client UUID"
+            }
+          ],
+          "query_params": [
+            {
+              "name": "search",
+              "type": "string",
+              "required": false,
+              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: name:*warehouse*,orderBy>name"
+            },
+            {
+              "name": "page",
+              "type": "integer",
+              "required": false,
+              "description": "Page number (1-indexed)"
+            },
+            {
+              "name": "pageSize",
+              "type": "integer",
+              "required": false,
+              "description": "Items per page"
+            }
+          ],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients/{client_id}/departments",
+          "method": "POST",
+          "operation_id": "create_department_api_organizations__organization_id__clients__client_id__departments_post",
+          "summary": "Create a new department",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "client_id",
+              "type": "string",
+              "required": true,
+              "description": "Client UUID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients/{client_id}/departments/{department_id}",
+          "method": "GET",
+          "operation_id": "get_department_api_organizations__organization_id__clients__client_id__departments__department_id__get",
+          "summary": "Get a specific department by ID",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "client_id",
+              "type": "string",
+              "required": true,
+              "description": "Client UUID"
+            },
+            {
+              "name": "department_id",
+              "type": "string",
+              "required": true,
+              "description": "Department UUID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients/{client_id}/departments/{department_id}",
+          "method": "PUT",
+          "operation_id": "update_department_api_organizations__organization_id__clients__client_id__departments__department_id__put",
+          "summary": "Update an existing department",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "client_id",
+              "type": "string",
+              "required": true,
+              "description": "Client UUID"
+            },
+            {
+              "name": "department_id",
+              "type": "string",
+              "required": true,
+              "description": "Department UUID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients/{client_id}/departments/{department_id}",
+          "method": "PATCH",
+          "operation_id": "update_department_status_api_organizations__organization_id__clients__client_id__departments__department_id__patch",
+          "summary": "Update department status",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "client_id",
+              "type": "string",
+              "required": true,
+              "description": "Client UUID"
+            },
+            {
+              "name": "department_id",
+              "type": "string",
+              "required": true,
+              "description": "Department UUID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients/{client_id}/departments/{department_id}",
+          "method": "DELETE",
+          "operation_id": "delete_department_api_organizations__organization_id__clients__client_id__departments__department_id__delete",
+          "summary": "Soft delete a department",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "client_id",
+              "type": "string",
+              "required": true,
+              "description": "Client UUID"
+            },
+            {
+              "name": "department_id",
+              "type": "string",
+              "required": true,
+              "description": "Department UUID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients/{client_id}/stores",
+          "method": "GET",
+          "operation_id": "list_stores_api_organizations__organization_id__clients__client_id__stores_get",
+          "summary": "Get all stores for a client",
+          "description": "Get a paginated list of stores with optional search filters.\n\n**Search filters**\n- `storeCode`: Store code\n- `storeName`: Store name (supports wildcards)\n- `chain`: Chain name (supports wildcards)\n- `slotId`: Slot ID\n\n**Sorting**\n- `orderBy>field` (Ascending)\n- `orderBy<field` (Descending)\n\n**Example:** `storeName:*test*,orderBy>storeCode`",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "client_id",
+              "type": "string",
+              "required": true,
+              "description": "Client UUID"
+            }
+          ],
+          "query_params": [
+            {
+              "name": "search",
+              "type": "string",
+              "required": false,
+              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: storeName:*Test*,orderBy>storeCode"
+            },
+            {
+              "name": "page",
+              "type": "integer",
+              "required": false,
+              "description": "Page number (1-indexed)"
+            },
+            {
+              "name": "pageSize",
+              "type": "integer",
+              "required": false,
+              "description": "Items per page"
+            }
+          ],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients/{client_id}/stores",
+          "method": "POST",
+          "operation_id": "create_store_api_organizations__organization_id__clients__client_id__stores_post",
+          "summary": "Create a new store",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "client_id",
+              "type": "string",
+              "required": true,
+              "description": "Client UUID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients/{client_id}/stores/upload",
+          "method": "POST",
+          "operation_id": "upload_stores_api_organizations__organization_id__clients__client_id__stores_upload_post",
+          "summary": "Upload stores from an Excel file",
+          "description": "Upload an Excel file with columns: Codigo, Nombre, SLOT ID, Cadena",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "client_id",
+              "type": "string",
+              "required": true,
+              "description": "Client UUID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients/{client_id}/stores/{store_id}",
+          "method": "GET",
+          "operation_id": "get_store_api_organizations__organization_id__clients__client_id__stores__store_id__get",
+          "summary": "Get a specific store by ID",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "client_id",
+              "type": "string",
+              "required": true,
+              "description": "Client UUID"
+            },
+            {
+              "name": "store_id",
+              "type": "string",
+              "required": true,
+              "description": "Store UUID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients/{client_id}/stores/{store_id}",
+          "method": "PUT",
+          "operation_id": "update_store_api_organizations__organization_id__clients__client_id__stores__store_id__put",
+          "summary": "Update an existing store",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "client_id",
+              "type": "string",
+              "required": true,
+              "description": "Client UUID"
+            },
+            {
+              "name": "store_id",
+              "type": "string",
+              "required": true,
+              "description": "Store UUID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/clients/{client_id}/stores/{store_id}",
+          "method": "PATCH",
+          "operation_id": "update_store_status_api_organizations__organization_id__clients__client_id__stores__store_id__patch",
+          "summary": "Update store status",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "client_id",
+              "type": "string",
+              "required": true,
+              "description": "Client UUID"
+            },
+            {
+              "name": "store_id",
+              "type": "string",
+              "required": true,
+              "description": "Store UUID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/codes/{hacienda_code}/products/{code}",
+          "method": "GET",
+          "operation_id": "get_product_by_code_api_organizations__organization_id__codes__hacienda_code__products__code__get",
+          "summary": "Get a specific product by Hacienda code type and code number",
+          "description": "Get a product by searching the codes JSONB array.\n\n**Hacienda Code Types:**\n- `01`: Vendor code\n- `02`: Buyer code\n- `03`: Manufacturer code\n- `04`: Internal code\n- `99`: Other\n\n**Example:** `/api/organizations/org-123/codes/01/products/VENDOR-001`",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "hacienda_code",
+              "type": "string",
+              "required": true,
+              "description": "Hacienda code type (01=Vendor, 02=Buyer, 03=Manufacturer, 04=Internal, 99=Other)"
+            },
+            {
+              "name": "code",
+              "type": "string",
+              "required": true,
+              "description": "Product code number"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/confirmations",
+          "method": "GET",
+          "operation_id": "list_confirmations_api_organizations__organization_id__confirmations_get",
+          "summary": "List confirmations for an organization",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            }
+          ],
+          "query_params": [
+            {
+              "name": "page",
+              "type": "integer",
+              "required": false,
+              "description": "Page number"
+            },
+            {
+              "name": "pageSize",
+              "type": "integer",
+              "required": false,
+              "description": "Items per page"
+            }
+          ],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/confirmations",
+          "method": "POST",
+          "operation_id": "create_confirmation_api_organizations__organization_id__confirmations_post",
+          "summary": "Create a confirmation and link orders",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/confirmations/{confirmation_number}",
+          "method": "GET",
+          "operation_id": "get_confirmation_api_organizations__organization_id__confirmations__confirmation_number__get",
+          "summary": "Get a confirmation by number",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "confirmation_number",
+              "type": "string",
+              "required": true,
+              "description": "Confirmation number"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/confirmations/{confirmation_number}",
+          "method": "PUT",
+          "operation_id": "update_confirmation_api_organizations__organization_id__confirmations__confirmation_number__put",
+          "summary": "Update confirmation details and/or add more orders",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "confirmation_number",
+              "type": "string",
+              "required": true,
+              "description": "Confirmation number"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/confirmations/{confirmation_number}/orders/{document_number}",
+          "method": "DELETE",
+          "operation_id": "remove_order_from_confirmation_api_organizations__organization_id__confirmations__confirmation_number__orders__document_number__delete",
+          "summary": "Remove an order from a confirmation",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "confirmation_number",
+              "type": "string",
+              "required": true,
+              "description": "Confirmation number"
+            },
+            {
+              "name": "document_number",
+              "type": "string",
+              "required": true,
+              "description": "Order document number"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/confirmations/{confirmation_number}/status",
+          "method": "PATCH",
+          "operation_id": "update_confirmation_status_api_organizations__organization_id__confirmations__confirmation_number__status_patch",
+          "summary": "Update status of confirmation and its orders (3=shipped triggers email)",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "confirmation_number",
+              "type": "string",
+              "required": true,
+              "description": "Confirmation number"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/orders",
+          "method": "GET",
+          "operation_id": "get_orders_api_organizations__organization_id__orders_get",
+          "summary": "Get all orders for an organization",
+          "description": "Get a paginated list of orders with optional search filters.\n\n**Search operators**\n- `:` = Equal\n- `!` = Not equal\n- `<` = Less than\n- `>` = Greater than\n- `~` = Like (contains)\n\n**Between (BETWEEN)**\n- `field:value1~value2` = Between values (e.g. `deliveryDate:01/02/2025~28/02/2025`)\n- `field!value1~value2` = Not between values\n\n**Search filters**\n- `documentNumber`: Document number (supports wildcards)\n- `clientName`: Client name (supports wildcards)\n- `supplierName`: Supplier name (supports wildcards)\n- `deliveryDate`: Delivery date — dd/mm/yyyy (supports between)\n- `creationDate`: Creation date — dd/mm/yyyy (supports between)\n- `orderStatus`: Order status (pending, processing, shipped, delivered, cancelled)\n- `deliverToCode`: Delivery place code\n- `deliverToName`: Delivery place name (supports wildcards)\n- `confirmationNumber`: Confirmation number (supports wildcards)\n\n**Separators**\nFilters are individual conditions separated by commas (,).\nLogical AND and OR conditions can be applied:\n- AND: All conditions separated by commas and outside parentheses are combined with AND\n- OR: To apply OR conditions, group them inside parentheses\n\n**Examples**\n- `clientName:*corp*,orderStatus:pending` → Orders where client name contains \"corp\" **and** status is pending\n- `(orderStatus:pending,orderStatus:processing)` → Orders with status pending **or** processing\n- `clientName:*test*,(orderStatus:pending,orderStatus:shipped)` → Client name contains \"test\" **and** (status pending **or** shipped)\n- `deliveryDate:01/02/2025~28/02/2025` → Orders with delivery date between Feb 1 and Feb 28\n\n**Wildcards**\n- `*ana*` = Contains (e.g. `clientName:*ana*` → Ariana, Melania)\n- `Al*` = Starts with (e.g. `clientName:Al*` → Alberto, Alana)\n- `*el` = Ends with (e.g. `clientName:*el` → Daniel, Miguel)\n\n**Note:** Fields that support wildcards (`documentNumber`, `clientName`, `supplierName`, `deliverToName`, `confirmationNumber`) automatically apply case-insensitive contains matching even without `*` wildcards.\n\n**Sorting**\n- `orderBy>field` (Ascending)\n- `orderBy<field` (Descending)\n- Sortable fields: `documentNumber`, `clientName`, `supplierName`, `deliveryDate`, `creationDate`, `orderStatus`, `createdOn`, `updatedOn`\n\n**Example with sorting:** `orderStatus:pending,orderBy>deliveryDate`",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            }
+          ],
+          "query_params": [
+            {
+              "name": "search",
+              "type": "string",
+              "required": false,
+              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Use () for OR grouping. Example: clientName:*Test*,orderStatus:pending,orderBy>deliveryDate"
+            },
+            {
+              "name": "page",
+              "type": "integer",
+              "required": false,
+              "description": "Page number (1-indexed)"
+            },
+            {
+              "name": "pageSize",
+              "type": "integer",
+              "required": false,
+              "description": "Items per page"
+            }
+          ],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/orders/parse",
+          "method": "POST",
+          "operation_id": "parse_and_save_order_api_organizations__organization_id__orders_parse_post",
+          "summary": "Parse and save an order details (DETALLES) Excel file",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/orders/{document_number}",
+          "method": "GET",
+          "operation_id": "get_order_by_number_api_organizations__organization_id__orders__document_number__get",
+          "summary": "Get a specific order by document number (includes crossdocking if uploaded)",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "document_number",
+              "type": "string",
+              "required": true,
+              "description": "Order document number"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/orders/{document_number}",
+          "method": "PATCH",
+          "operation_id": "update_order_status_api_organizations__organization_id__orders__document_number__patch",
+          "summary": "Update order status",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "document_number",
+              "type": "string",
+              "required": true,
+              "description": "Order document number"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/orders/{document_number}/crossdocking/parse",
+          "method": "POST",
+          "operation_id": "parse_and_save_crossdocking_api_organizations__organization_id__orders__document_number__crossdocking_parse_post",
+          "summary": "Parse and save a crossdocking Excel file for an existing order",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "document_number",
+              "type": "string",
+              "required": true,
+              "description": "Order document number"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/orders/{document_number}/reprocess",
+          "method": "POST",
+          "operation_id": "reprocess_order_api_organizations__organization_id__orders__document_number__reprocess_post",
+          "summary": "Reprocess order: re-parse Excel files and regenerate all outputs",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "document_number",
+              "type": "string",
+              "required": true,
+              "description": "Order document number"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/products",
+          "method": "GET",
+          "operation_id": "list_products_api_organizations__organization_id__products_get",
+          "summary": "Get all products for an organization",
+          "description": "Get a paginated list of products with optional search filters.\n\n**Search filters**\n- `description`: Product description (supports wildcards)\n- `code`: Product code lookup in codes JSONB array\n  - Format with code type: `code:01-123415` (searches for codeTypeId \"01\" and number \"123415\")\n  - Format without code type: `code:123415` (searches all code types for number \"123415\")\n- `name`: Product name (supports wildcards)\n- `categoryId`: Filter by category ID (exact match)\n- `categoryName`: Filter by category name (supports wildcards)\n- `status`: Filter by product status (1=Active, 2=Inactive, 3=Deleted)\n- `price`: Filter by net price (supports between with `~`)\n  - Single value: `price:100` (exact match)\n  - Range: `price:50~150` (between 50 and 150)\n  - Greater than: `price>100`\n  - Less than: `price<100`\n- `salePrice`: Filter by sale price (supports between with `~`)\n  - Single value: `salePrice:100` (exact match)\n  - Range: `salePrice:50~150` (between 50 and 150)\n  - Greater than: `salePrice>100`\n  - Less than: `salePrice<100`\n\n**Sorting**\n- `orderBy>field` (Ascending)\n- `orderBy<field` (Descending)\n- Sortable fields: `description`, `name`, `price`, `salePrice`, `createdOn`, `updatedOn`\n\n**Examples:**\n- `name:*shampoo*,orderBy>name` - Products with \"shampoo\" in name, sorted by name\n- `categoryId:cat-123` - Products in specific category\n- `categoryName:*electronics*,status:1` - Active products in electronics category\n- `status:2` - Inactive products\n- `status:1` - Active products only\n- `price:50~150` - Products with net price between 50 and 150\n- `salePrice:50~150` - Products with sale price between 50 and 150\n- `price>100,orderBy>price` - Products over 100, sorted by net price\n- `categoryName:*beauty*,salePrice<50,orderBy>salePrice` - Beauty products under 50, sorted by sale price",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            }
+          ],
+          "query_params": [
+            {
+              "name": "search",
+              "type": "string",
+              "required": false,
+              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: name:*shampoo*,orderBy>internalCode"
+            },
+            {
+              "name": "page",
+              "type": "integer",
+              "required": false,
+              "description": "Page number (1-indexed)"
+            },
+            {
+              "name": "pageSize",
+              "type": "integer",
+              "required": false,
+              "description": "Items per page"
+            }
+          ],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/products",
+          "method": "POST",
+          "operation_id": "create_product_api_organizations__organization_id__products_post",
+          "summary": "Create a new product",
+          "description": "Create a new product for an organization.\n\nAn optional `image` field can be included with base64-encoded image data.\nSupported image formats: PNG, JPEG, GIF, WEBP. Max size: 5MB.",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/products/parse",
+          "method": "POST",
+          "operation_id": "parse_products_excel_api_organizations__organization_id__products_parse_post",
+          "summary": "Parse and import products from Excel file",
+          "description": "Upload Excel file to create or update products in bulk.\n\n**Excel Format:**\nRequired headers: COD_ARTIC, COD_BARRA, COD_INTERNO, DESCRIPCION, CANTIDAD_CAJA, UNIDAD_MEDIDA, PRECIO, CATEGORIA\n\n**Behavior:**\n- Creates new products if no matching code is found\n- Updates category for existing products (preserves prices and other data)\n- Processes each row independently (one failure doesn't affect others)\n- Returns list of all successfully created/updated products\n\n**Product Matching:**\nProducts are matched by codes in priority order:\n1. COD_INTERNO (Internal code - type 04)\n2. COD_BARRA (Barcode - type 03)\n3. COD_ARTIC (Vendor code - type 01)\n\n**Category Handling:**\n- If category exists (case-insensitive match), uses existing category\n- If category doesn't exist, creates new category\n- If category is empty, uses default \"uncategorized\" category",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/products/{product_id}",
+          "method": "GET",
+          "operation_id": "get_product_api_organizations__organization_id__products__product_id__get",
+          "summary": "Get a specific product by ID",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "product_id",
+              "type": "string",
+              "required": true,
+              "description": "Product ID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/products/{product_id}",
+          "method": "PUT",
+          "operation_id": "update_product_api_organizations__organization_id__products__product_id__put",
+          "summary": "Update an existing product",
+          "description": "Update a product. Only provided fields are updated.\n\nAn optional `image` field can be included with base64-encoded image data.\nSupported image formats: PNG, JPEG, GIF, WEBP. Max size: 5MB.",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "product_id",
+              "type": "string",
+              "required": true,
+              "description": "Product ID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/products/{product_id}/status",
+          "method": "PATCH",
+          "operation_id": "update_product_status_api_organizations__organization_id__products__product_id__status_patch",
+          "summary": "Update product status",
+          "description": "Update the status of a product (1=Active, 2=Inactive, 3=Deleted)",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "product_id",
+              "type": "string",
+              "required": true,
+              "description": "Product ID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        }
+      ]
+    }
+  ]
+}

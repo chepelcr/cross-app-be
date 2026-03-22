@@ -8,6 +8,7 @@ services:
     environment:
       - AWS_PROFILE=J-CAMPOS
       - AWS_DEFAULT_REGION=us-east-1
+      - PATH_TO_WKHTMLTOPDF=/usr/local/bin/wkhtmltopdf
     ports:
       - "8000:8000"
     volumes:

@@ -294,12 +294,15 @@ def get_order(organization_id: str, document_number: str) -> OrderResponse:
 
 def reprocess_order(organization_id: str, document_number: str, color=None) -> OrderResponse:
     """Re-download and re-parse order + crossdocking Excel files, regenerate all outputs."""
+    logger.info(f"[REPROCESS] START order={document_number} org={organization_id} color={color}")
     with OrderRepository() as repo:
+        logger.info(f"[REPROCESS] DB session open — finding order")
         order = repo.find_by_company_and_document(organization_id, document_number)
         if not order:
             raise LookupError(
                 f"Order {document_number} not found for organization {organization_id}"
             )
+        logger.info(f"[REPROCESS] Order found: order_id={order.order_id} excel_url={order.excel_url} cd_excel_url={order.crossdocking_excel_url}")
 
         org_repo = OrganizationRepository.from_session(repo.session)
         client_repo = ClientRepository.from_session(repo.session)
@@ -309,57 +312,75 @@ def reprocess_order(organization_id: str, document_number: str, color=None) -> O
 
         # Re-parse order Excel if stored
         if order.excel_url:
+            logger.info(f"[REPROCESS] Downloading order Excel from S3: {order.excel_url}")
             try:
                 excel_bytes = download_from_s3(order.excel_url)
+                logger.info(f"[REPROCESS] Order Excel downloaded ({len(excel_bytes)} bytes) — parsing")
                 parsed = parse_order_detail_file(BytesIO(excel_bytes))
+                logger.info(f"[REPROCESS] Order Excel parsed — syncing organization")
 
                 # Sync organization
                 _sync_organization(org_repo, organization_id, parsed)
+                logger.info(f"[REPROCESS] Organization synced — upserting entities")
 
                 # Upsert normalized entities
                 _upsert_order_entities(
                     order, parsed, organization_id,
                     client_repo, store_repo, dept_repo, product_repo,
                 )
+                logger.info(f"[REPROCESS] Entities upserted — updating order from parsed")
 
                 _update_order_from_parsed(order, parsed)
                 order = repo.save(order)
                 logger.info(f"Re-parsed order Excel for {document_number}")
             except Exception as e:
-                logger.warning(f"Failed to re-parse order Excel for {document_number}: {e}")
+                logger.warning(f"Failed to re-parse order Excel for {document_number}: {e}", exc_info=True)
+        else:
+            logger.info(f"[REPROCESS] No order Excel URL — skipping Excel re-parse")
 
         # Resolve color: use provided color, or fall back to stored value
         if color is not None:
             resolved_color = color.value if isinstance(color, ReportColorScheme) else str(color)
             order.report_color = resolved_color
         resolved_color = order.report_color or _default_color_for_order(order)
+        logger.info(f"[REPROCESS] Resolved color: {resolved_color}")
 
         # Regenerate order PDF
+        logger.info(f"[REPROCESS] Regenerating order PDF")
         try:
             # Ensure all relationships are loaded fresh from database
             repo.session.expire_all()
             order = repo.find_by_company_and_document(organization_id, document_number)
             order.pdf_url = create_order_pdf(order)
             order = repo.save(order)
-            logger.info(f"Order PDF regenerated for {document_number}")
+            logger.info(f"Order PDF regenerated for {document_number}: {order.pdf_url}")
         except Exception as e:
             logger.error(f"Order PDF regeneration failed for {document_number}: {e}", exc_info=True)
 
         # Re-parse crossdocking Excel if stored
         if order.crossdocking_excel_url:
+            logger.info(f"[REPROCESS] Downloading crossdocking Excel: {order.crossdocking_excel_url}")
             try:
                 cd_bytes = download_from_s3(order.crossdocking_excel_url)
+                logger.info(f"[REPROCESS] CD Excel downloaded ({len(cd_bytes)} bytes) — parsing")
                 parsed_cd = parse_crossdocking_file(BytesIO(cd_bytes))
+                logger.info(f"[REPROCESS] CD Excel parsed — applying crossdocking data")
 
                 _apply_crossdocking_data(order, parsed_cd, organization_id, store_repo, product_repo)
                 order = repo.save(order)
                 logger.info(f"Re-parsed crossdocking Excel for {document_number}")
             except Exception as e:
-                logger.warning(f"Failed to re-parse crossdocking Excel for {document_number}: {e}")
+                logger.warning(f"Failed to re-parse crossdocking Excel for {document_number}: {e}", exc_info=True)
 
+            logger.info(f"[REPROCESS] Generating crossdocking outputs (PDF + Excel)")
             _generate_crossdocking_outputs(order, resolved_color)
+            logger.info(f"[REPROCESS] Crossdocking outputs generated")
+        else:
+            logger.info(f"[REPROCESS] No crossdocking Excel URL — skipping CD re-parse")
 
+        logger.info(f"[REPROCESS] Saving final order state")
         order = repo.save(order)
+        logger.info(f"[REPROCESS] DONE order={document_number}")
         return order_to_response(order)
 
 

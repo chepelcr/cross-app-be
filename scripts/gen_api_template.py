@@ -13,7 +13,8 @@ SERVICES = ["backend"]
 
 SKIP_PREFIXES = ("/health", "/docs", "/openapi.json", "/redoc")
 COGNITO_ARN_EXPORT = "jmarkets-cognito-UserPoolArn"
-REQUIRE_AUTH = True
+REQUIRE_AUTH = False
+HTTP_METHODS = ("get", "post", "put", "patch", "delete")
 I = [""] + ["  " * n for n in range(1, 12)]   # indentation levels
 
 CUSTOM_DOMAIN = "orders-api.jcampos.dev"
@@ -104,8 +105,8 @@ args = parser.parse_args()
 if not args.skip_refresh:
     refresh_swagger()
 
-# ── collect GET paths from swagger/backend.json ───────────────────────────────
-all_paths = {}
+# ── collect all methods per path from swagger/backend.json ────────────────────
+all_paths = {}   # path -> {method: op}
 path_file = "swagger/backend.json"
 if os.path.exists(path_file):
     with open(path_file, encoding="utf-8") as f:
@@ -113,8 +114,9 @@ if os.path.exists(path_file):
     for path, path_item in spec.get("paths", {}).items():
         if any(path.startswith(p) for p in SKIP_PREFIXES):
             continue
-        if "get" in path_item:
-            all_paths[path] = {"service": "backend", "op": path_item["get"]}
+        methods = {m: path_item[m] for m in HTTP_METHODS if m in path_item}
+        if methods:
+            all_paths[path] = methods
 
 # ── build YAML lines ──────────────────────────────────────────────────────────
 lines = []
@@ -207,53 +209,61 @@ L(I[9] + '- Fn::ImportValue: "' + COGNITO_ARN_EXPORT + '"')
 L(I[4] + "paths:")
 
 for path in sorted(all_paths.keys()):
-    info = all_paths[path]
-    service = info["service"]
-    op = info["op"]
-    path_params = [p for p in op.get("parameters", []) if p.get("in") == "path"]
-    query_params = [p for p in op.get("parameters", []) if p.get("in") == "query"]
-    summary = op.get("summary", "")
-    op_id = service + "_" + op.get("operationId", "get")
+    methods = all_paths[path]   # {method: op}
+    service = "backend"
+    allowed_methods = ",".join(m.upper() for m in methods) + ",OPTIONS"
 
     L(I[5] + ys(path) + ":")
 
-    # GET
-    L(I[6] + "get:")
-    L(I[7] + "operationId: " + ys(op_id))
-    if summary:
-        L(I[7] + "summary: " + ys(summary))
-    if path_params or query_params:
-        L(I[7] + "parameters:")
-        for p in path_params + query_params:
-            req = "true" if p.get("required") else "false"
-            ptype = (p.get("schema") or {}).get("type", "string")
-            L(I[8] + "- name: " + ys(p["name"]))
-            L(I[9] + "in: " + p["in"])
-            L(I[9] + "required: " + req)
-            L(I[9] + "schema:")
-            L(I[9] + "  type: " + ptype)
-    L(I[7] + "responses:")
-    L(I[8] + "'200':")
-    L(I[9] + "description: OK")
-    L(I[9] + "headers:")
-    L(I[9] + "  Access-Control-Allow-Origin:")
-    L(I[9] + "    schema:")
-    L(I[9] + "      type: string")
-    L(I[8] + "'400':")
-    L(I[9] + "description: Bad Request")
-    L(I[8] + "'404':")
-    L(I[9] + "description: Not Found")
-    if REQUIRE_AUTH:
-        L(I[7] + "security:")
-        L(I[8] + "- CognitoAuthorizer: []")
-    L(I[7] + "x-amazon-apigateway-integration:")
-    L(I[8] + "httpMethod: POST")
-    L(I[8] + "uri: !Sub " + lambda_uri_sub(service))
-    L(I[8] + "passthroughBehavior: when_no_match")
-    L(I[8] + "contentHandling: CONVERT_TO_TEXT")
-    L(I[8] + "type: aws_proxy")
+    for method, op in methods.items():
+        path_params = [p for p in op.get("parameters", []) if p.get("in") == "path"]
+        query_params = [p for p in op.get("parameters", []) if p.get("in") == "query"]
+        summary = op.get("summary", "")
+        op_id = service + "_" + op.get("operationId", method)
 
-    # OPTIONS (CORS preflight)
+        L(I[6] + method + ":")
+        L(I[7] + "operationId: " + ys(op_id))
+        if summary:
+            L(I[7] + "summary: " + ys(summary))
+        if path_params or query_params:
+            L(I[7] + "parameters:")
+            for p in path_params + query_params:
+                req = "true" if p.get("required") else "false"
+                ptype = (p.get("schema") or {}).get("type", "string")
+                L(I[8] + "- name: " + ys(p["name"]))
+                L(I[9] + "in: " + p["in"])
+                L(I[9] + "required: " + req)
+                L(I[9] + "schema:")
+                L(I[9] + "  type: " + ptype)
+        if method in ("post", "put", "patch"):
+            L(I[7] + "requestBody:")
+            L(I[8] + "required: true")
+            L(I[8] + "content:")
+            L(I[9] + "application/json:")
+            L(I[10] + "schema:")
+            L(I[11] + "type: object")
+        L(I[7] + "responses:")
+        L(I[8] + "'200':")
+        L(I[9] + "description: OK")
+        L(I[9] + "headers:")
+        L(I[9] + "  Access-Control-Allow-Origin:")
+        L(I[9] + "    schema:")
+        L(I[9] + "      type: string")
+        L(I[8] + "'400':")
+        L(I[9] + "description: Bad Request")
+        L(I[8] + "'404':")
+        L(I[9] + "description: Not Found")
+        if REQUIRE_AUTH:
+            L(I[7] + "security:")
+            L(I[8] + "- CognitoAuthorizer: []")
+        L(I[7] + "x-amazon-apigateway-integration:")
+        L(I[8] + "httpMethod: POST")
+        L(I[8] + "uri: !Sub " + lambda_uri_sub(service))
+        L(I[8] + "passthroughBehavior: when_no_match")
+        L(I[8] + "contentHandling: CONVERT_TO_TEXT")
+        L(I[8] + "type: aws_proxy")
+
+    # OPTIONS (CORS preflight) — allowed methods derived from actual path methods
     L(I[6] + "options:")
     L(I[7] + "responses:")
     L(I[8] + "'200':")
@@ -273,7 +283,7 @@ for path in sorted(all_paths.keys()):
     L(I[9] + "  responseParameters:")
     L(I[9] + "    method.response.header.Access-Control-Allow-Headers:"
        " \"'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'\"")
-    L(I[9] + "    method.response.header.Access-Control-Allow-Methods: \"'GET,OPTIONS'\"")
+    L(I[9] + "    method.response.header.Access-Control-Allow-Methods: \"'" + allowed_methods + "'\"")
     L(I[9] + "    method.response.header.Access-Control-Allow-Origin: \"'*'\"")
 
 L()
@@ -287,7 +297,7 @@ for rtype in ("DEFAULT_4XX", "DEFAULT_5XX"):
     L(I[3] + "ResponseParameters:")
     L(I[4] + "gatewayresponse.header.Access-Control-Allow-Headers:"
        " \"'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'\"")
-    L(I[4] + "gatewayresponse.header.Access-Control-Allow-Methods: \"'GET,OPTIONS'\"")
+    L(I[4] + "gatewayresponse.header.Access-Control-Allow-Methods: \"'GET,POST,PUT,PATCH,DELETE,OPTIONS'\"")
     L(I[4] + "gatewayresponse.header.Access-Control-Allow-Origin: \"'*'\"")
     L(I[3] + "ResponseType: " + rtype)
     L(I[3] + "RestApiId: !Ref ApiGatewayRestApi")
@@ -371,9 +381,11 @@ out = "\n".join(lines)
 with open("api-gateway/template.yml", "w", encoding="utf-8") as f:
     f.write(out)
 
+total_ops = sum(len(m) for m in all_paths.values())
 print(f"Generated api-gateway/template.yml")
-print(f"  Lines  : {len(lines)}")
-print(f"  Paths  : {len(all_paths)}")
+print(f"  Lines     : {len(lines)}")
+print(f"  Paths     : {len(all_paths)}")
+print(f"  Operations: {total_ops}")
 
 # ── generate endpoints.json ───────────────────────────────────────────────────
 BASE_URL = "https://" + CUSTOM_DOMAIN
@@ -443,38 +455,39 @@ if os.path.exists(path_file):
         if any(path.startswith(s) for s in JSON_SKIP):
             continue
         path_item = spec["paths"][path]
-        if "get" not in path_item:
-            continue
-        op = path_item["get"]
-        params = op.get("parameters", [])
-        path_params = [
-            {
-                "name": p["name"],
-                "type": (p.get("schema") or {}).get("type", "string"),
-                "required": bool(p.get("required")),
-                "description": p.get("description", ""),
-            }
-            for p in params if p.get("in") == "path"
-        ]
-        query_params = [
-            {
-                "name": p["name"],
-                "type": (p.get("schema") or {}).get("type", "string"),
-                "required": bool(p.get("required")),
-                "description": p.get("description", ""),
-            }
-            for p in params if p.get("in") == "query"
-        ]
-        svc_endpoints.append({
-            "path": path,
-            "method": "GET",
-            "operation_id": op.get("operationId", ""),
-            "summary": op.get("summary", ""),
-            "description": op.get("description", ""),
-            "path_params": path_params,
-            "query_params": query_params,
-            "response": _extract_response(op),
-        })
+        for method in HTTP_METHODS:
+            if method not in path_item:
+                continue
+            op = path_item[method]
+            params = op.get("parameters", [])
+            path_params = [
+                {
+                    "name": p["name"],
+                    "type": (p.get("schema") or {}).get("type", "string"),
+                    "required": bool(p.get("required")),
+                    "description": p.get("description", ""),
+                }
+                for p in params if p.get("in") == "path"
+            ]
+            query_params = [
+                {
+                    "name": p["name"],
+                    "type": (p.get("schema") or {}).get("type", "string"),
+                    "required": bool(p.get("required")),
+                    "description": p.get("description", ""),
+                }
+                for p in params if p.get("in") == "query"
+            ]
+            svc_endpoints.append({
+                "path": path,
+                "method": method.upper(),
+                "operation_id": op.get("operationId", ""),
+                "summary": op.get("summary", ""),
+                "description": op.get("description", ""),
+                "path_params": path_params,
+                "query_params": query_params,
+                "response": _extract_response(op),
+            })
 
 if svc_endpoints:
     endpoints_json["services"].append({"name": "backend", "endpoints": svc_endpoints})

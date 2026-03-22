@@ -114,19 +114,22 @@ PARAMS_STACK="jcampos-${ENVIRONMENT}-cd-backend-ssm-params"
 echo ""
 echo "Deploying SSM Parameters: $PARAMS_STACK"
 
+PARAM_OVERRIDES=(
+  "Environment=$ENVIRONMENT"
+  "S3Bucket=$S3_BUCKET"
+  "PdfDomain=$PDF_DOMAIN"
+  "EmailSender=$EMAIL_SENDER"
+  "EmailRecipient=$EMAIL_RECIPIENT"
+  "ApiServicesUrl=$API_SERVICES_URL"
+  "ApiOrganizationsUrl=$API_ORGS_URL"
+)
+[ -n "$CLOUDFRONT_ID" ]    && PARAM_OVERRIDES+=("CloudfrontDistributionId=$CLOUDFRONT_ID")
+[ -n "$WKHTMLTOPDF_PATH" ] && PARAM_OVERRIDES+=("WkhtmltopdfPath=$WKHTMLTOPDF_PATH")
+
 aws cloudformation deploy \
   --template-file cloudformation/params.yml \
   --stack-name "$PARAMS_STACK" \
-  --parameter-overrides \
-      Environment="$ENVIRONMENT" \
-      S3Bucket="$S3_BUCKET" \
-      PdfDomain="$PDF_DOMAIN" \
-      EmailSender="$EMAIL_SENDER" \
-      EmailRecipient="$EMAIL_RECIPIENT" \
-      ApiServicesUrl="$API_SERVICES_URL" \
-      ApiOrganizationsUrl="$API_ORGS_URL" \
-      CloudfrontDistributionId="$CLOUDFRONT_ID" \
-      WkhtmltopdfPath="$WKHTMLTOPDF_PATH" \
+  --parameter-overrides "${PARAM_OVERRIDES[@]}" \
   --region "$REGION" \
   $PROFILE_ARG \
   --no-fail-on-empty-changeset
@@ -144,5 +147,5 @@ echo "  email/recipient            -> ${EMAIL_RECIPIENT:-<empty>}"
 echo "  api/services/url           -> ${API_SERVICES_URL:-<empty>}"
 echo "  api/organizations/url      -> ${API_ORGS_URL:-<empty>}"
 echo "  cloudfront/distribution/id -> ${CLOUDFRONT_ID:-<skipped>}"
-echo "  path/to/wkhtmltopdf        -> ${WKHTMLTOPDF_PATH:-<skipped, default used>}"
+echo "  path/to/wkhtmltopdf        -> ${WKHTMLTOPDF_PATH:-/usr/local/bin/wkhtmltopdf (default)}"
 echo "============================================"
