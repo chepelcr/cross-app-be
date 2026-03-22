@@ -13,7 +13,7 @@ SERVICES = ["backend"]
 
 SKIP_PREFIXES = ("/health", "/docs", "/openapi.json", "/redoc")
 COGNITO_ARN_EXPORT = "jmarkets-cognito-UserPoolArn"
-REQUIRE_AUTH = False
+REQUIRE_AUTH = True
 HTTP_METHODS = ("get", "post", "put", "patch", "delete")
 I = [""] + ["  " * n for n in range(1, 12)]   # indentation levels
 

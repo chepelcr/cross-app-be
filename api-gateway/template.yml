@@ -96,6 +96,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -128,6 +130,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -185,6 +189,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -222,6 +228,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -259,6 +267,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -290,6 +300,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -357,6 +369,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -389,6 +403,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -446,6 +462,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -483,6 +501,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -520,6 +540,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -592,6 +614,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -629,6 +653,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -691,6 +717,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -733,6 +761,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -775,6 +805,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -811,6 +843,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -883,6 +917,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -920,6 +956,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -983,6 +1021,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1045,6 +1085,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1087,6 +1129,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1129,6 +1173,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1191,6 +1237,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1253,6 +1301,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1285,6 +1335,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1342,6 +1394,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1379,6 +1433,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1441,6 +1497,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1504,6 +1562,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1571,6 +1631,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1629,6 +1691,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1686,6 +1750,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1723,6 +1789,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1786,6 +1854,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1849,6 +1919,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1916,6 +1988,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -1948,6 +2022,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -2006,6 +2082,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -2063,6 +2141,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -2100,6 +2180,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
@@ -2163,6 +2245,8 @@ Resources:
                   description: Bad Request
                 '404':
                   description: Not Found
+              security:
+                - CognitoAuthorizer: []
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
