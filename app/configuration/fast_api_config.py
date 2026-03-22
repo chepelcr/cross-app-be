@@ -30,6 +30,7 @@ class FastApiConfig:
             docs_url="/docs",
             redoc_url=None,
             openapi_url="/openapi.json",
+            redirect_slashes=False,
         )
 
         return app
