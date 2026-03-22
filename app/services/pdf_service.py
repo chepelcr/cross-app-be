@@ -8,6 +8,7 @@ import pdfkit
 from jinja2 import Environment, FileSystemLoader
 
 from app.configuration.app_config import AppConfig
+from app.enums.report_color import get_color_palette
 from app.models.order import Order
 
 logger = logging.getLogger(__name__)
@@ -18,6 +19,16 @@ def _format_currency(value) -> str:
         return f"{float(value):,.2f}"
     except (TypeError, ValueError):
         return "0.00"
+
+
+def _get_code_from_array(codes: list, code_type: str) -> str:
+    """Extract code number from codes array by type."""
+    if not codes:
+        return ""
+    for code in codes:
+        if isinstance(code, dict) and code.get("codeTypeId") == code_type:
+            return code.get("number", "")
+    return ""
 
 
 # Jinja2 setup
@@ -41,9 +52,13 @@ def render_order_html(order: Order) -> str:
     lines = []
     for ln in lines_data:
         p = ln.product
+        # Extract codes from JSONB array
+        internal_code = _get_code_from_array(p.codes if p else [], "04")
+        code = _get_code_from_array(p.codes if p else [], "03")
+        
         lines.append({
-            "internal_code": (p.internal_code if p else "") or "",
-            "code": (p.code if p else "") or "",
+            "internal_code": internal_code,
+            "code": code,
             "description": (p.description if p else "") or "",
             "quantity_ordered": ln.quantity_ordered or 0,
             "units_ordered": ln.units_ordered or 0,
@@ -64,13 +79,15 @@ def render_order_html(order: Order) -> str:
     dept_code = (dept.department_code if dept else "") or ""
     dept_name = (dept.name if dept else "") or ""
     # vendor number (NUM_VENDEDOR) lives on the department
-    supplier_internal_code = (dept.supplier_code if dept else "") or (org.internal_code if org else "") or ""
+    supplier_internal_code = (dept.supplier_code if dept else "") or ""
     department_value = f"{dept_code} - {dept_name}" if dept_code and dept_name else dept_code
 
     store = order.deliver_to_store
     if store:
-        deliver_to = f"{store.store_code} {store.store_name}"
+        deliver_to = f"{store.store_code} - {store.store_name}"
         deliver_to_gln = store.gln or ""
+        if deliver_to_gln:
+            deliver_to += f" - {deliver_to_gln}"
     else:
         deliver_to = ""
         deliver_to_gln = ""
@@ -194,7 +211,7 @@ def create_order_pdf(order: Order) -> str:
     return upload_file_to_s3(pdf_bytes, key)
 
 
-def render_crossdocking_html(order: Order, crossdocking_data) -> str:
+def render_crossdocking_html(order: Order, crossdocking_data, color=None) -> str:
     """Render the crossdocking distribution PDF template."""
     sale_points = crossdocking_data.sale_points
     item_summary = crossdocking_data.item_summary
@@ -240,13 +257,15 @@ def render_crossdocking_html(order: Order, crossdocking_data) -> str:
     dept_code = (dept.department_code if dept else "") or ""
     dept_name = (dept.name if dept else "") or ""
     # vendor number (NUM_VENDEDOR) lives on the department
-    supplier_internal_code = (dept.supplier_code if dept else "") or (org.internal_code if org else "") or ""
+    supplier_internal_code = (dept.supplier_code if dept else "") or ""
     department_value = f"{dept_code} - {dept_name}" if dept_code and dept_name else dept_code
 
     store = order.deliver_to_store
     if store:
-        deliver_to = f"{store.store_code} {store.store_name}"
+        deliver_to = f"{store.store_code} - {store.store_name}"
         deliver_to_gln = store.gln or ""
+        if deliver_to_gln:
+            deliver_to += f" - {deliver_to_gln}"
     else:
         deliver_to = ""
         deliver_to_gln = ""
@@ -267,6 +286,7 @@ def render_crossdocking_html(order: Order, crossdocking_data) -> str:
         "total_boxes_all": total_boxes_all,
         "faltantes_parciales": faltantes_parciales,
         "faltantes_completos": faltantes_completos,
+        "colors": get_color_palette(color),
     }
 
     template = _jinja_env.get_template("crossdocking.html")
@@ -289,9 +309,9 @@ def download_from_s3(url: str) -> bytes:
     return response["Body"].read()
 
 
-def create_crossdocking_pdf(order: Order, crossdocking_data) -> str:
+def create_crossdocking_pdf(order: Order, crossdocking_data, color=None) -> str:
     """Generate crossdocking distribution PDF and upload to S3."""
-    html = render_crossdocking_html(order, crossdocking_data)
+    html = render_crossdocking_html(order, crossdocking_data, color)
     pdf_bytes = generate_pdf(
         html,
         header_left=datetime.now().strftime("%d/%m/%Y"),

@@ -17,17 +17,32 @@ from app.models.order import Order
 from app.utils.crossdocking_utils import build_summaries
 
 
+def _get_code_from_array(codes: list, code_type: str) -> str:
+    """Extract code number from codes array by type."""
+    if not codes:
+        return ""
+    for code in codes:
+        if isinstance(code, dict) and code.get("codeTypeId") == code_type:
+            return code.get("number", "")
+    return ""
+
+
 def order_to_response(order: Order) -> OrderResponse:
     """Map an Order entity to an OrderResponse DTO."""
     lines = []
     for ln in (order.lines or []):
         p = ln.product
+        # Extract codes from JSONB array
+        internal_code = _get_code_from_array(p.codes if p else [], "04")
+        code = _get_code_from_array(p.codes if p else [], "03")
+        client_article_code = _get_code_from_array(p.codes if p else [], "02")
+        
         lines.append(
             OrderDetailLineResponse(
                 line_number=ln.line_number or 0,
-                internal_code=(p.internal_code if p else "") or "",
-                code=(p.code if p else "") or "",
-                client_article_code=(p.client_article_code if p else "") or "",
+                internal_code=internal_code,
+                code=code,
+                client_article_code=client_article_code,
                 description=(p.description if p else "") or "",
                 units_per_box=(p.units_per_box if p else 0) or 0,
                 quantity_ordered=ln.quantity_ordered or 0,
@@ -86,6 +101,7 @@ def order_to_response(order: Order) -> OrderResponse:
         delivery_location_dto = LocationDTO(
             code=order.deliver_to_store.store_code,
             name=order.deliver_to_store.store_name,
+            gln=order.deliver_to_store.gln,
             latitude=order.latitude,
             longitude=order.longitude,
         )
@@ -164,10 +180,14 @@ def build_crossdocking_data(order: Order) -> CrossDockingData:
         items = []
         for it in (sp.items or []):
             p = it.product
+            # Extract codes from JSONB array
+            internal_code = _get_code_from_array(p.codes if p else [], "04")
+            original_code = _get_code_from_array(p.codes if p else [], "01")
+            
             items.append(
                 ItemResponse(
-                    internal_code=(p.internal_code if p else "") or "",
-                    original_code=(p.original_code if p else "") or "",
+                    internal_code=internal_code,
+                    original_code=original_code,
                     description=(p.description if p else "") or "",
                     quantity=it.quantity or 0,
                     units_per_box=(p.units_per_box if p else 0) or 0,

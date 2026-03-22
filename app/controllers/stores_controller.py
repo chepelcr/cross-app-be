@@ -4,7 +4,7 @@ from typing import Annotated, Optional
 
 from fastapi import Body, FastAPI, HTTPException, Path, Query
 
-from app.dtos import ExcelFileDTO
+from app.dtos.files import ExcelDTO
 from app.dtos.requests.status_request_dto import StatusRequestDTO
 from app.dtos.requests.store_request_dto import StoreRequestDTO
 from app.dtos.responses.store_dto import StoreListResponse, StoreResponse
@@ -94,7 +94,7 @@ class StoresController:
         async def upload_stores(
             organization_id: Annotated[str, Path(description="Organization identifier")],
             client_id: Annotated[str, Path(description="Client UUID")],
-            body: ExcelFileDTO = Body(...),
+            body: ExcelDTO = Body(...),
         ):
             try:
                 count = store_service.upload_stores_excel(

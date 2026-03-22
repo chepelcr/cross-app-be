@@ -1,0 +1,183 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  JCAMPOS Cross-Docking Backend Services - SSM Parameters.
+  Single resource per parameter; environment encoded in the path via !Sub.
+  Path prefix: /jcampos/{env}/cd-backend  (matches app/settings.cfg ssmpath).
+  DB credentials are NOT here — they live in Secrets Manager under
+  jcampos/{env}/database, shared with other services.
+
+# ---------------------------------------------------------------------------
+# Parameters
+# ---------------------------------------------------------------------------
+Parameters:
+
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, stag, prod]
+    Description: Deployment environment
+
+  S3Bucket:
+    Type: String
+    Description: S3 bucket name for file uploads
+    Default: ""
+
+  PdfDomain:
+    Type: String
+    Description: Public domain for serving PDF/file URLs (e.g. https://jmarkets-uploads.jcampos.dev)
+    Default: ""
+
+  EmailSender:
+    Type: String
+    Description: SES verified sender address
+    Default: ""
+
+  EmailRecipient:
+    Type: String
+    Description: Default email recipient
+    Default: ""
+
+  ApiServicesUrl:
+    Type: String
+    Description: Internal services API base URL
+    Default: ""
+
+  ApiOrganizationsUrl:
+    Type: String
+    Description: Organizations API URL template (e.g. /api/organizations/%s)
+    Default: ""
+
+  # ── Optional parameters (guarded by Conditions) ───────────────────────
+  CloudfrontDistributionId:
+    Type: String
+    Description: CloudFront distribution ID for cache invalidation (optional)
+    Default: ""
+
+  WkhtmltopdfPath:
+    Type: String
+    Description: Absolute path to wkhtmltopdf binary (optional — defaults to /usr/local/bin/wkhtmltopdf)
+    Default: ""
+
+# ---------------------------------------------------------------------------
+# Conditions — skip optional params when no value is provided
+# ---------------------------------------------------------------------------
+Conditions:
+  HasCloudfrontDistributionId: !Not [!Equals [!Ref CloudfrontDistributionId, ""]]
+  HasWkhtmltopdfPath:          !Not [!Equals [!Ref WkhtmltopdfPath, ""]]
+
+# ---------------------------------------------------------------------------
+# Resources  — one SSM parameter per entry
+# ---------------------------------------------------------------------------
+Resources:
+
+  # /jcampos/{env}/cd-backend/aws/stage
+  AwsStage:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/jcampos/${Environment}/cd-backend/aws/stage"
+      Type: String
+      Value: !Ref Environment
+      Description: !Sub "Deployment stage for Cross-Docking Backend (${Environment})"
+
+  # /jcampos/{env}/cd-backend/aws/region
+  AwsRegion:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/jcampos/${Environment}/cd-backend/aws/region"
+      Type: String
+      Value: !Ref AWS::Region
+      Description: AWS region
+
+  # /jcampos/{env}/cd-backend/aws/database
+  # Points to the shared Secrets Manager secret name (same secret used by data-services)
+  AwsDatabase:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/jcampos/${Environment}/cd-backend/aws/database"
+      Type: String
+      Value: !Sub "jcampos/${Environment}/database"
+      Description: Shared Secrets Manager secret name for database credentials
+
+  # /jcampos/{env}/cd-backend/s3/bucket
+  S3BucketParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/jcampos/${Environment}/cd-backend/s3/bucket"
+      Type: String
+      Value: !Ref S3Bucket
+      Description: S3 bucket for file uploads
+
+  # /jcampos/{env}/cd-backend/pdf/domain
+  PdfDomainParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/jcampos/${Environment}/cd-backend/pdf/domain"
+      Type: String
+      Value: !Ref PdfDomain
+      Description: Public domain for serving PDF/file URLs
+
+  # /jcampos/{env}/cd-backend/email/sender
+  EmailSenderParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/jcampos/${Environment}/cd-backend/email/sender"
+      Type: String
+      Value: !Ref EmailSender
+      Description: SES verified sender address
+
+  # /jcampos/{env}/cd-backend/email/recipient
+  EmailRecipientParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/jcampos/${Environment}/cd-backend/email/recipient"
+      Type: String
+      Value: !Ref EmailRecipient
+      Description: Default email recipient
+
+  # /jcampos/{env}/cd-backend/api/services/url
+  ApiServicesUrlParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/jcampos/${Environment}/cd-backend/api/services/url"
+      Type: String
+      Value: !Ref ApiServicesUrl
+      Description: Internal services API base URL
+
+  # /jcampos/{env}/cd-backend/api/organizations/url
+  ApiOrganizationsUrlParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/jcampos/${Environment}/cd-backend/api/organizations/url"
+      Type: String
+      Value: !Ref ApiOrganizationsUrl
+      Description: Organizations API URL template
+
+  # /jcampos/{env}/cd-backend/cloudfront/distribution/id  (optional)
+  CloudfrontDistributionIdParam:
+    Type: AWS::SSM::Parameter
+    Condition: HasCloudfrontDistributionId
+    Properties:
+      Name: !Sub "/jcampos/${Environment}/cd-backend/cloudfront/distribution/id"
+      Type: String
+      Value: !Ref CloudfrontDistributionId
+      Description: CloudFront distribution ID for cache invalidation
+
+  # /jcampos/{env}/cd-backend/path/to/wkhtmltopdf  (optional)
+  WkhtmltopdfPathParam:
+    Type: AWS::SSM::Parameter
+    Condition: HasWkhtmltopdfPath
+    Properties:
+      Name: !Sub "/jcampos/${Environment}/cd-backend/path/to/wkhtmltopdf"
+      Type: String
+      Value: !Ref WkhtmltopdfPath
+      Description: Absolute path to wkhtmltopdf binary
+
+# ---------------------------------------------------------------------------
+# Outputs
+# ---------------------------------------------------------------------------
+Outputs:
+  SsmBasePath:
+    Description: SSM base path for all Cross-Docking Backend parameters
+    Value: !Sub "/jcampos/${Environment}/cd-backend"
+    Export:
+      Name: !Sub "jcampos-${Environment}-cd-backend-ssm-base-path"

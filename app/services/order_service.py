@@ -3,7 +3,9 @@ from __future__ import annotations
 import logging
 from io import BytesIO
 
-from app.dtos import ExcelFileDTO, OrderListResponse, OrderResponse
+from app.dtos.files import ExcelDTO, ExcelAndColorDTO
+from app.dtos import OrderListResponse, OrderResponse, SelectColorDTO
+from app.enums.report_color import ReportColorScheme, get_color_palette
 from app.dtos.responses.order_dto import PaginationResponse
 from app.mappers.orders_mapper import build_crossdocking_data, order_to_response
 from app.models.crossdocking_item import CrossDockingItem
@@ -16,6 +18,7 @@ from app.repositories.order_repository import OrderRepository
 from app.repositories.organization_repository import OrganizationRepository
 from app.repositories.product_repository import ProductRepository
 from app.repositories.store_repository import StoreRepository
+from app.enums.search_filters import SearchFilters
 from app.utils.search_utils import SearchUtils
 from app.services.excel_export_service import create_nuevo_reporte
 from app.services.excel_parser import parse_crossdocking_file
@@ -31,13 +34,28 @@ from app.utils.crossdocking_utils import decode_excel_file
 
 logger = logging.getLogger(__name__)
 
+_DEPT_COLOR_MAP = {
+    "26": ReportColorScheme.GREEN_ALT.value,
+    "22": ReportColorScheme.ORANGE.value,
+}
+
+
+def _default_color_for_order(order: Order) -> str:
+    """Return the default color scheme based on department code."""
+    dept = order.department_rel
+    if dept:
+        code = (dept.department_code or "").strip()
+        if code in _DEPT_COLOR_MAP:
+            return _DEPT_COLOR_MAP[code]
+    return ReportColorScheme.GREEN.value
+
 EXCEL_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 def _sync_organization(org_repo: OrganizationRepository, organization_id: str, parsed) -> None:
     """Upsert organization from parsed data."""
-    supplier_name = getattr(parsed, "supplier_name", None) or ""
-    supplier_gln = getattr(parsed, "supplier_gln", None) or ""
+    supplier_name = parsed.supplier_name if hasattr(parsed, "supplier_name") else ""
+    supplier_gln = parsed.supplier_gln if hasattr(parsed, "supplier_gln") else ""
     
     org_repo.upsert(
         organization_id=organization_id,
@@ -46,7 +64,7 @@ def _sync_organization(org_repo: OrganizationRepository, organization_id: str, p
     )
 
 
-def process_order_excel(organization_id: str, body: ExcelFileDTO) -> OrderResponse:
+def process_order_excel(organization_id: str, body: ExcelDTO) -> OrderResponse:
     """Decode Excel, parse DETALLES, save order to DB, generate PDF, and return OrderResponse."""
     file = decode_excel_file(body)
     excel_bytes = file.getvalue()
@@ -174,7 +192,7 @@ def process_order_excel(organization_id: str, body: ExcelFileDTO) -> OrderRespon
 
 
 def process_crossdocking_excel(
-    organization_id: str, document_number: str, body: ExcelFileDTO
+    organization_id: str, document_number: str, body: ExcelAndColorDTO
 ) -> OrderResponse:
     """Decode Excel, parse crossdocking, validate, update sale points on existing order."""
     file = decode_excel_file(body)
@@ -207,6 +225,11 @@ def process_crossdocking_excel(
 
         _apply_crossdocking_data(order, parsed, organization_id, store_repo, product_repo)
         order.order_status = "processing"
+
+        # Store selected color (default by department if not specified)
+        color = body.color or _default_color_for_order(order)
+        order.report_color = color.value if isinstance(color, ReportColorScheme) else str(color)
+
         order = repo.save(order)
 
         # Upload original crossdocking Excel to S3
@@ -218,7 +241,7 @@ def process_crossdocking_excel(
             logger.warning(f"Crossdocking Excel upload failed: {e}")
 
         # Generate crossdocking PDF and NuevoReporte Excel
-        _generate_crossdocking_outputs(order)
+        _generate_crossdocking_outputs(order, color)
 
         order = repo.save(order)
         return order_to_response(order)
@@ -247,7 +270,9 @@ def get_order(organization_id: str, document_number: str) -> OrderResponse:
         if order.crossdocking_sale_points and not order.crossdocking_pdf_url:
             try:
                 crossdocking_data = build_crossdocking_data(order)
-                cd_pdf_url = create_crossdocking_pdf(order, crossdocking_data)
+                cd_pdf_url = create_crossdocking_pdf(
+                    order, crossdocking_data, order.report_color
+                )
                 order.crossdocking_pdf_url = cd_pdf_url
                 order = repo.save(order)
                 logger.info(f"Generated missing crossdocking PDF: {cd_pdf_url}")
@@ -257,7 +282,7 @@ def get_order(organization_id: str, document_number: str) -> OrderResponse:
         if order.crossdocking_sale_points and not order.nuevo_reporte_url:
             try:
                 crossdocking_data = build_crossdocking_data(order)
-                nr_url = create_nuevo_reporte(order, crossdocking_data)
+                nr_url = create_nuevo_reporte(order, crossdocking_data, order.report_color)
                 order.nuevo_reporte_url = nr_url
                 order = repo.save(order)
                 logger.info(f"Generated missing NuevoReporte: {nr_url}")
@@ -267,7 +292,7 @@ def get_order(organization_id: str, document_number: str) -> OrderResponse:
         return order_to_response(order)
 
 
-def reprocess_order(organization_id: str, document_number: str) -> OrderResponse:
+def reprocess_order(organization_id: str, document_number: str, color=None) -> OrderResponse:
     """Re-download and re-parse order + crossdocking Excel files, regenerate all outputs."""
     with OrderRepository() as repo:
         order = repo.find_by_company_and_document(organization_id, document_number)
@@ -303,11 +328,22 @@ def reprocess_order(organization_id: str, document_number: str) -> OrderResponse
             except Exception as e:
                 logger.warning(f"Failed to re-parse order Excel for {document_number}: {e}")
 
+        # Resolve color: use provided color, or fall back to stored value
+        if color is not None:
+            resolved_color = color.value if isinstance(color, ReportColorScheme) else str(color)
+            order.report_color = resolved_color
+        resolved_color = order.report_color or _default_color_for_order(order)
+
         # Regenerate order PDF
         try:
+            # Ensure all relationships are loaded fresh from database
+            repo.session.expire_all()
+            order = repo.find_by_company_and_document(organization_id, document_number)
             order.pdf_url = create_order_pdf(order)
+            order = repo.save(order)
+            logger.info(f"Order PDF regenerated for {document_number}")
         except Exception as e:
-            logger.warning(f"Order PDF regeneration failed for {document_number}: {e}")
+            logger.error(f"Order PDF regeneration failed for {document_number}: {e}", exc_info=True)
 
         # Re-parse crossdocking Excel if stored
         if order.crossdocking_excel_url:
@@ -321,7 +357,7 @@ def reprocess_order(organization_id: str, document_number: str) -> OrderResponse
             except Exception as e:
                 logger.warning(f"Failed to re-parse crossdocking Excel for {document_number}: {e}")
 
-            _generate_crossdocking_outputs(order)
+            _generate_crossdocking_outputs(order, resolved_color)
 
         order = repo.save(order)
         return order_to_response(order)
@@ -338,7 +374,7 @@ def get_orders(
     order_by = None
 
     if search:
-        filters, order_result = SearchUtils.parse_search_filter(search, Order)
+        filters, order_result = SearchUtils.parse_search_filter(search, Order, SearchFilters)
         if filters:
             search_filters = filters
         if order_result:
@@ -518,18 +554,19 @@ def _apply_crossdocking_data(
         order.crossdocking_sale_points.append(sp)
 
 
-def _generate_crossdocking_outputs(order: Order) -> None:
+def _generate_crossdocking_outputs(order: Order, color=None) -> None:
     """Generate crossdocking PDF and NuevoReporte Excel for an order."""
+    resolved_color = color or order.report_color or _default_color_for_order(order)
     crossdocking_data = build_crossdocking_data(order)
     try:
-        cd_pdf_url = create_crossdocking_pdf(order, crossdocking_data)
+        cd_pdf_url = create_crossdocking_pdf(order, crossdocking_data, resolved_color)
         order.crossdocking_pdf_url = cd_pdf_url
         logger.info(f"Crossdocking PDF generated: {cd_pdf_url}")
     except Exception as e:
         logger.warning(f"Crossdocking PDF generation failed: {e}")
 
     try:
-        nr_url = create_nuevo_reporte(order, crossdocking_data)
+        nr_url = create_nuevo_reporte(order, crossdocking_data, resolved_color)
         order.nuevo_reporte_url = nr_url
         logger.info(f"NuevoReporte generated: {nr_url}")
     except Exception as e:

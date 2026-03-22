@@ -7,7 +7,7 @@ import uuid
 
 import openpyxl
 
-from app.dtos import ExcelFileDTO
+from app.dtos.files import ExcelDTO
 from app.dtos.requests.store_request_dto import StoreRequestDTO
 from app.dtos.responses.pagination_dto import PaginationResponse
 from app.dtos.responses.store_dto import StoreListResponse, StoreResponse
@@ -141,7 +141,7 @@ def update_store_status(
     return _map_store(store)
 
 
-def upload_stores_excel(company_id: str, client_id_str: str, body: ExcelFileDTO) -> int:
+def upload_stores_excel(company_id: str, client_id_str: str, body: ExcelDTO) -> int:
     """Upload stores from an Excel file. Returns count of upserted records."""
     file = decode_excel_file(body)
     client_id = uuid.UUID(client_id_str)

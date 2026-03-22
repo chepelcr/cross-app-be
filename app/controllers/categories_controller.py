@@ -58,6 +58,11 @@ class CategoriesController:
             status_code=201,
             tags=["categories"],
             summary="Create a new category",
+            description="""Create a new category for an organization.
+
+Optional `image1` and `image2` fields can be included with base64-encoded image data.
+Supported image formats: PNG, JPEG, GIF, WEBP. Max size: 5MB per image.
+""",
         )
         async def create_category(
             organization_id: Annotated[str, Path(description="Organization identifier")],
@@ -75,6 +80,11 @@ class CategoriesController:
             response_model=CategoryResponse,
             tags=["categories"],
             summary="Update an existing category",
+            description="""Update a category. Only provided fields are updated.
+
+Optional `image1` and `image2` fields can be included with base64-encoded image data.
+Supported image formats: PNG, JPEG, GIF, WEBP. Max size: 5MB per image.
+""",
         )
         async def update_category(
             organization_id: Annotated[str, Path(description="Organization identifier")],

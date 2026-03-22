@@ -4,6 +4,7 @@ from io import BytesIO
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
+from app.enums.report_color import get_color_palette
 from app.models.order import Order
 from app.services.pdf_service import _s3_key, upload_file_to_s3
 
@@ -21,7 +22,6 @@ COLUMNS = [
 ]
 
 HEADER_FONT = Font(bold=True, size=10, color="FFFFFF")
-HEADER_FILL = PatternFill(start_color="0E5C23", end_color="0E5C23", fill_type="solid")
 HEADER_ALIGNMENT = Alignment(horizontal="center", vertical="center", wrap_text=True)
 THIN_BORDER = Border(
     left=Side(style="thin"),
@@ -31,8 +31,15 @@ THIN_BORDER = Border(
 )
 
 
-def generate_nuevo_reporte(order: Order, crossdocking_data) -> bytes:
+def generate_nuevo_reporte(order: Order, crossdocking_data, color=None) -> bytes:
     """Generate NuevoReporte Excel workbook from crossdocking data."""
+    palette = get_color_palette(color)
+    header_fill = PatternFill(
+        start_color=palette["excel_header"],
+        end_color=palette["excel_header"],
+        fill_type="solid",
+    )
+
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "NuevoReporte"
@@ -41,7 +48,7 @@ def generate_nuevo_reporte(order: Order, crossdocking_data) -> bytes:
     for col_idx, (name, width) in enumerate(COLUMNS, start=1):
         cell = ws.cell(row=1, column=col_idx, value=name)
         cell.font = HEADER_FONT
-        cell.fill = HEADER_FILL
+        cell.fill = header_fill
         cell.alignment = HEADER_ALIGNMENT
         cell.border = THIN_BORDER
         ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = width
@@ -78,9 +85,9 @@ def generate_nuevo_reporte(order: Order, crossdocking_data) -> bytes:
     return buf.getvalue()
 
 
-def create_nuevo_reporte(order: Order, crossdocking_data) -> str:
+def create_nuevo_reporte(order: Order, crossdocking_data, color=None) -> str:
     """Generate NuevoReporte Excel and upload to S3."""
-    excel_bytes = generate_nuevo_reporte(order, crossdocking_data)
+    excel_bytes = generate_nuevo_reporte(order, crossdocking_data, color)
     last4 = (order.document_number or "")[-4:]
     key = _s3_key(order.company_id, order.document_number, f"{last4}-RN.xlsx")
     url = upload_file_to_s3(

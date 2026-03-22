@@ -1,4 +1,5 @@
-from app.dtos.requests.excel_file_dto import ExcelFileDTO
+from app.dtos.files import ExcelDTO
+from app.dtos.requests.select_color_dto import SelectColorDTO
 from app.dtos.requests.confirmation_request_dto import (
     CreateConfirmationDTO,
     UpdateConfirmationDTO,
@@ -30,7 +31,8 @@ from app.dtos.responses.order_dto import (
 )
 
 __all__ = [
-    "ExcelFileDTO",
+    "ExcelDTO",
+    "SelectColorDTO",
     "CreateConfirmationDTO",
     "UpdateConfirmationDTO",
     "ConfirmationOrderSummary",

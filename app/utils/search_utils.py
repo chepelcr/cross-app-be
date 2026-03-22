@@ -7,7 +7,7 @@ from typing import Any, Optional, Type
 from sqlalchemy import and_, or_, asc, desc
 from sqlalchemy.orm import InstrumentedAttribute
 
-from app.enums.search_filters import SearchFilters
+from app.enums.base_search_filter import BaseSearchFilter
 from app.enums.search_operations import (
     SearchOperations,
     SIMPLE_OPERATION_SET,
@@ -26,24 +26,26 @@ class SearchCriteria:
     is_join_field: bool = False
     join_field: Optional[str] = None
     entity_field: Optional[str] = None
-    search_filter: Optional[SearchFilters] = None
+    search_filter: Optional[BaseSearchFilter] = None
+    filter_enum_class: Type[BaseSearchFilter] = None
 
     def __post_init__(self) -> None:
-        search_filter = SearchFilters.get_filter_by_json_field(self.field)
-        if search_filter:
-            self.search_filter = search_filter
-            self.is_join_field = search_filter.is_join_field
-            self.join_field = search_filter.join_field
-            self.entity_field = search_filter.entity_field
+        # Use the provided filter enum class, or skip if not provided
+        if self.filter_enum_class:
+            search_filter = self.filter_enum_class.get_filter_by_json_field(self.field)
+            if search_filter:
+                self.search_filter = search_filter
+                self.is_join_field = search_filter.is_join_field
+                self.join_field = search_filter.join_field
+                self.entity_field = search_filter.entity_field
+            else:
+                self.entity_field = self.field
         else:
             self.entity_field = self.field
 
 
 class SearchUtils:
     _ORDER_BY_PATTERN = re.compile(r"orderBy([<>])([a-zA-Z_][a-zA-Z0-9_]*)")
-
-    # Text fields that always use case-insensitive LIKE
-    ALWAYS_LIKE_FIELDS = {"documentNumber", "clientName", "supplierName", "deliverToName", "confirmationNumber"}
 
     # Fields valid for orderBy (only direct columns, not join fields)
     SORTABLE_FIELDS = {
@@ -65,10 +67,7 @@ class SearchUtils:
     }
 
     @classmethod
-    def parse_search_filter(cls, search: str, entity_class: Type, filter_enum_class: Type = None) -> tuple:
-        if filter_enum_class is None:
-            filter_enum_class = SearchFilters
-
+    def parse_search_filter(cls, search: str, entity_class: Type, filter_enum_class: Type[BaseSearchFilter] = None) -> tuple:
         if not search or not search.strip():
             return [], None
 
@@ -145,10 +144,7 @@ class SearchUtils:
         return tokens
 
     @classmethod
-    def _parse_criteria(cls, token: str, filter_enum_class: Type = None) -> Optional[SearchCriteria]:
-        if filter_enum_class is None:
-            filter_enum_class = SearchFilters
-
+    def _parse_criteria(cls, token: str, filter_enum_class: Type[BaseSearchFilter] = None) -> Optional[SearchCriteria]:
         if not token:
             return None
 
@@ -162,17 +158,19 @@ class SearchUtils:
                     if operation:
                         # Check for BETWEEN range separator in value
                         if BETWEEN_RANGE_SEPARATOR in value:
-                            search_filter = filter_enum_class.get_filter_by_json_field(field)
-                            if search_filter and search_filter.allows_between:
-                                if operation == SearchOperations.NEGATION:
-                                    operation = SearchOperations.NEGATION_BETWEEN
-                                else:
-                                    operation = SearchOperations.BETWEEN
-                                return SearchCriteria(
-                                    field=field,
-                                    operation=operation,
-                                    value=value,
-                                )
+                            if filter_enum_class:
+                                search_filter = filter_enum_class.get_filter_by_json_field(field)
+                                if search_filter and search_filter.allows_between:
+                                    if operation == SearchOperations.NEGATION:
+                                        operation = SearchOperations.NEGATION_BETWEEN
+                                    else:
+                                        operation = SearchOperations.BETWEEN
+                                    return SearchCriteria(
+                                        field=field,
+                                        operation=operation,
+                                        value=value,
+                                        filter_enum_class=filter_enum_class,
+                                    )
 
                         operation, value = cls._process_wildcard_value(operation, value)
                         converted_value = cls._convert_value(value)
@@ -180,6 +178,7 @@ class SearchUtils:
                             field=field,
                             operation=operation,
                             value=converted_value,
+                            filter_enum_class=filter_enum_class,
                         )
         return None
 
@@ -187,21 +186,23 @@ class SearchUtils:
     def _process_wildcard_value(cls, operation: SearchOperations, value: str) -> tuple:
         if ZERO_OR_MORE_REGEX not in value:
             return operation, value
-        if operation != SearchOperations.EQUALITY:
-            return operation, value
 
-        starts = value.startswith(ZERO_OR_MORE_REGEX)
-        ends = value.endswith(ZERO_OR_MORE_REGEX)
-        processed = value.strip(ZERO_OR_MORE_REGEX)
+        # Value contains wildcards - convert to LIKE pattern
+        starts_with_wildcard = value.startswith(ZERO_OR_MORE_REGEX)
+        ends_with_wildcard = value.endswith(ZERO_OR_MORE_REGEX)
 
-        if starts and ends:
-            return SearchOperations.CONTAINS, processed
-        elif starts:
-            return SearchOperations.ENDS_WITH, processed
-        elif ends:
-            return SearchOperations.STARTS_WITH, processed
+        # Replace wildcards with SQL LIKE wildcards
+        processed_value = value.replace(ZERO_OR_MORE_REGEX, "%")
 
-        return SearchOperations.CONTAINS, processed
+        if starts_with_wildcard and ends_with_wildcard:
+            return SearchOperations.CONTAINS, processed_value
+        elif starts_with_wildcard:
+            return SearchOperations.ENDS_WITH, processed_value
+        elif ends_with_wildcard:
+            return SearchOperations.STARTS_WITH, processed_value
+
+        # Middle wildcards - use CONTAINS
+        return SearchOperations.CONTAINS, processed_value
 
     @classmethod
     def _convert_value(cls, value: str) -> Any:
@@ -224,41 +225,117 @@ class SearchUtils:
     @classmethod
     def _build_filter(cls, criteria: SearchCriteria, entity_class: Type):
         if criteria.is_join_field and criteria.join_field:
-            rel_name = criteria.entity_field or criteria.field
-            if not hasattr(entity_class, rel_name):
+            # Handle nested joins (e.g., "terminal.branch")
+            join_parts = criteria.join_field.split(".")
+            current_class = entity_class
+
+            for join_name in join_parts:
+                if not hasattr(current_class, join_name):
+                    return None
+                relationship_attr = getattr(current_class, join_name)
+                # Get the related class from the relationship
+                try:
+                    # Try newer SQLAlchemy API first
+                    if hasattr(relationship_attr.property, 'entity'):
+                        current_class = relationship_attr.property.entity.class_
+                    elif hasattr(relationship_attr.property, 'mapper'):
+                        current_class = relationship_attr.property.mapper.class_
+                    else:
+                        # Fallback: try to get from the relationship itself
+                        current_class = relationship_attr.property.argument
+                        if callable(current_class):
+                            current_class = current_class()
+                except AttributeError:
+                    return None
+
+            # current_class is now the final related class after all joins
+            related_class = current_class
+
+            # Get the field from the related class
+            field_name = criteria.entity_field or criteria.field
+            if not hasattr(related_class, field_name):
                 return None
-            relationship_attr = getattr(entity_class, rel_name)
-            target_model = relationship_attr.property.mapper.class_
-            if not hasattr(target_model, criteria.join_field):
-                return None
-            target_column = getattr(target_model, criteria.join_field)
-            inner_filter = cls._apply_operation(target_column, criteria.operation, criteria.value, criteria.field)
-            if inner_filter is not None:
-                return relationship_attr.has(inner_filter)
-            return None
+
+            target_column = getattr(related_class, field_name)
+            return cls._apply_operation(target_column, criteria.operation, criteria.value, criteria.field, criteria.search_filter)
 
         field_name = criteria.entity_field or criteria.field
+        
+        # Special handling for JSONB codes field in Product
+        if field_name == "codes" and criteria.field == "code":
+            return cls._build_codes_filter(entity_class, criteria.operation, criteria.value)
+        
         if not hasattr(entity_class, field_name):
             return None
         column: InstrumentedAttribute = getattr(entity_class, field_name)
-        return cls._apply_operation(column, criteria.operation, criteria.value, criteria.field)
+        return cls._apply_operation(column, criteria.operation, criteria.value, criteria.field, criteria.search_filter)
 
     @classmethod
-    def _apply_operation(cls, column, operation: SearchOperations, value: Any, field_name: Optional[str] = None):
-        # Ensure string comparison for VARCHAR columns
+    def _build_codes_filter(cls, entity_class: Type, operation: SearchOperations, value: Any):
+        """Build filter for JSONB codes array with format: code:01-123415 or code:123415"""
+        from sqlalchemy import cast, String, func
+        from sqlalchemy.dialects.postgresql import JSONB
+        
+        if not hasattr(entity_class, "codes"):
+            return None
+        
+        codes_column = getattr(entity_class, "codes")
+        value_str = str(value)
+        
+        # Check if value contains code type (format: 01-123415)
+        if "-" in value_str:
+            parts = value_str.split("-", 1)
+            code_type = parts[0].strip()
+            code_number = parts[1].strip()
+            
+            # Search for exact match with both codeTypeId and number
+            # JSONB query: codes @> '[{"codeTypeId": "01", "number": "123415"}]'
+            search_obj = [{"codeTypeId": code_type, "number": code_number}]
+            if operation == SearchOperations.EQUALITY:
+                return codes_column.op("@>")(cast(search_obj, JSONB))
+            elif operation == SearchOperations.NEGATION:
+                return ~codes_column.op("@>")(cast(search_obj, JSONB))
+        else:
+            # No code type specified, search all code types for the number
+            # Use jsonb_array_elements to expand array and check number field
+            if operation == SearchOperations.EQUALITY:
+                return codes_column.op("@>")(cast([{"number": value_str}], JSONB))
+            elif operation == SearchOperations.NEGATION:
+                return ~codes_column.op("@>")(cast([{"number": value_str}], JSONB))
+        
+        return None
+
+    @classmethod
+    def _apply_operation(cls, column, operation: SearchOperations, value: Any, field_name: Optional[str] = None, search_filter = None):
+        # Handle type conversions based on column type
         try:
             col_type = str(column.type)
+            
+            # Handle VARCHAR/TEXT columns - ensure value is string
             if "VARCHAR" in col_type.upper() or "TEXT" in col_type.upper() or "CHAR" in col_type.upper():
                 if value is not None and operation not in (SearchOperations.BETWEEN, SearchOperations.NEGATION_BETWEEN):
                     value = str(value)
+            
+            # Handle INTEGER columns - ensure value is integer (no boolean conversion for status)
+            elif "INTEGER" in col_type.upper():
+                if isinstance(value, str) and value.isdigit():
+                    value = int(value)
+                elif isinstance(value, bool):
+                    # Convert boolean to integer for backward compatibility
+                    value = 1 if value else 2
         except Exception:
             pass
 
-        # For ALWAYS_LIKE_FIELDS, convert EQUALITY to case-insensitive LIKE
-        if operation == SearchOperations.EQUALITY and field_name in cls.ALWAYS_LIKE_FIELDS:
+        # Check if field has always_like property set to True
+        always_like = False
+        if search_filter and hasattr(search_filter, 'always_like'):
+            always_like = search_filter.always_like
+
+        # For always_like fields, convert EQUALITY to case-insensitive LIKE
+        if operation == SearchOperations.EQUALITY and always_like:
             return column.ilike(f"%{value}%")
 
-        if operation == SearchOperations.NEGATION and field_name in cls.ALWAYS_LIKE_FIELDS:
+        if operation == SearchOperations.NEGATION and always_like:
             return ~column.ilike(f"%{value}%")
 
         if operation == SearchOperations.EQUALITY:
@@ -272,10 +349,19 @@ class SearchUtils:
         elif operation == SearchOperations.LIKE:
             return column.ilike(f"%{value}%")
         elif operation == SearchOperations.STARTS_WITH:
+            # Value already has % from wildcard processing
+            if isinstance(value, str) and "%" in value:
+                return column.ilike(value)
             return column.ilike(f"{value}%")
         elif operation == SearchOperations.ENDS_WITH:
+            # Value already has % from wildcard processing
+            if isinstance(value, str) and "%" in value:
+                return column.ilike(value)
             return column.ilike(f"%{value}")
         elif operation == SearchOperations.CONTAINS:
+            # Value already has % from wildcard processing
+            if isinstance(value, str) and "%" in value:
+                return column.ilike(value)
             return column.ilike(f"%{value}%")
         elif operation == SearchOperations.BETWEEN:
             if isinstance(value, str) and BETWEEN_RANGE_SEPARATOR in value:
@@ -297,10 +383,7 @@ class SearchUtils:
             return column == value
 
     @classmethod
-    def _parse_order_by(cls, token: str, entity_class: Type, filter_enum_class: Type = None):
-        if filter_enum_class is None:
-            filter_enum_class = SearchFilters
-
+    def _parse_order_by(cls, token: str, entity_class: Type, filter_enum_class: Type[BaseSearchFilter] = None):
         match = cls._ORDER_BY_PATTERN.match(token)
         if not match:
             return None
@@ -308,19 +391,30 @@ class SearchUtils:
         direction_char = match.group(1)
         field_name = match.group(2)
 
-        if field_name not in cls.SORTABLE_FIELDS:
-            raise ValueError(f"Cannot sort by field: {field_name}")
-
-        search_filter = filter_enum_class.get_filter_by_json_field(field_name)
-        if field_name in cls.SORTABLE_FIELD_MAP:
-            mapped = cls.SORTABLE_FIELD_MAP[field_name]
+        # Check if field exists in the filter enum
+        if filter_enum_class:
+            search_filter = filter_enum_class.get_filter_by_json_field(field_name)
+            
+            # If in filter enum, check if it's sortable
+            if search_filter:
+                if not hasattr(search_filter, 'sortable') or not search_filter.sortable:
+                    raise ValueError(f"Cannot sort by field: {field_name}")
+                entity_field_name = search_filter.entity_field
+            # Otherwise check global sortable fields (for backward compatibility)
+            elif field_name in cls.SORTABLE_FIELDS:
+                entity_field_name = cls.SORTABLE_FIELD_MAP.get(field_name, field_name)
+            else:
+                raise ValueError(f"Cannot sort by field: {field_name}")
         else:
-            mapped = field_name
+            # No filter enum provided, use global sortable fields
+            if field_name in cls.SORTABLE_FIELDS:
+                entity_field_name = cls.SORTABLE_FIELD_MAP.get(field_name, field_name)
+            else:
+                raise ValueError(f"Cannot sort by field: {field_name}")
 
-        entity_field_name = search_filter.entity_field if search_filter and search_filter.entity_field else mapped
-
+        # Check if the entity has this field
         if not hasattr(entity_class, entity_field_name):
-            return None
+            raise ValueError(f"Cannot sort by field: {field_name} (entity field: {entity_field_name} not found)")
 
         column = getattr(entity_class, entity_field_name)
         if direction_char == ">":

@@ -8,6 +8,8 @@ from sqlalchemy import asc, func, select, and_
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.configuration.database_connection import DatabaseConnection
+from app.enums.hacienda_codes import ProductCodeType
+from app.enums.product_status import ProductStatus
 from app.models.category import Category
 from app.models.product import Product
 
@@ -29,7 +31,7 @@ class ProductRepository(DatabaseConnection):
                     and_(
                         Product.id == product_id,
                         Product.organization_id == company_id,
-                        Product.is_active == True,
+                        Product.status != ProductStatus.DELETED,
                     )
                 )
             )
@@ -38,15 +40,60 @@ class ProductRepository(DatabaseConnection):
             logger.error(f"Error finding product {product_id} for company {company_id}: {e}", exc_info=True)
             raise
 
-    def find_by_company_and_internal_code(self, company_id: str, internal_code: str) -> Optional[Product]:
+    def find_by_company_and_code(
+        self, company_id: str, hacienda_code: str, code: str, exclude_product_id: Optional[str] = None
+    ) -> Optional[Product]:
+        """Find product by Hacienda code type and code number in JSONB codes array.
+        
+        Args:
+            company_id: Organization ID
+            hacienda_code: Code type (01, 02, 03, 04, 99)
+            code: Code number
+            exclude_product_id: Optional product ID to exclude from search (for update validation)
+        """
         try:
+            from sqlalchemy import cast
+            from sqlalchemy.dialects.postgresql import JSONB
+            
+            # Search for product with matching code in JSONB array
+            # codes @> '[{"codeTypeId": "01", "number": "123415"}]'
+            search_obj = [{"codeTypeId": hacienda_code, "number": code}]
+            
+            conditions = [
+                Product.organization_id == company_id,
+                Product.status != ProductStatus.DELETED,
+                Product.codes.op("@>")(cast(search_obj, JSONB)),
+            ]
+            
+            # Exclude current product when validating updates
+            if exclude_product_id:
+                conditions.append(Product.id != exclude_product_id)
+            
+            stmt = select(Product).where(and_(*conditions))
+            return self.session.execute(stmt).scalar_one_or_none()
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error finding product by code {hacienda_code}-{code} for company {company_id}: {e}",
+                exc_info=True,
+            )
+            raise
+
+    def find_by_company_and_internal_code(self, company_id: str, internal_code: str) -> Optional[Product]:
+        """Find product by internal code (type 04) in JSONB codes array."""
+        try:
+            from sqlalchemy import cast
+            from sqlalchemy.dialects.postgresql import JSONB
+            
+            # Search for product with internal code (type 04) in JSONB array
+            search_obj = [{"codeTypeId": ProductCodeType.INTERNAL, "number": internal_code}]
+            
             stmt = (
                 select(Product)
                 .where(
                     and_(
                         Product.organization_id == company_id,
-                        Product.internal_code == internal_code,
-                        Product.is_active == True,
+                        Product.status != ProductStatus.DELETED,
+                        Product.codes.op("@>")(cast(search_obj, JSONB)),
                     )
                 )
             )
@@ -69,26 +116,46 @@ class ProductRepository(DatabaseConnection):
         try:
             base_conditions = [
                 Product.organization_id == company_id,
-                Product.is_active == True,
-                Product.internal_code.isnot(None),
+                Product.status != ProductStatus.DELETED,
             ]
             if search_filters:
                 base_conditions.extend(search_filters)
 
             base_filter = and_(*base_conditions)
+            
+            # Check if we need to join with categories table
+            # This happens when search includes categoryName filter
+            needs_category_join = self._needs_category_join(search_filters)
 
-            # Count total
-            count_stmt = select(func.count()).select_from(Product).where(base_filter)
+            # Count total - use distinct if joining
+            if needs_category_join:
+                count_stmt = (
+                    select(func.count(func.distinct(Product.id)))
+                    .select_from(Product)
+                    .join(Category, Product.category_id == Category.id)
+                    .where(base_filter)
+                )
+            else:
+                count_stmt = select(func.count()).select_from(Product).where(base_filter)
+            
             total = self.session.execute(count_stmt).scalar() or 0
 
-            # Build query
-            stmt = select(Product).where(base_filter)
+            # Build query - use distinct if joining
+            if needs_category_join:
+                stmt = (
+                    select(Product)
+                    .distinct()
+                    .join(Category, Product.category_id == Category.id)
+                    .where(base_filter)
+                )
+            else:
+                stmt = select(Product).where(base_filter)
 
             # Apply sorting
             if order_by:
                 stmt = stmt.order_by(order_by[0])
             else:
-                stmt = stmt.order_by(asc(Product.internal_code))
+                stmt = stmt.order_by(asc(Product.name))
 
             # Apply pagination
             offset = (page - 1) * page_size
@@ -101,6 +168,19 @@ class ProductRepository(DatabaseConnection):
                 f"Error finding products for company {company_id}: {e}", exc_info=True
             )
             raise
+    
+    def _needs_category_join(self, search_filters: list | None) -> bool:
+        """Check if any search filter references the Category table."""
+        if not search_filters:
+            return False
+        
+        # Convert filters to string and check if Category is referenced
+        for filter_obj in search_filters:
+            filter_str = str(filter_obj)
+            if 'categories.name' in filter_str.lower() or 'category.name' in filter_str.lower():
+                return True
+        
+        return False
 
     def _ensure_default_category(self, company_id: str) -> str:
         """Ensure the default 'uncategorized' category exists for the org."""
@@ -133,22 +213,33 @@ class ProductRepository(DatabaseConnection):
         units_per_box: int = None,
         price: float = None,
     ) -> Product:
+        """Upsert product by internal code (type 04).
+        
+        Builds codes array from the provided code parameters.
+        """
         try:
             existing = self.find_by_company_and_internal_code(company_id, internal_code)
+
+            # Build codes array from parameters
+            codes_array = []
+            if internal_code:
+                codes_array.append({"codeTypeId": ProductCodeType.INTERNAL, "number": internal_code})
+            if original_code:
+                codes_array.append({"codeTypeId": ProductCodeType.VENDOR, "number": original_code})
+            if client_article_code:
+                codes_array.append({"codeTypeId": ProductCodeType.BUYER, "number": client_article_code})
+            if code:
+                codes_array.append({"codeTypeId": ProductCodeType.MANUFACTURER, "number": code})
 
             if existing:
                 if description is not None:
                     existing.description = description
-                if original_code is not None:
-                    existing.original_code = original_code
-                if client_article_code is not None:
-                    existing.client_article_code = client_article_code
-                if code is not None:
-                    existing.code = code
                 if units_per_box is not None:
                     existing.units_per_box = units_per_box
                 if price is not None and price > 0 and existing.price == 0:
                     existing.price = price
+                # Update codes array
+                existing.codes = codes_array
                 self.session.flush()
                 return existing
 
@@ -161,12 +252,9 @@ class ProductRepository(DatabaseConnection):
                 description=description or internal_code,
                 price=price if price is not None else 0,
                 category_id=category_id,
-                is_active=True,
-                internal_code=internal_code,
-                original_code=original_code,
-                client_article_code=client_article_code,
-                code=code,
+                status=ProductStatus.ACTIVE,
                 units_per_box=units_per_box,
+                codes=codes_array,
             )
             self.session.add(product)
             self.session.flush()

@@ -20,12 +20,14 @@
         .avoid-break { page-break-inside: avoid; }
 
         /* Color palette */
-        .hdr-dark { background: #0e5c23 !important; color: #fff !important; }
+        .hdr-dark { background: {{ colors.hdr_dark }} !important; color: #fff !important; }
         .hdr-dark th, .hdr-dark td { color: #fff !important; }
-        .hdr-med { background: #2e6b34 !important; color: #fff !important; }
+        .hdr-med { background: {{ colors.hdr_med }} !important; color: #fff !important; }
         .hdr-med td { color: #fff !important; }
-        .row-light { background: #d4edda !important; }
-        .row-alt { background: #e8f5e9 !important; }
+        .hdr-light { background: {{ colors.hdr_light }} !important; color: {{ colors.hdr_light_text }} !important; }
+        .hdr-light th, .hdr-light td { color: {{ colors.hdr_light_text }} !important; }
+        .row-light { background: {{ colors.row_light }} !important; }
+        .row-alt { background: {{ colors.row_alt }} !important; }
         .col-sent { background: #f0ad4e !important; color: #000 !important; }
         .col-sent-hdr { background: #e6a020 !important; color: #000 !important; }
 
@@ -81,14 +83,14 @@
         .label-block {
             width: 100%;
             margin-bottom: 2px;
-            border: 2px solid #0e5c23;
+            border: 2px solid {{ colors.hdr_dark }};
         }
         .label-title {
             text-align: center;
             font-weight: bold;
             font-size: 10px;
             padding: 3px 0;
-            background: #0e5c23 !important;
+            background: {{ colors.hdr_dark }} !important;
             color: #fff !important;
         }
         .label-meta {
@@ -126,7 +128,7 @@
             padding: 1px 4px !important;
             text-align: left !important;
             font-size: 9px;
-            background: #d4edda !important;
+            background: {{ colors.row_light }} !important;
         }
         .label-meta-row td.lm-slot {
             background: #f0ad4e !important;
@@ -190,7 +192,7 @@
     <div class="sp-block avoid-break">
         <table class="cd-table">
             <thead>
-                <tr class="hdr-dark">
+                <tr class="hdr-light">
                     <th style="width:70px;">PUNTO DE<br>VENTA</th>
                     <th style="width:200px;">NOMBRE DEL PUNTO DE VENTA</th>
                     <th style="width:50px;">ITEM</th>
@@ -490,6 +492,57 @@
     {% endif %}
 </div>
 {% endif %}
+
+<!-- ============================================================ -->
+<!-- SECTION 5: NUEVO REPORTE                                     -->
+<!-- ============================================================ -->
+<div class="page-break"></div>
+<div>
+    <h3>CENTRO DE DISTRIBUCION {{ deliver_to }}</h3>
+    <h4>NUEVO REPORTE</h4>
+
+    <table class="meta-table">
+        <tr>
+            <td class="meta-label">ORDEN DE COMPRA</td>
+            <td class="text-bold">{{ document_number }}</td>
+            <td class="meta-label">CONFIRMACIÓN</td>
+            <td class="text-bold">{{ confirmation }}</td>
+        </tr>
+    </table>
+
+    <table class="cd-table">
+        <thead>
+            <tr class="hdr-dark">
+                <th>PO</th>
+                <th>UPC</th>
+                <th>LINE_NBR</th>
+                <th>ITEM</th>
+                <th>STORE_NBR</th>
+                <th>ORDENADO</th>
+                <th>CANTIDAD A<br>ENTREGAR</th>
+                <th>DIFERENCIA</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set row_counter = namespace(value=0) %}
+            {% for sp in sale_points %}
+            {% for item in sp.items %}
+            {% set row_counter.value = row_counter.value + 1 %}
+            <tr class="{{ 'row-light' if row_counter.value is odd else 'row-alt' }}">
+                <td>{{ document_number }}</td>
+                <td>{{ item.original_code }}</td>
+                <td>{{ loop.index }}</td>
+                <td>{{ item.internal_code }}</td>
+                <td>{{ sp.store_number }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.sent }}</td>
+                <td>{{ item.quantity - item.sent }}</td>
+            </tr>
+            {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
 </body>
 </html>

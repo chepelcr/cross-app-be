@@ -5,7 +5,7 @@ from collections import OrderedDict
 from io import BytesIO
 from typing import TYPE_CHECKING
 
-from app.dtos import ExcelFileDTO
+from app.dtos.files import ExcelDTO
 from app.dtos.responses.crossdocking_dto import (
     BoxSummary,
     CrossDockingTotals,
@@ -82,8 +82,8 @@ def build_summaries(
     return item_summary, box_summary, totals
 
 
-def decode_excel_file(body: ExcelFileDTO) -> BytesIO:
-    """Decode a Base64-encoded Excel file from an ExcelFileDTO into a BytesIO stream."""
+def decode_excel_file(body: ExcelDTO) -> BytesIO:
+    """Decode a Base64-encoded Excel file from an ExcelDTO into a BytesIO stream."""
     if not body.data:
         raise ValueError("File data is required")
 

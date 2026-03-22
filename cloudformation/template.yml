@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: SAM Template for Cross-Docking Backend Lambda Function
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, stag, prod]
+
+  ECRImageURIParam:
+    Description: Elastic Container Registry image URI
+    Type: String
+    Default: "cd-backend-ecr"
+
+Mappings:
+  EnvironmentMapping:
+    dev:
+      ConfigStage: "DEVELOPMENT"
+    stag:
+      ConfigStage: "STAGING"
+    prod:
+      ConfigStage: "PRODUCTION"
+
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 1024
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        STAGE: !FindInMap [EnvironmentMapping, !Ref Environment, ConfigStage]
+        ENVIRONMENT: !Ref Environment
+
+Resources:
+  CrossDockingBackendFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "cd-backend-${Environment}-lambda"
+      Description: "Cross-Docking Backend API"
+      PackageType: Image
+      ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRImageURIParam}:latest"
+      Role: !GetAtt LambdaRole.Arn
+      SnapStart:
+        ApplyOn: None
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "cd-backend-${Environment}-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - !ImportValue
+          'Fn::Sub': "${Environment}-ssm-parameter-policy-arn"
+        - !ImportValue
+          'Fn::Sub': "${Environment}-decrypt-policy-arn"
+        - !ImportValue
+          'Fn::Sub': "${Environment}-ecr-policy-arn"
+
+  CrossDockingBackendLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/cd-backend-${Environment}-lambda"
+      RetentionInDays: 7
+
+  CrossDockingBackendLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CrossDockingBackendFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
+
+Outputs:
+  CrossDockingBackendFunctionArn:
+    Description: "Cross-Docking Backend Lambda Function ARN"
+    Value: !GetAtt CrossDockingBackendFunction.Arn
+    Export:
+      Name: !Sub "cd-backend-${Environment}-arn"
+
+  CrossDockingBackendFunctionName:
+    Description: "Cross-Docking Backend Lambda Function Name"
+    Value: !Ref CrossDockingBackendFunction
+    Export:
+      Name: !Sub "cd-backend-${Environment}-name"

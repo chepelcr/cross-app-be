@@ -137,7 +137,8 @@ class StoreRepository(DatabaseConnection):
                     existing.slot_id = slot_id
                 if chain is not None:
                     existing.chain = chain
-                if gln:
+                # Update GLN if provided and different from current value
+                if gln is not None and gln != existing.gln:
                     existing.gln = gln
                 self.session.flush()
                 return existing

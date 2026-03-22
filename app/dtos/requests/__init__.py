@@ -1,3 +1,3 @@
-from app.dtos.requests.excel_file_dto import ExcelFileDTO
+from app.dtos.files import ExcelDTO
 
-__all__ = ["ExcelFileDTO"]
+__all__ = ["ExcelDTO"]

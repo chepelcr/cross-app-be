@@ -1,0 +1,77 @@
+version = 0.1
+
+[default]
+[default.global]
+[default.global.parameters]
+template_file = "cloudformation/template.yml"
+
+[default.build]
+[default.build.parameters]
+use_container = true
+
+[default.deploy]
+[default.deploy.parameters]
+stack_name          = "cd-backend-dev-lambda"
+s3_bucket           = "cd-backend-dev-sam-deployments"
+s3_prefix           = "cd-backend-dev-lambda"
+region              = "us-east-1"
+confirm_changeset   = false
+capabilities        = "CAPABILITY_NAMED_IAM"
+parameter_overrides = "Environment=dev ECRImageURIParam=cd-backend-ecr"
+
+[dev]
+[dev.global]
+[dev.global.parameters]
+template_file = "cloudformation/template.yml"
+
+[dev.build]
+[dev.build.parameters]
+use_container = true
+
+[dev.deploy]
+[dev.deploy.parameters]
+stack_name          = "cd-backend-dev-lambda"
+s3_bucket           = "cd-backend-dev-sam-deployments"
+s3_prefix           = "cd-backend-dev-lambda"
+region              = "us-east-1"
+confirm_changeset   = false
+capabilities        = "CAPABILITY_NAMED_IAM"
+parameter_overrides = "Environment=dev ECRImageURIParam=cd-backend-ecr"
+
+[stag]
+[stag.global]
+[stag.global.parameters]
+template_file = "cloudformation/template.yml"
+
+[stag.build]
+[stag.build.parameters]
+use_container = true
+
+[stag.deploy]
+[stag.deploy.parameters]
+stack_name          = "cd-backend-stag-lambda"
+s3_bucket           = "cd-backend-stag-sam-deployments"
+s3_prefix           = "cd-backend-stag-lambda"
+region              = "us-east-1"
+confirm_changeset   = false
+capabilities        = "CAPABILITY_NAMED_IAM"
+parameter_overrides = "Environment=stag ECRImageURIParam=cd-backend-ecr"
+
+[prod]
+[prod.global]
+[prod.global.parameters]
+template_file = "cloudformation/template.yml"
+
+[prod.build]
+[prod.build.parameters]
+use_container = true
+
+[prod.deploy]
+[prod.deploy.parameters]
+stack_name          = "cd-backend-prod-lambda"
+s3_bucket           = "cd-backend-prod-sam-deployments"
+s3_prefix           = "cd-backend-prod-lambda"
+region              = "us-east-1"
+confirm_changeset   = false
+capabilities        = "CAPABILITY_NAMED_IAM"
+parameter_overrides = "Environment=prod ECRImageURIParam=cd-backend-ecr"

@@ -12,14 +12,16 @@ class StoreSearchFilters(Enum):
     """
     Search filters for Store entity.
 
-    Format: (entity_field, json_field, is_join, join_field, is_controller, entities, allows_like, allows_between)
+    Format: (entity_field, json_field, is_join, join_field, is_controller, entities, allows_like, allows_between, sortable)
     """
 
-    STORE_CODE = ("store_code", "storeCode", False, None, True, ENTITY_ALL, False, False)
-    STORE_NAME = ("store_name", "storeName", False, None, True, ENTITY_ALL, True, False)
-    CHAIN = ("chain", "chain", False, None, True, ENTITY_ALL, True, False)
-    SLOT_ID = ("slot_id", "slotId", False, None, True, ENTITY_ALL, False, False)
-    ORDER_BY = (None, "orderBy", False, None, False, ENTITY_ALL, False, False)
+    STORE_CODE = ("store_code", "storeCode", False, None, True, ENTITY_ALL, False, False, True, False)
+    STORE_NAME = ("store_name", "storeName", False, None, True, ENTITY_ALL, True, False, True, False)
+    CHAIN = ("chain", "chain", False, None, True, ENTITY_ALL, True, False, True, False)
+    SLOT_ID = ("slot_id", "slotId", False, None, True, ENTITY_ALL, False, False, True, False)
+    CREATED_ON = ("created_on", "createdOn", False, None, True, ENTITY_ALL, False, False, True, False)
+    UPDATED_ON = ("updated_on", "updatedOn", False, None, True, ENTITY_ALL, False, False, True, False)
+    ORDER_BY = (None, "orderBy", False, None, False, ENTITY_ALL, False, False, False, False)
 
     def __init__(
         self,
@@ -31,6 +33,8 @@ class StoreSearchFilters(Enum):
         applicable_entities: Optional[Set[str]] = None,
         allows_like: bool = False,
         allows_between: bool = False,
+        sortable: bool = False,
+        always_like: bool = False,
     ) -> None:
         self._entity_field = entity_field
         self._json_field = json_field
@@ -40,6 +44,8 @@ class StoreSearchFilters(Enum):
         self._applicable_entities = applicable_entities or ENTITY_ALL
         self._allows_like = allows_like
         self._allows_between = allows_between
+        self._sortable = sortable
+        self._always_like = always_like
 
     @property
     def entity_field(self) -> Optional[str]:
@@ -68,6 +74,14 @@ class StoreSearchFilters(Enum):
     @property
     def allows_between(self) -> bool:
         return self._allows_between
+
+    @property
+    def sortable(self) -> bool:
+        return self._sortable
+
+    @property
+    def always_like(self) -> bool:
+        return self._always_like
 
     @classmethod
     def get_filter_by_json_field(cls, json_field: str) -> Optional[StoreSearchFilters]:

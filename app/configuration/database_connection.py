@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Optional
 
@@ -45,13 +46,40 @@ class DatabaseConnection:
             self.session.close()
 
     @staticmethod
+    def _resolve_credentials() -> tuple:
+        """Resolve DB credentials from env vars (local) or Secrets Manager (Lambda)."""
+        host = AppConfig.get_key("database.host")
+        port = AppConfig.get_key("database.port", 5432)
+        username = AppConfig.get_key("database.username")
+        password = AppConfig.get_key("database.password")
+        dbname = AppConfig.get_key("database.dbname")
+
+        if all([host, username, password, dbname]):
+            return host, port, username, password, dbname
+
+        # Fall back to shared Secrets Manager secret: jcampos/{env}/database
+        secret_name = AppConfig.get_key("aws.database")
+        if not secret_name:
+            raise RuntimeError("Database credentials not found: set DATABASE_* env vars or deploy SSM params stack")
+
+        logger.info(f"Loading DB credentials from Secrets Manager: {secret_name}")
+        import boto3
+        client = boto3.client("secretsmanager")
+        response = client.get_secret_value(SecretId=secret_name)
+        creds = json.loads(response["SecretString"])
+
+        return (
+            creds.get("host", host),
+            int(creds.get("port", port or 5432)),
+            creds.get("username", username),
+            creds.get("password", password),
+            creds.get("dbname", dbname),
+        )
+
+    @staticmethod
     def _create_engine() -> Engine:
         try:
-            host = AppConfig.get_key("database.host")
-            port = AppConfig.get_key("database.port", 5432)
-            username = AppConfig.get_key("database.username")
-            password = AppConfig.get_key("database.password")
-            dbname = AppConfig.get_key("database.dbname")
+            host, port, username, password, dbname = DatabaseConnection._resolve_credentials()
 
             if not all([host, username, password, dbname]):
                 raise ValueError("Missing required database credentials")

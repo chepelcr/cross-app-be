@@ -132,7 +132,8 @@ class DepartmentRepository(DatabaseConnection):
             if existing:
                 if name is not None:
                     existing.name = name
-                if supplier_code is not None:
+                # Update supplier_code if provided and different from current value
+                if supplier_code is not None and supplier_code != existing.supplier_code:
                     existing.supplier_code = supplier_code
                 self.session.flush()
                 return existing

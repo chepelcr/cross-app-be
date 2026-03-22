@@ -1,16 +1,28 @@
 from __future__ import annotations
 
+import base64
 import logging
 from typing import Optional
 import uuid
 
 from app.dtos.requests.category_request_dto import CategoryRequestDTO
+from app.dtos.files import ImageDTO
 from app.dtos.responses.category_dto import CategoryListResponse, CategoryResponse
 from app.dtos.responses.pagination_dto import PaginationResponse
 from app.models.category import Category
 from app.repositories.category_repository import CategoryRepository
+from app.services.pdf_service import upload_file_to_s3
 
 logger = logging.getLogger(__name__)
+
+ALLOWED_IMAGE_TYPES = {
+    "image/png": "png",
+    "image/jpeg": "jpeg",
+    "image/jpg": "jpg",
+    "image/gif": "gif",
+    "image/webp": "webp",
+}
+MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
 
 
 def get_categories(
@@ -59,16 +71,26 @@ def create_category(
             if existing:
                 raise ValueError("Category slug already exists")
 
+        category_id = str(uuid.uuid4())
+
+        # Handle image uploads
+        image_1_url = None
+        image_2_url = None
+        if dto.image_1:
+            image_1_url = _save_category_image(company_id, category_id, dto.image_1, "image1")
+        if dto.image_2:
+            image_2_url = _save_category_image(company_id, category_id, dto.image_2, "image2")
+
         category = Category(
-            id=str(uuid.uuid4()),
+            id=category_id,
             organization_id=company_id,
             name=dto.name or "",
             slug=dto.slug or "",
             description=dto.description or "",
             background_color=dto.background_color or "#FFFFFF",
             button_color=dto.button_color or "#000000",
-            image_1_url=dto.image_1_url,
-            image_2_url=dto.image_2_url,
+            image_1_url=image_1_url,
+            image_2_url=image_2_url,
             is_active=True,
             sort_order=dto.sort_order or 0,
         )
@@ -104,10 +126,10 @@ def update_category(
             category.background_color = dto.background_color
         if dto.button_color is not None:
             category.button_color = dto.button_color
-        if dto.image_1_url is not None:
-            category.image_1_url = dto.image_1_url
-        if dto.image_2_url is not None:
-            category.image_2_url = dto.image_2_url
+        if dto.image_1 is not None:
+            category.image_1_url = _save_category_image(company_id, category_id, dto.image_1, "image1")
+        if dto.image_2 is not None:
+            category.image_2_url = _save_category_image(company_id, category_id, dto.image_2, "image2")
         if dto.sort_order is not None:
             category.sort_order = dto.sort_order
 
@@ -140,6 +162,43 @@ def delete_category(company_id: str, category_id: str) -> bool:
         if not category:
             return False
         return repo.delete(category_id)
+
+
+def _save_category_image(organization_id: str, category_id: str, image: ImageDTO, image_name: str) -> str:
+    """Validate, decode, and upload a category image to S3."""
+    if not image.data:
+        raise ValueError("Image data is empty")
+
+    content_type = (image.content_type or "").lower().strip()
+    if content_type not in ALLOWED_IMAGE_TYPES:
+        raise ValueError(
+            f"Invalid image type '{content_type}'. "
+            f"Allowed: {', '.join(ALLOWED_IMAGE_TYPES.keys())}"
+        )
+
+    ext = ALLOWED_IMAGE_TYPES[content_type]
+
+    # Strip data URL prefix if present (e.g. "data:image/png;base64,...")
+    data = image.data
+    if data.startswith("data:"):
+        if "," in data:
+            data = data.split(",", 1)[1]
+
+    try:
+        decoded = base64.b64decode(data)
+    except Exception:
+        raise ValueError("Invalid base64 image data")
+
+    if len(decoded) > MAX_IMAGE_SIZE:
+        raise ValueError(
+            f"Image size ({len(decoded)} bytes) exceeds maximum allowed "
+            f"({MAX_IMAGE_SIZE // (1024 * 1024)}MB)"
+        )
+
+    # Use custom filename if provided, otherwise use default
+    filename = image.name if image.name else f"{image_name}.{ext}"
+    key = f"organizations/{organization_id}/categories/{category_id}/{filename}"
+    return upload_file_to_s3(decoded, key, content_type)
 
 
 def _map_category(category: Category) -> CategoryResponse:

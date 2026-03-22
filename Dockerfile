@@ -21,3 +21,4 @@ COPY app/ ${LAMBDA_TASK_ROOT}/app/
 
 # Lambda handler
 CMD ["app.main.lambda_handler"]
+

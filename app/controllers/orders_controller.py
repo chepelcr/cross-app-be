@@ -2,7 +2,8 @@ from typing import Annotated, Optional
 
 from fastapi import Body, FastAPI, HTTPException, Path, Query
 
-from app.dtos import ExcelFileDTO, OrderListResponse, OrderResponse
+from app.dtos.files import ExcelDTO, ExcelAndColorDTO
+from app.dtos import OrderListResponse, OrderResponse, SelectColorDTO
 from app.dtos.requests.status_request_dto import StatusRequestDTO
 from app.services import order_service
 
@@ -20,7 +21,7 @@ class OrdersController:
         )
         async def parse_and_save_order(
             organization_id: Annotated[str, Path(description="Organization identifier")],
-            body: ExcelFileDTO = Body(...),
+            body: ExcelDTO = Body(...),
         ):
             try:
                 return order_service.process_order_excel(organization_id, body)
@@ -38,7 +39,7 @@ class OrdersController:
         async def parse_and_save_crossdocking(
             organization_id: Annotated[str, Path(description="Organization identifier")],
             document_number: Annotated[str, Path(description="Order document number")],
-            body: ExcelFileDTO = Body(...),
+            body: ExcelAndColorDTO = Body(...),
         ):
             try:
                 return order_service.process_crossdocking_excel(
@@ -60,9 +61,11 @@ class OrdersController:
         async def reprocess_order(
             organization_id: Annotated[str, Path(description="Organization identifier")],
             document_number: Annotated[str, Path(description="Order document number")],
+            body: Optional[SelectColorDTO] = Body(None),
         ):
             try:
-                return order_service.reprocess_order(organization_id, document_number)
+                color = body.color if body else None
+                return order_service.reprocess_order(organization_id, document_number, color)
             except LookupError as e:
                 raise HTTPException(status_code=404, detail=str(e))
             except Exception as e:

@@ -1,0 +1,15 @@
+version: 0.2
+
+env:
+  variables:
+    ENVIRONMENT: "dev"
+    REGION: "us-east-1"
+
+phases:
+  build:
+    commands:
+      - bash scripts/pipeline-update.sh
+
+  post_build:
+    commands:
+      - echo "Update phase complete"

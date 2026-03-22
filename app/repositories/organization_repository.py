@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.configuration.database_connection import DatabaseConnection
+from app.exceptions.organization_not_found_exception import OrganizationNotFoundException
 from app.models.organization import Organization
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,15 @@ class OrganizationRepository(DatabaseConnection):
         except SQLAlchemyError as e:
             logger.error(f"Error finding organization {organization_id}: {e}", exc_info=True)
             raise
+
+    def validate_exists(self, organization_id: str) -> Organization:
+        """Return the organization or raise OrganizationNotFoundException."""
+        org = self.find_by_id(organization_id)
+        if org is None:
+            raise OrganizationNotFoundException(
+                f"Organization {organization_id} not found"
+            )
+        return org
 
     def upsert(
         self,

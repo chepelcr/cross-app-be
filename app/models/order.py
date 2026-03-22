@@ -44,6 +44,7 @@ class Order(Base, AuditMixin):
         BigInteger, ForeignKey("crossdocking_confirmations.confirmation_id"), nullable=True
     )
     confirmation_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    report_color: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, default="green")
 
     # Normalized FK columns
     client_id: Mapped[Optional[uuid.UUID]] = mapped_column(

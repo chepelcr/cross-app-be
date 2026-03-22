@@ -4,6 +4,7 @@ from app.models.category import Category
 from app.models.client import Client
 from app.models.store import Store
 from app.models.department import Department
+from app.models.cabys import Cabys
 from app.models.product import Product
 from app.models.confirmation import Confirmation
 from app.models.order import Order
@@ -19,6 +20,7 @@ __all__ = [
     "Client",
     "Store",
     "Department",
+    "Cabys",
     "Product",
     "Confirmation",
     "Order",

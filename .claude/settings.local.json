@@ -6,7 +6,18 @@
       "Bash(aws cloudfront:*)",
       "Bash(python:*)",
       "Bash(head:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(xargs grep -l \"Select\")",
+      "Bash(find app -name \"*.py\" -exec grep -l \"enum\\\\|Enum\" {} ;)",
+      "Bash(powershell -Command \"& { Add-Type -AssemblyName System.Drawing; $file=''E:\\\\dev\\\\cross-app-be\\\\example-files\\\\2446.pdf''; Write-Host ''File exists:'' \\(Test-Path $file\\) }\")",
+      "Bash(where gswin64c)",
+      "Bash(where gs)",
+      "Bash(where mutool)",
+      "Bash(where pdftoppm)",
+      "Bash(ls -la \"E:\\\\dev\\\\cross-app-be\\\\example-files\"\" 2>/dev/null || echo \"Checking for example-files \")",
+      "Bash(docker compose up --build)",
+      "Bash(bash deploys/deploy-params.sh dev)",
+      "Bash(ls e:/dev/cross-app-be/test_*.py)"
     ]
   }
 }
