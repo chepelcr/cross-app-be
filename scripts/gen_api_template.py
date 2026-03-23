@@ -289,7 +289,7 @@ for path in sorted(all_paths.keys()):
 L()
 
 # ── CORS gateway responses ────────────────────────────────────────────────────
-for rtype in ("DEFAULT_4XX", "DEFAULT_5XX"):
+for rtype in ("DEFAULT_4XX", "DEFAULT_5XX", "UNAUTHORIZED", "ACCESS_DENIED"):
     rname = "GatewayResponse" + rtype.replace("_", "")
     L(I[1] + rname + ":")
     L(I[2] + "Type: AWS::ApiGateway::GatewayResponse")

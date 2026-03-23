@@ -2299,6 +2299,26 @@ Resources:
       ResponseType: DEFAULT_5XX
       RestApiId: !Ref ApiGatewayRestApi
 
+  GatewayResponseUNAUTHORIZED:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+      ResponseType: UNAUTHORIZED
+      RestApiId: !Ref ApiGatewayRestApi
+
+  GatewayResponseACCESSDENIED:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+      ResponseType: ACCESS_DENIED
+      RestApiId: !Ref ApiGatewayRestApi
+
   ApiCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
