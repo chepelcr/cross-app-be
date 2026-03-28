@@ -86,7 +86,6 @@ def create_client(
             existing.client_name = dto.client_name
             existing.client_gln = dto.client_gln
             existing.status = 1
-            existing.identification_type = dto.identification.type if dto.identification else None
             existing.identification_code = dto.identification.code if dto.identification else None
             existing.identification_number = dto.identification.number if dto.identification else None
             existing.business_name = dto.business_name
@@ -108,7 +107,6 @@ def create_client(
                 client_name=dto.client_name,
                 client_gln=dto.client_gln,
                 status=1,
-                identification_type=dto.identification.type if dto.identification else None,
                 identification_code=dto.identification.code if dto.identification else None,
                 identification_number=dto.identification.number if dto.identification else None,
                 business_name=dto.business_name,
@@ -149,8 +147,6 @@ def update_client(
         if dto.client_gln is not None:
             client.client_gln = dto.client_gln
         if dto.identification:
-            if dto.identification.type is not None:
-                client.identification_type = dto.identification.type
             if dto.identification.code is not None:
                 client.identification_code = dto.identification.code
             if dto.identification.number is not None:
@@ -214,7 +210,6 @@ def _map_client(client: Client) -> ClientResponse:
     identification = None
     if client.identification_number:
         identification = IdentificationResponse(
-            type=client.identification_type,
             code=client.identification_code,
             number=client.identification_number,
         )

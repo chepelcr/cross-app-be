@@ -8,7 +8,6 @@ from app.dtos.responses.pagination_dto import PaginationResponse
 
 
 class IdentificationResponse(BaseModel):
-    type: Optional[int] = Field(None)
     code: Optional[str] = Field(None)
     number: Optional[str] = Field(None)
 

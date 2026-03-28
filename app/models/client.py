@@ -22,7 +22,6 @@ class Client(Base, AuditMixin):
     status: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     
     # Identification
-    identification_type: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     identification_code: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     identification_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     

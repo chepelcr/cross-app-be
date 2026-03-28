@@ -54,7 +54,8 @@
       "Bash(aws ssm get-parameter --name \"/jcampos/dev/cd-backend/path/to/wkhtmltopdf\" --profile J-CAMPOS --query \"Parameter.Value\" --output text)",
       "Bash(aws cloudformation describe-stack-events --stack-name jcampos-dev-cd-backend-ssm-params --profile J-CAMPOS --query \"StackEvents[?ResourceStatus==''CREATE_FAILED''||ResourceStatus==''UPDATE_FAILED''].{Resource:LogicalResourceId,Reason:ResourceStatusReason}\" --output table)",
       "Bash(aws cloudformation delete-stack --stack-name jcampos-dev-cd-backend-ssm-params --profile J-CAMPOS)",
-      "Bash(aws cloudformation wait stack-delete-complete --stack-name jcampos-dev-cd-backend-ssm-params --profile J-CAMPOS)"
+      "Bash(aws cloudformation wait stack-delete-complete --stack-name jcampos-dev-cd-backend-ssm-params --profile J-CAMPOS)",
+      "Bash(aws cloudformation describe-stack-resources --stack-name jcampos-dev-cd-backend-api-gateway --region us-east-1 --profile J-CAMPOS --query \"StackResources[?contains\\(LogicalResourceId, ''GatewayResponse''\\)].LogicalResourceId\" --output json)"
     ]
   }
 }

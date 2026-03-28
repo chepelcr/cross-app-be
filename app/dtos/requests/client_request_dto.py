@@ -8,7 +8,6 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 class IdentificationRequestDTO(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    type: Optional[int] = Field(None)
     code: Optional[str] = Field(None, max_length=10)
     number: Optional[str] = Field(None, min_length=9, max_length=50)
 
