@@ -11,6 +11,11 @@ Parameters:
     Type: String
     Default: 'jmarkets-uploads.jcampos.dev'
     Description: 'Custom domain name'
+
+  FrontEndDomainName:
+    Type: String
+    Default: 'admin.j-markets.jcampos.dev'
+    Description: 'Custom domain name'
   
   HostedZoneId:
     Type: String
@@ -40,6 +45,7 @@ Resources:
               - 'http://localhost:5000'
               - 'https://mozilla.github.io'
               - !Sub 'https://${DomainName}'
+              - !Sub 'https://${FrontEndDomainName}'
             AllowedMethods:
               - PUT
               - POST

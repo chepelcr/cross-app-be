@@ -1,0 +1,22 @@
+version: 0.2
+
+env:
+  variables:
+    ENVIRONMENT: "dev"
+    REGION: "us-east-1"
+    API_DOMAIN: "orders-api.jcampos.dev"
+    ROOT_DOMAIN: "jcampos.dev"
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - pip3 install --quiet aws-sam-cli
+      - pip3 install --quiet -r requirements.txt
+  build:
+    commands:
+      - bash scripts/pipeline-api.sh
+  post_build:
+    commands:
+      - echo "API Gateway update phase complete"

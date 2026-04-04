@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: CodePipeline for Cross-Docking Backend (cd-backend) - builds Docker image and updates Lambda
+Description: CodePipeline for Cross-Docking Backend (cd-backend) - builds Docker image, updates Lambda, and refreshes API Gateway
 
 Parameters:
   Environment:
@@ -28,6 +28,14 @@ Parameters:
       - BUILD_GENERAL1_MEDIUM
       - BUILD_GENERAL1_LARGE
 
+  ApiDomainParam:
+    Type: String
+    Default: "orders-api.jcampos.dev"
+
+  RootDomainParam:
+    Type: String
+    Default: "jcampos.dev"
+
 Resources:
   BuildLogGroup:
     Type: AWS::Logs::LogGroup
@@ -39,6 +47,12 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/codebuild/jcampos-${Environment}-cd-backend-update"
+      RetentionInDays: 14
+
+  ApiGatewayLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/codebuild/jcampos-${Environment}-cd-backend-api-gateway"
       RetentionInDays: 14
 
   LambdaImageBuildProject:
@@ -96,6 +110,38 @@ Resources:
         CloudWatchLogs:
           Status: ENABLED
           GroupName: !Ref UpdateLogGroup
+
+  ApiGatewayUpdateProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub "jcampos-${Environment}-cd-backend-api-gateway"
+      Description: Regenerate api-gateway/template.yml from app and deploy API Gateway SAM stack
+      ServiceRole: !ImportValue
+        'Fn::Sub': "jcampos-${Environment}-codebuild-web-service-role-arn"
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: !Ref BuildComputeTypeParam
+        Image: aws/codebuild/standard:7.0
+        PrivilegedMode: false
+        EnvironmentVariables:
+          - Name: ENVIRONMENT
+            Value: !Ref Environment
+          - Name: REGION
+            Value: !Ref AWS::Region
+          - Name: API_DOMAIN
+            Value: !Ref ApiDomainParam
+          - Name: ROOT_DOMAIN
+            Value: !Ref RootDomainParam
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec-api.yml
+      TimeoutInMinutes: 30
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+          GroupName: !Ref ApiGatewayLogGroup
 
   CdBackendPipeline:
     Type: AWS::CodePipeline::Pipeline
@@ -161,6 +207,24 @@ Resources:
                 - Name: SourceCode
               OutputArtifacts:
                 - Name: UpdateOutput
+              RunOrder: 1
+
+        - Name: UpdateApiGateway
+          Actions:
+            - Name: UpdateApiGateway
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Ref ApiGatewayUpdateProject
+                EnvironmentVariables: !Sub |
+                  [{"name":"ENVIRONMENT","value":"${Environment}","type":"PLAINTEXT"},{"name":"REGION","value":"${AWS::Region}","type":"PLAINTEXT"},{"name":"API_DOMAIN","value":"${ApiDomainParam}","type":"PLAINTEXT"},{"name":"ROOT_DOMAIN","value":"${RootDomainParam}","type":"PLAINTEXT"}]
+              InputArtifacts:
+                - Name: SourceCode
+              OutputArtifacts:
+                - Name: ApiOutput
               RunOrder: 1
 
 Outputs:
