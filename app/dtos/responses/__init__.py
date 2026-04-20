@@ -23,6 +23,16 @@ from app.dtos.responses.confirmation_response_dto import (
     ConfirmationResponse,
     ConfirmationListResponse,
 )
+from app.dtos.responses.branch_dto import BranchResponse, BranchListResponse
+from app.dtos.responses.terminal_dto import TerminalResponse, TerminalListResponse
+from app.dtos.responses.session_dto import SessionResponse, SessionListResponse
+from app.dtos.responses.assignment_dto import AssignmentResponse, AssignmentListResponse
+from app.dtos.responses.closing_dto import ClosingResponse, ClosingListResponse
+from app.dtos.responses.dashboard_data_dto import (
+    DashboardDataResponse,
+    StandData,
+    ProductRanking,
+)
 
 # Backward compatibility
 DocumentAttachmentsDTO = OrderAttachmentsDTO
@@ -48,4 +58,17 @@ __all__ = [
     "ConfirmationOrderSummary",
     "ConfirmationResponse",
     "ConfirmationListResponse",
+    "BranchResponse",
+    "BranchListResponse",
+    "TerminalResponse",
+    "TerminalListResponse",
+    "SessionResponse",
+    "SessionListResponse",
+    "AssignmentResponse",
+    "AssignmentListResponse",
+    "ClosingResponse",
+    "ClosingListResponse",
+    "DashboardDataResponse",
+    "StandData",
+    "ProductRanking",
 ]
