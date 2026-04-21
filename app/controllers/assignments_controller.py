@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Optional
 
-from fastapi import Body, FastAPI, HTTPException, Path, Query
+from fastapi import Body, FastAPI, Header, HTTPException, Path, Query
 
 from app.dtos.requests.assignment_request_dto import (
     AssignmentCreateRequestDTO,
@@ -20,7 +20,7 @@ class AssignmentsController:
     def register_routes(self, app: FastAPI):
 
         @app.get(
-            "/api/users/{user_id}/organization/{organization_id}/assignments",
+            "/api/organizations/{organization_id}/assignments",
             response_model=AssignmentListResponse,
             tags=["assignments"],
             summary="Get all assignments for an organization",
@@ -35,14 +35,14 @@ class AssignmentsController:
 - `branch_id`: Filter by branch UUID
 
 **Examples:**
-- Get all assignments: `/api/users/{userId}/organization/{orgId}/assignments`
-- Get assignments for a session: `/api/users/{userId}/organization/{orgId}/assignments?session_id={sessionId}`
-- Get assignments for a user: `/api/users/{userId}/organization/{orgId}/assignments?assigned_user_id={userId}`
+- Get all assignments: `/api/organizations/{orgId}/assignments`
+- Get assignments for a session: `/api/organizations/{orgId}/assignments?session_id={sessionId}`
+- Get assignments for a user: `/api/organizations/{orgId}/assignments?assigned_user_id={userId}`
 """,
         )
         async def list_assignments(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
             search: Optional[str] = Query(
                 None,
                 description=(
@@ -65,7 +65,7 @@ class AssignmentsController:
         ) -> AssignmentListResponse:
             try:
                 return assignment_service.get_assignments(
-                    organization_id, user_id, page=page, page_size=pageSize, search=search
+                    organization_id, x_user_id, page=page, page_size=pageSize, search=search
                 )
             except ValueError as e:
                 raise HTTPException(status_code=422, detail=str(e))
@@ -73,18 +73,18 @@ class AssignmentsController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.get(
-            "/api/users/{user_id}/organization/{organization_id}/assignments/{assignment_id}",
+            "/api/organizations/{organization_id}/assignments/{assignment_id}",
             response_model=AssignmentResponse,
             tags=["assignments"],
             summary="Get a specific assignment by ID",
         )
         async def get_assignment(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
             assignment_id: Annotated[str, Path(description="Assignment ID")],
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
         ):
             try:
-                result = assignment_service.get_assignment(organization_id, user_id, assignment_id)
+                result = assignment_service.get_assignment(organization_id, x_user_id, assignment_id)
                 if not result:
                     raise HTTPException(status_code=404, detail="Assignment not found")
                 return result
@@ -94,7 +94,7 @@ class AssignmentsController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.post(
-            "/api/users/{user_id}/organization/{organization_id}/assignments",
+            "/api/organizations/{organization_id}/assignments",
             response_model=AssignmentResponse,
             status_code=201,
             tags=["assignments"],
@@ -120,19 +120,19 @@ class AssignmentsController:
 """,
         )
         async def create_assignment(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
             body: AssignmentCreateRequestDTO,
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
         ):
             try:
-                return assignment_service.create_assignment(organization_id, user_id, body)
+                return assignment_service.create_assignment(organization_id, x_user_id, body)
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=str(e))
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.patch(
-            "/api/users/{user_id}/organization/{organization_id}/assignments/{assignment_id}",
+            "/api/organizations/{organization_id}/assignments/{assignment_id}",
             response_model=AssignmentResponse,
             tags=["assignments"],
             summary="Update an existing assignment",
@@ -149,14 +149,14 @@ class AssignmentsController:
 """,
         )
         async def update_assignment(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
             assignment_id: Annotated[str, Path(description="Assignment ID")],
             body: AssignmentUpdateRequestDTO,
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
         ):
             try:
                 result = assignment_service.update_assignment(
-                    organization_id, user_id, assignment_id, body
+                    organization_id, x_user_id, assignment_id, body
                 )
                 if not result:
                     raise HTTPException(status_code=404, detail="Assignment not found")
@@ -169,21 +169,21 @@ class AssignmentsController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.patch(
-            "/api/users/{user_id}/organization/{organization_id}/assignments/{assignment_id}/status",
+            "/api/organizations/{organization_id}/assignments/{assignment_id}/status",
             response_model=AssignmentResponse,
             tags=["assignments"],
             summary="Update assignment status",
             description="Update the status of an assignment (1=Active, 2=Inactive, 3=Deleted)",
         )
         async def update_assignment_status(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
             assignment_id: Annotated[str, Path(description="Assignment ID")],
             body: ProductStatusRequestDTO,
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
         ) -> AssignmentResponse:
             try:
                 result = assignment_service.update_assignment_status(
-                    organization_id, user_id, assignment_id, body.status
+                    organization_id, x_user_id, assignment_id, body.status
                 )
                 if not result:
                     raise HTTPException(status_code=404, detail="Assignment not found")
@@ -196,7 +196,7 @@ class AssignmentsController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.delete(
-            "/api/users/{user_id}/organization/{organization_id}/assignments/{assignment_id}",
+            "/api/organizations/{organization_id}/assignments/{assignment_id}",
             status_code=204,
             tags=["assignments"],
             summary="Delete an assignment",
@@ -206,13 +206,13 @@ Returns 204 No Content on success.
 """,
         )
         async def delete_assignment(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
             assignment_id: Annotated[str, Path(description="Assignment ID")],
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
         ):
             try:
                 success = assignment_service.delete_assignment(
-                    organization_id, user_id, assignment_id
+                    organization_id, x_user_id, assignment_id
                 )
                 if not success:
                     raise HTTPException(status_code=404, detail="Assignment not found")

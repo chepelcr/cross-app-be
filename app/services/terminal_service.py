@@ -25,6 +25,7 @@ def get_terminals(
     page: int = 1,
     page_size: int = 12,
     search: Optional[str] = None,
+    branch_id: Optional[str] = None,
 ) -> TerminalListResponse:
     """Get all terminals for an organization with pagination and optional filters."""
     filters, order_by = (
@@ -32,6 +33,11 @@ def get_terminals(
         if search
         else ([], None)
     )
+    
+    # Add branch_id filter if provided
+    if branch_id:
+        from sqlalchemy import and_
+        filters.append(Terminal.branch_id == branch_id)
 
     with TerminalRepository() as repo:
         terminals, total = repo.find_all_paginated(

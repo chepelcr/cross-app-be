@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Optional
 
-from fastapi import Body, FastAPI, HTTPException, Path, Query
+from fastapi import Body, FastAPI, Header, HTTPException, Path, Query
 
 from app.dtos.requests.product_status_request_dto import ProductStatusRequestDTO
 from app.dtos.requests.session_request_dto import (
@@ -20,7 +20,7 @@ class SessionsController:
     def register_routes(self, app: FastAPI):
 
         @app.get(
-            "/api/users/{user_id}/organization/{organization_id}/sessions",
+            "/api/organizations/{organization_id}/sessions",
             response_model=SessionListResponse,
             tags=["sessions"],
             summary="Get all sessions for an organization",
@@ -35,14 +35,15 @@ class SessionsController:
 - `context`: Filter by session context ('gradas', 'mesa', or 'caja')
 
 **Examples:**
-- Get all sessions: `/api/users/{userId}/organization/{orgId}/sessions`
-- Get match sessions: `/api/users/{userId}/organization/{orgId}/sessions?type=match`
-- Get sessions for a branch: `/api/users/{userId}/organization/{orgId}/sessions?branch_id={branchId}`
+- Get all sessions: `/api/organizations/{orgId}/sessions`
+- Get match sessions: `/api/organizations/{orgId}/sessions?type=match`
+- Get sessions for a branch: `/api/organizations/{orgId}/sessions?branch_id={branchId}`
 """,
         )
         async def list_sessions(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
+
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
             search: Optional[str] = Query(
                 None,
                 description=(
@@ -65,7 +66,7 @@ class SessionsController:
         ) -> SessionListResponse:
             try:
                 return session_service.get_sessions(
-                    organization_id, user_id, page=page, page_size=pageSize, search=search
+                    organization_id, x_user_id, page=page, page_size=pageSize, search=search
                 )
             except ValueError as e:
                 raise HTTPException(status_code=422, detail=str(e))
@@ -73,18 +74,19 @@ class SessionsController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.get(
-            "/api/users/{user_id}/organization/{organization_id}/sessions/{session_id}",
+            "/api/organizations/{organization_id}/sessions/{session_id}",
             response_model=SessionResponse,
             tags=["sessions"],
             summary="Get a specific session by ID",
         )
         async def get_session(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
+
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
             session_id: Annotated[str, Path(description="Session ID")],
         ):
             try:
-                result = session_service.get_session(organization_id, user_id, session_id)
+                result = session_service.get_session(organization_id, x_user_id, session_id)
                 if not result:
                     raise HTTPException(status_code=404, detail="Session not found")
                 return result
@@ -94,7 +96,7 @@ class SessionsController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.post(
-            "/api/users/{user_id}/organization/{organization_id}/sessions",
+            "/api/organizations/{organization_id}/sessions",
             response_model=SessionResponse,
             status_code=201,
             tags=["sessions"],
@@ -116,19 +118,20 @@ class SessionsController:
 """,
         )
         async def create_session(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
+
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
             body: SessionCreateRequestDTO,
         ):
             try:
-                return session_service.create_session(organization_id, user_id, body)
+                return session_service.create_session(organization_id, x_user_id, body)
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=str(e))
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.patch(
-            "/api/users/{user_id}/organization/{organization_id}/sessions/{session_id}",
+            "/api/organizations/{organization_id}/sessions/{session_id}",
             response_model=SessionResponse,
             tags=["sessions"],
             summary="Update an existing session",
@@ -150,14 +153,15 @@ class SessionsController:
 """,
         )
         async def update_session(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
+
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
             session_id: Annotated[str, Path(description="Session ID")],
             body: SessionUpdateRequestDTO,
         ):
             try:
                 result = session_service.update_session(
-                    organization_id, user_id, session_id, body
+                    organization_id, x_user_id, session_id, body
                 )
                 if not result:
                     raise HTTPException(status_code=404, detail="Session not found")
@@ -170,21 +174,22 @@ class SessionsController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.patch(
-            "/api/users/{user_id}/organization/{organization_id}/sessions/{session_id}/status",
+            "/api/organizations/{organization_id}/sessions/{session_id}/status",
             response_model=SessionResponse,
             tags=["sessions"],
             summary="Update session status",
             description="Update the status of a session (1=Active, 2=Inactive, 3=Deleted)",
         )
         async def update_session_status(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
+
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
             session_id: Annotated[str, Path(description="Session ID")],
             body: ProductStatusRequestDTO,
         ) -> SessionResponse:
             try:
                 result = session_service.update_session_status(
-                    organization_id, user_id, session_id, body.status
+                    organization_id, x_user_id, session_id, body.status
                 )
                 if not result:
                     raise HTTPException(status_code=404, detail="Session not found")
@@ -197,7 +202,7 @@ class SessionsController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.delete(
-            "/api/users/{user_id}/organization/{organization_id}/sessions/{session_id}",
+            "/api/organizations/{organization_id}/sessions/{session_id}",
             status_code=204,
             tags=["sessions"],
             summary="Delete a session",
@@ -210,13 +215,14 @@ Returns 204 No Content on success.
 """,
         )
         async def delete_session(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
+
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
             session_id: Annotated[str, Path(description="Session ID")],
         ):
             try:
                 success = session_service.delete_session(
-                    organization_id, user_id, session_id
+                    organization_id, x_user_id, session_id
                 )
                 if not success:
                     raise HTTPException(status_code=404, detail="Session not found")

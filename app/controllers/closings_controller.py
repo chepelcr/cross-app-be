@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Optional
 
-from fastapi import Body, FastAPI, HTTPException, Path, Query
+from fastapi import Body, FastAPI, Header, HTTPException, Path, Query
 
 from app.dtos.requests.closing_request_dto import (
     ClosingCreateRequestDTO,
@@ -20,7 +20,7 @@ class ClosingsController:
     def register_routes(self, app: FastAPI):
 
         @app.get(
-            "/api/users/{user_id}/organization/{organization_id}/closings",
+            "/api/organizations/{organization_id}/closings",
             response_model=ClosingListResponse,
             tags=["closings"],
             summary="Get all closings for an organization",
@@ -35,15 +35,16 @@ class ClosingsController:
 - `branch_id`: Filter by branch UUID
 
 **Examples:**
-- Get all closings: `/api/users/{userId}/organization/{orgId}/closings`
-- Get pending closings: `/api/users/{userId}/organization/{orgId}/closings?status=pending`
-- Get closings for a session: `/api/users/{userId}/organization/{orgId}/closings?session_id={sessionId}`
-- Get closings for a branch: `/api/users/{userId}/organization/{orgId}/closings?branch_id={branchId}`
+- Get all closings: `/api/organizations/{orgId}/closings`
+- Get pending closings: `/api/organizations/{orgId}/closings?status=pending`
+- Get closings for a session: `/api/organizations/{orgId}/closings?session_id={sessionId}`
+- Get closings for a branch: `/api/organizations/{orgId}/closings?branch_id={branchId}`
 """,
         )
         async def list_closings(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
+
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
             search: Optional[str] = Query(
                 None,
                 description=(
@@ -66,7 +67,7 @@ class ClosingsController:
         ) -> ClosingListResponse:
             try:
                 return closing_service.get_closings(
-                    organization_id, user_id, page=page, page_size=pageSize, search=search
+                    organization_id, x_user_id, page=page, page_size=pageSize, search=search
                 )
             except ValueError as e:
                 raise HTTPException(status_code=422, detail=str(e))
@@ -74,18 +75,19 @@ class ClosingsController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.get(
-            "/api/users/{user_id}/organization/{organization_id}/closings/{closing_id}",
+            "/api/organizations/{organization_id}/closings/{closing_id}",
             response_model=ClosingResponse,
             tags=["closings"],
             summary="Get a specific closing by ID",
         )
         async def get_closing(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
+
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
             closing_id: Annotated[str, Path(description="Closing ID")],
         ):
             try:
-                result = closing_service.get_closing(organization_id, user_id, closing_id)
+                result = closing_service.get_closing(organization_id, x_user_id, closing_id)
                 if not result:
                     raise HTTPException(status_code=404, detail="Closing not found")
                 return result
@@ -95,7 +97,7 @@ class ClosingsController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.post(
-            "/api/users/{user_id}/organization/{organization_id}/closings",
+            "/api/organizations/{organization_id}/closings",
             response_model=ClosingResponse,
             status_code=201,
             tags=["closings"],
@@ -125,19 +127,20 @@ class ClosingsController:
 """,
         )
         async def create_closing(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
+
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
             body: ClosingCreateRequestDTO,
         ):
             try:
-                return closing_service.create_closing(organization_id, user_id, body)
+                return closing_service.create_closing(organization_id, x_user_id, body)
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=str(e))
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.patch(
-            "/api/users/{user_id}/organization/{organization_id}/closings/{closing_id}",
+            "/api/organizations/{organization_id}/closings/{closing_id}",
             response_model=ClosingResponse,
             tags=["closings"],
             summary="Update an existing closing",
@@ -165,8 +168,9 @@ class ClosingsController:
 """,
         )
         async def update_closing(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
+
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
             closing_id: Annotated[str, Path(description="Closing ID")],
             body: ClosingUpdateRequestDTO,
         ):
@@ -178,7 +182,7 @@ class ClosingsController:
                 is_manager = True  # Placeholder - should be determined by auth layer
 
                 result = closing_service.update_closing(
-                    organization_id, user_id, closing_id, body, is_manager=is_manager
+                    organization_id, x_user_id, closing_id, body, is_manager=is_manager
                 )
                 if not result:
                     raise HTTPException(status_code=404, detail="Closing not found")
@@ -193,21 +197,22 @@ class ClosingsController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.patch(
-            "/api/users/{user_id}/organization/{organization_id}/closings/{closing_id}/status",
+            "/api/organizations/{organization_id}/closings/{closing_id}/status",
             response_model=ClosingResponse,
             tags=["closings"],
             summary="Update closing status",
             description="Update the status of a closing (1=pending, 2=approved, 3=rejected)",
         )
         async def update_closing_status(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
+
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
             closing_id: Annotated[str, Path(description="Closing ID")],
             body: ProductStatusRequestDTO,
         ) -> ClosingResponse:
             try:
                 result = closing_service.update_closing_status(
-                    organization_id, user_id, closing_id, body.status
+                    organization_id, x_user_id, closing_id, body.status
                 )
                 if not result:
                     raise HTTPException(status_code=404, detail="Closing not found")
@@ -220,7 +225,7 @@ class ClosingsController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.delete(
-            "/api/users/{user_id}/organization/{organization_id}/closings/{closing_id}",
+            "/api/organizations/{organization_id}/closings/{closing_id}",
             status_code=204,
             tags=["closings"],
             summary="Delete a closing",
@@ -230,13 +235,14 @@ Returns 204 No Content on success.
 """,
         )
         async def delete_closing(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
+
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
             closing_id: Annotated[str, Path(description="Closing ID")],
         ):
             try:
                 success = closing_service.delete_closing(
-                    organization_id, user_id, closing_id
+                    organization_id, x_user_id, closing_id
                 )
                 if not success:
                     raise HTTPException(status_code=404, detail="Closing not found")

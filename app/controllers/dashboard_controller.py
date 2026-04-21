@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Annotated, Optional
 
-from fastapi import FastAPI, HTTPException, Path, Query
+from fastapi import FastAPI, Header, HTTPException, Path, Query
 
 from app.dtos.responses.dashboard_data_dto import DashboardDataResponse
 from app.services import dashboard_service
@@ -20,7 +20,7 @@ class DashboardController:
     def register_routes(self, app: FastAPI):
 
         @app.get(
-            "/api/users/{user_id}/organization/{organization_id}/dashboard",
+            "/api/organizations/{organization_id}/dashboard",
             response_model=DashboardDataResponse,
             tags=["dashboard"],
             summary="Get real-time dashboard data",
@@ -60,16 +60,16 @@ Returns aggregated dashboard data including:
 6. Calculates global KPIs (total_revenue, total_sales, avg_ticket)
 
 **Examples:**
-- Get dashboard for all active sessions: `/api/users/{userId}/organization/{orgId}/dashboard`
-- Get dashboard for specific session: `/api/users/{userId}/organization/{orgId}/dashboard?session_id={sessionId}`
+- Get dashboard for all active sessions: `/api/organizations/{orgId}/dashboard`
+- Get dashboard for specific session: `/api/organizations/{orgId}/dashboard?session_id={sessionId}`
 
 **Authorization:**
 - User must be a member of the organization (enforced at API Gateway/auth layer)
 """,
         )
         async def get_dashboard(
-            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
             session_id: Optional[str] = Query(
                 None, description="Optional session UUID to filter by specific session"
             ),
@@ -77,7 +77,7 @@ Returns aggregated dashboard data including:
             try:
                 return dashboard_service.get_dashboard_data(
                     organization_id,
-                    user_id,
+                    x_user_id,
                     session_id=session_id,
                 )
             except ValueError as e:
