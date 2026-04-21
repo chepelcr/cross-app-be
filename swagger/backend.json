@@ -6,6 +6,960 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/api/organizations/{organization_id}/assignments": {
+      "get": {
+        "tags": [
+          "assignments"
+        ],
+        "summary": "Get all assignments for an organization",
+        "description": "Get a paginated list of assignments with optional search filters.\n\n**Query Parameters:**\n- `search`: Search filter string (field:value syntax)\n- `page`: Page number (1-indexed)\n- `pageSize`: Items per page\n- `session_id`: Filter by session UUID\n- `assigned_user_id`: Filter by assigned user ID\n- `branch_id`: Filter by branch UUID\n\n**Examples:**\n- Get all assignments: `/api/organizations/{orgId}/assignments`\n- Get assignments for a session: `/api/organizations/{orgId}/assignments?session_id={sessionId}`\n- Get assignments for a user: `/api/organizations/{orgId}/assignments?assigned_user_id={userId}`",
+        "operationId": "list_assignments_api_organizations__organization_id__assignments_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: role:cashier,orderBy>start_time",
+              "title": "Search"
+            },
+            "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: role:cashier,orderBy>start_time"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number (1-indexed)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 12,
+              "title": "Pagesize"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "session_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by session UUID",
+              "title": "Session Id"
+            },
+            "description": "Filter by session UUID"
+          },
+          {
+            "name": "assigned_user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by assigned user ID",
+              "title": "Assigned User Id"
+            },
+            "description": "Filter by assigned user ID"
+          },
+          {
+            "name": "branch_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by branch UUID",
+              "title": "Branch Id"
+            },
+            "description": "Filter by branch UUID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "assignments"
+        ],
+        "summary": "Create a new assignment",
+        "description": "Create a new assignment for a cashier/supervisor.\n\n**Required fields:**\n- `session_id`: UUID of the session (must be active)\n- `user_id`: User ID of the cashier/supervisor\n- `branch_id`: UUID of the branch\n- `role`: Role ('cashier' or 'supervisor')\n- `start_time`: Assignment start time (ISO timestamp)\n\n**Optional fields:**\n- `terminal_id`: UUID of the terminal (if assigned to a specific terminal)\n\n**Validation:**\n- Session must exist, belong to the organization, and be active\n- Branch must exist and belong to the organization\n- Terminal must exist and belong to the branch (if terminal_id provided)\n- User cannot have another active assignment\n- NOTE: User existence and org membership validation is not performed (limitation: no access to Markets API)",
+        "operationId": "create_assignment_api_organizations__organization_id__assignments_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentCreateRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/assignments/{assignment_id}": {
+      "get": {
+        "tags": [
+          "assignments"
+        ],
+        "summary": "Get a specific assignment by ID",
+        "operationId": "get_assignment_api_organizations__organization_id__assignments__assignment_id__get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "assignment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Assignment ID",
+              "title": "Assignment Id"
+            },
+            "description": "Assignment ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "assignments"
+        ],
+        "summary": "Update an existing assignment",
+        "description": "Update an assignment. Only provided fields are updated.\n\n**Updatable fields:**\n- `terminal_id`: UUID of the terminal\n- `end_time`: Assignment end time (ISO timestamp)\n- `is_active`: Active status (when set to false, end_time is automatically set if not provided)\n\n**Validation:**\n- Terminal must exist and belong to the branch (if terminal_id provided)\n- When deactivating (is_active=false), end_time is automatically set to current time if not already set",
+        "operationId": "update_assignment_api_organizations__organization_id__assignments__assignment_id__patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "assignment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Assignment ID",
+              "title": "Assignment Id"
+            },
+            "description": "Assignment ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentUpdateRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "assignments"
+        ],
+        "summary": "Delete an assignment",
+        "description": "Delete an assignment.\n\nReturns 204 No Content on success.",
+        "operationId": "delete_assignment_api_organizations__organization_id__assignments__assignment_id__delete",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "assignment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Assignment ID",
+              "title": "Assignment Id"
+            },
+            "description": "Assignment ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/assignments/{assignment_id}/status": {
+      "patch": {
+        "tags": [
+          "assignments"
+        ],
+        "summary": "Update assignment status",
+        "description": "Update the status of an assignment (1=Active, 2=Inactive, 3=Deleted)",
+        "operationId": "update_assignment_status_api_organizations__organization_id__assignments__assignment_id__status_patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "assignment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Assignment ID",
+              "title": "Assignment Id"
+            },
+            "description": "Assignment ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductStatusRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/branches": {
+      "get": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "Get all branches for an organization",
+        "description": "Get a paginated list of branches with optional search filters.\n\n**Query Parameters:**\n- `search`: Search filter string (field:value syntax)\n- `page`: Page number (1-indexed)\n- `pageSize`: Items per page\n- `type`: Filter by branch type ('stand' or 'restaurant')\n\n**Examples:**\n- Get all branches: `/api/organizations/{orgId}/branches`\n- Get stands only: `/api/organizations/{orgId}/branches?type=stand`\n- Search by name: `/api/organizations/{orgId}/branches?search=name:*centro*`",
+        "operationId": "list_branches_api_organizations__organization_id__branches_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: name:*centro*,orderBy>name",
+              "title": "Search"
+            },
+            "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: name:*centro*,orderBy>name"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number (1-indexed)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 12,
+              "title": "Pagesize"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by branch type (stand/restaurant)",
+              "title": "Type"
+            },
+            "description": "Filter by branch type (stand/restaurant)"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "Create a new branch",
+        "description": "Create a new branch for an organization.\n\n**Required fields:**\n- `name`: Branch name (e.g., \"Puesto 1\", \"Restaurante Centro\")\n- `code`: Short code (e.g., \"P1\", \"RC\") - must be unique within organization\n- `type`: Branch type ('stand' or 'restaurant')\n\n**Optional fields:**\n- `address`: Physical address\n- `phone`: Contact phone number",
+        "operationId": "create_branch_api_organizations__organization_id__branches_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BranchCreateRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/branches/{branch_id}": {
+      "get": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "Get a specific branch by ID",
+        "operationId": "get_branch_api_organizations__organization_id__branches__branch_id__get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "branch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Branch ID",
+              "title": "Branch Id"
+            },
+            "description": "Branch ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "Update an existing branch",
+        "description": "Update a branch. Only provided fields are updated.\n\n**Updatable fields:**\n- `name`: Branch name\n- `code`: Branch code (must be unique within organization)\n- `type`: Branch type ('stand' or 'restaurant')\n- `address`: Physical address\n- `phone`: Contact phone number",
+        "operationId": "update_branch_api_organizations__organization_id__branches__branch_id__patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "branch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Branch ID",
+              "title": "Branch Id"
+            },
+            "description": "Branch ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BranchUpdateRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "Delete a branch",
+        "description": "Delete a branch.\n\n**Validation:**\n- Cannot delete if branch has active terminals\n- Cannot delete if branch has active sessions\n\nReturns 204 No Content on success.",
+        "operationId": "delete_branch_api_organizations__organization_id__branches__branch_id__delete",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "branch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Branch ID",
+              "title": "Branch Id"
+            },
+            "description": "Branch ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/branches/{branch_id}/status": {
+      "patch": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "Update branch status",
+        "description": "Update the status of a branch (1=Active, 2=Inactive, 3=Deleted)",
+        "operationId": "update_branch_status_api_organizations__organization_id__branches__branch_id__status_patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "branch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Branch ID",
+              "title": "Branch Id"
+            },
+            "description": "Branch ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductStatusRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/organizations/{organization_id}/categories": {
       "get": {
         "tags": [
@@ -684,6 +1638,501 @@
         }
       }
     },
+    "/api/organizations/{organization_id}/closings": {
+      "get": {
+        "tags": [
+          "closings"
+        ],
+        "summary": "Get all closings for an organization",
+        "description": "Get a paginated list of closings with optional search filters.\n\n**Query Parameters:**\n- `search`: Search filter string (field:value syntax)\n- `page`: Page number (1-indexed)\n- `pageSize`: Items per page\n- `session_id`: Filter by session UUID\n- `status`: Filter by status ('pending', 'approved', 'rejected')\n- `branch_id`: Filter by branch UUID\n\n**Examples:**\n- Get all closings: `/api/organizations/{orgId}/closings`\n- Get pending closings: `/api/organizations/{orgId}/closings?status=pending`\n- Get closings for a session: `/api/organizations/{orgId}/closings?session_id={sessionId}`\n- Get closings for a branch: `/api/organizations/{orgId}/closings?branch_id={branchId}`",
+        "operationId": "list_closings_api_organizations__organization_id__closings_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: status:pending,orderBy>created_on",
+              "title": "Search"
+            },
+            "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: status:pending,orderBy>created_on"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number (1-indexed)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 12,
+              "title": "Pagesize"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "session_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by session UUID",
+              "title": "Session Id"
+            },
+            "description": "Filter by session UUID"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by status (pending/approved/rejected)",
+              "title": "Status"
+            },
+            "description": "Filter by status (pending/approved/rejected)"
+          },
+          {
+            "name": "branch_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by branch UUID",
+              "title": "Branch Id"
+            },
+            "description": "Filter by branch UUID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosingListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "closings"
+        ],
+        "summary": "Create a new closing",
+        "description": "Create a new cash register closing for an assignment.\n\n**Required fields:**\n- `session_id`: UUID of the session\n- `assignment_id`: UUID of the assignment\n- `declared_cash`: Declared cash amount from cashier\n- `declared_sinpe`: Declared SINPE amount from cashier\n- `declared_card`: Declared card amount from cashier\n- `declared_total`: Declared total amount from cashier\n\n**Optional fields:**\n- `notes`: Optional notes from cashier\n\n**Logic:**\n1. Validates assignment exists and belongs to organization\n2. Calculates expected amounts from orders associated with the assignment\n3. Calculates differences between declared and expected amounts (done by database)\n4. Creates closing record with status 'pending'\n\n**Validation:**\n- Assignment must exist and belong to the organization\n- Only one closing per assignment is allowed",
+        "operationId": "create_closing_api_organizations__organization_id__closings_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClosingCreateRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/closings/{closing_id}": {
+      "get": {
+        "tags": [
+          "closings"
+        ],
+        "summary": "Get a specific closing by ID",
+        "operationId": "get_closing_api_organizations__organization_id__closings__closing_id__get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "closing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Closing ID",
+              "title": "Closing Id"
+            },
+            "description": "Closing ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "closings"
+        ],
+        "summary": "Update an existing closing",
+        "description": "Update a closing (typically for approval/rejection by managers).\n\n**Updatable fields:**\n- `status`: Closing status ('pending', 'approved', 'rejected')\n- `reviewed_by`: User ID of the reviewer (manager) - automatically set if not provided\n- `notes`: Optional notes\n\n**Authorization:**\n- Only managers can approve or reject closings (Requirement 5.7)\n- Authorization enforcement should be done at API Gateway/auth layer\n- Service layer provides defense-in-depth validation\n\n**Logic:**\n- When status is set to 'approved' or 'rejected', reviewed_by and reviewed_at are automatically set\n- Attempting to approve/reject without manager role returns 403 Forbidden\n\n**Error Responses:**\n- 403: User does not have manager role for approval/rejection operations\n- 404: Closing not found\n- 400: Invalid request data\n- 500: Internal server error",
+        "operationId": "update_closing_api_organizations__organization_id__closings__closing_id__patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "closing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Closing ID",
+              "title": "Closing Id"
+            },
+            "description": "Closing ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClosingUpdateRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "closings"
+        ],
+        "summary": "Delete a closing",
+        "description": "Delete a closing.\n\nReturns 204 No Content on success.",
+        "operationId": "delete_closing_api_organizations__organization_id__closings__closing_id__delete",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "closing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Closing ID",
+              "title": "Closing Id"
+            },
+            "description": "Closing ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/closings/{closing_id}/status": {
+      "patch": {
+        "tags": [
+          "closings"
+        ],
+        "summary": "Update closing status",
+        "description": "Update the status of a closing (1=pending, 2=approved, 3=rejected)",
+        "operationId": "update_closing_status_api_organizations__organization_id__closings__closing_id__status_patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "closing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Closing ID",
+              "title": "Closing Id"
+            },
+            "description": "Closing ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductStatusRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/organizations/{organization_id}/confirmations": {
       "post": {
         "tags": [
@@ -1039,6 +2488,470 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ConfirmationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/consecutives": {
+      "get": {
+        "tags": [
+          "consecutives"
+        ],
+        "summary": "List consecutives with pagination and search",
+        "operationId": "list_consecutives_api_organizations__organization_id__consecutives_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search filter (field:value syntax)",
+              "title": "Search"
+            },
+            "description": "Search filter (field:value syntax)"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 12,
+              "title": "Pagesize"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsecutiveListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "consecutives"
+        ],
+        "summary": "Create a new consecutive counter",
+        "operationId": "create_consecutive_api_organizations__organization_id__consecutives_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsecutiveCreateRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsecutiveResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/consecutives/{consecutive_id}": {
+      "get": {
+        "tags": [
+          "consecutives"
+        ],
+        "summary": "Get a specific consecutive by ID",
+        "operationId": "get_consecutive_api_organizations__organization_id__consecutives__consecutive_id__get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "consecutive_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Consecutive ID",
+              "title": "Consecutive Id"
+            },
+            "description": "Consecutive ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsecutiveResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/terminals/{terminal_id}/consecutives/{document_type_id}": {
+      "get": {
+        "tags": [
+          "consecutives"
+        ],
+        "summary": "Get (and optionally increment) a consecutive for a terminal and document type",
+        "operationId": "get_terminal_consecutive_api_organizations__organization_id__terminals__terminal_id__consecutives__document_type_id__get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "terminal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Terminal ID",
+              "title": "Terminal Id"
+            },
+            "description": "Terminal ID"
+          },
+          {
+            "name": "document_type_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Document type ID",
+              "title": "Document Type Id"
+            },
+            "description": "Document type ID"
+          },
+          {
+            "name": "increment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Atomically increment the counter before returning",
+              "default": false,
+              "title": "Increment"
+            },
+            "description": "Atomically increment the counter before returning"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsecutiveResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/consecutives/{consecutive_id}/status": {
+      "patch": {
+        "tags": [
+          "consecutives"
+        ],
+        "summary": "Update consecutive status",
+        "operationId": "update_consecutive_status_api_organizations__organization_id__consecutives__consecutive_id__status_patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "consecutive_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Consecutive ID",
+              "title": "Consecutive Id"
+            },
+            "description": "Consecutive ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductStatusRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsecutiveResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/dashboard": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get real-time dashboard data",
+        "description": "Get real-time sales dashboard data for an organization.\n\n**Query Parameters:**\n- `session_id`: Optional UUID to filter by specific session\n\n**Response:**\nReturns aggregated dashboard data including:\n- `stands`: Array of stand/branch data with sales metrics\n  - `id`: Branch ID\n  - `name`: Branch name\n  - `cashier_name`: Assigned cashier name\n  - `context`: Session context (gradas/mesa/caja)\n  - `total_revenue`: Total revenue for this stand\n  - `sales_count`: Number of sales\n  - `cash`: Cash payment total\n  - `sinpe`: SINPE payment total\n  - `card`: Card payment total\n  - `last_sync_at`: Timestamp of last order sync\n- `total_revenue`: Total revenue across all stands\n- `total_sales`: Total number of sales across all stands\n- `avg_ticket`: Average ticket value (total_revenue / total_sales)\n- `product_ranking`: Top 10 products by revenue\n  - `name`: Product name\n  - `emoji`: Product image/emoji\n  - `units`: Units sold\n  - `revenue`: Total revenue for this product\n\n**Logic:**\n1. Gets active sessions for the organization (optionally filtered by session_id)\n2. Gets active assignments for those sessions\n3. Aggregates sales data from orders by assignment\n4. Calculates payment method breakdowns\n5. Computes product rankings\n6. Calculates global KPIs (total_revenue, total_sales, avg_ticket)\n\n**Examples:**\n- Get dashboard for all active sessions: `/api/organizations/{orgId}/dashboard`\n- Get dashboard for specific session: `/api/organizations/{orgId}/dashboard?session_id={sessionId}`\n\n**Authorization:**\n- User must be a member of the organization (enforced at API Gateway/auth layer)",
+        "operationId": "get_dashboard_api_organizations__organization_id__dashboard_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "session_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional session UUID to filter by specific session",
+              "title": "Session Id"
+            },
+            "description": "Optional session UUID to filter by specific session"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardDataResponse"
                 }
               }
             }
@@ -2343,6 +4256,501 @@
         }
       }
     },
+    "/api/organizations/{organization_id}/sessions": {
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Get all sessions for an organization",
+        "description": "Get a paginated list of sessions with optional search filters.\n\n**Query Parameters:**\n- `search`: Search filter string (field:value syntax)\n- `page`: Page number (1-indexed)\n- `pageSize`: Items per page\n- `branch_id`: Filter by branch UUID\n- `type`: Filter by session type ('match' or 'shift')\n- `context`: Filter by session context ('gradas', 'mesa', or 'caja')\n\n**Examples:**\n- Get all sessions: `/api/organizations/{orgId}/sessions`\n- Get match sessions: `/api/organizations/{orgId}/sessions?type=match`\n- Get sessions for a branch: `/api/organizations/{orgId}/sessions?branch_id={branchId}`",
+        "operationId": "list_sessions_api_organizations__organization_id__sessions_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: name:*partido*,orderBy>start_time",
+              "title": "Search"
+            },
+            "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: name:*partido*,orderBy>start_time"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number (1-indexed)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 12,
+              "title": "Pagesize"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "branch_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by branch UUID",
+              "title": "Branch Id"
+            },
+            "description": "Filter by branch UUID"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by session type (match/shift)",
+              "title": "Type"
+            },
+            "description": "Filter by session type (match/shift)"
+          },
+          {
+            "name": "context",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by session context (gradas/mesa/caja)",
+              "title": "Context"
+            },
+            "description": "Filter by session context (gradas/mesa/caja)"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Create a new session",
+        "description": "Create a new session for an organization.\n\n**Required fields:**\n- `name`: Session name (e.g., \"Partido vs Herediano\", \"Turno Mañana\")\n- `type`: Session type ('match' or 'shift')\n- `context`: Session context ('gradas', 'mesa', or 'caja')\n- `start_time`: Session start time (ISO timestamp)\n\n**Optional fields:**\n- `branch_id`: UUID of the branch for this session\n- `expected_revenue`: Expected revenue for this session\n\n**Validation:**\n- If branch_id is provided, the branch must exist and belong to the organization",
+        "operationId": "create_session_api_organizations__organization_id__sessions_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionCreateRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/sessions/{session_id}": {
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Get a specific session by ID",
+        "operationId": "get_session_api_organizations__organization_id__sessions__session_id__get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Session ID",
+              "title": "Session Id"
+            },
+            "description": "Session ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Update an existing session",
+        "description": "Update a session. Only provided fields are updated.\n\n**Updatable fields:**\n- `name`: Session name\n- `type`: Session type ('match' or 'shift')\n- `context`: Session context ('gradas', 'mesa', or 'caja')\n- `branch_id`: UUID of the branch for this session\n- `end_time`: Session end time (ISO timestamp)\n- `is_active`: Active status (when set to false, end_time is automatically set if not provided)\n- `expected_revenue`: Expected revenue\n- `actual_revenue`: Actual revenue\n\n**Validation:**\n- If branch_id is provided, the branch must exist and belong to the organization\n- When deactivating (is_active=false), end_time is automatically set to current time if not already set",
+        "operationId": "update_session_api_organizations__organization_id__sessions__session_id__patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Session ID",
+              "title": "Session Id"
+            },
+            "description": "Session ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionUpdateRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Delete a session",
+        "description": "Delete a session.\n\n**Validation:**\n- Cannot delete if session has active assignments\n\nReturns 204 No Content on success.",
+        "operationId": "delete_session_api_organizations__organization_id__sessions__session_id__delete",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Session ID",
+              "title": "Session Id"
+            },
+            "description": "Session ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/sessions/{session_id}/status": {
+      "patch": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Update session status",
+        "description": "Update the status of a session (1=Active, 2=Inactive, 3=Deleted)",
+        "operationId": "update_session_status_api_organizations__organization_id__sessions__session_id__status_patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Session ID",
+              "title": "Session Id"
+            },
+            "description": "Session ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductStatusRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/organizations/{organization_id}/clients/{client_id}/stores": {
       "get": {
         "tags": [
@@ -2784,10 +5192,1043 @@
           }
         }
       }
+    },
+    "/api/organizations/{organization_id}/branches/{branch_id}/terminals": {
+      "get": {
+        "tags": [
+          "terminals"
+        ],
+        "summary": "Get all terminals for a branch",
+        "description": "Get a paginated list of terminals for a specific branch.\n\n**Query Parameters:**\n- `search`: Search filter string (field:value syntax)\n- `page`: Page number (1-indexed)\n- `pageSize`: Items per page\n\n**Examples:**\n- Get all terminals for a branch: `/api/organizations/{orgId}/branches/{branchId}/terminals`\n- Search by name: `/api/organizations/{orgId}/branches/{branchId}/terminals?search=name:*caja*`",
+        "operationId": "list_terminals_api_organizations__organization_id__branches__branch_id__terminals_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "branch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Branch identifier",
+              "title": "Branch Id"
+            },
+            "description": "Branch identifier"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: name:*caja*,orderBy>name",
+              "title": "Search"
+            },
+            "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: name:*caja*,orderBy>name"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number (1-indexed)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 12,
+              "title": "Pagesize"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TerminalListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "terminals"
+        ],
+        "summary": "Create a new terminal",
+        "description": "Create a new terminal for a branch.\n\n**Required fields:**\n- `name`: Terminal name (e.g., \"Terminal 1\", \"Caja Principal\")\n- `code`: Short code (e.g., \"T1\", \"CP\") - must be unique within organization\n\n**Optional fields:**\n- `device_id`: Physical device identifier (must be globally unique)\n\n**Note:** The branch_id is taken from the URL path.",
+        "operationId": "create_terminal_api_organizations__organization_id__branches__branch_id__terminals_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "branch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Branch identifier",
+              "title": "Branch Id"
+            },
+            "description": "Branch identifier"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TerminalCreateRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TerminalResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/branches/{branch_id}/terminals/{terminal_id}": {
+      "get": {
+        "tags": [
+          "terminals"
+        ],
+        "summary": "Get a specific terminal by ID",
+        "operationId": "get_terminal_api_organizations__organization_id__branches__branch_id__terminals__terminal_id__get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "branch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Branch identifier",
+              "title": "Branch Id"
+            },
+            "description": "Branch identifier"
+          },
+          {
+            "name": "terminal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Terminal ID",
+              "title": "Terminal Id"
+            },
+            "description": "Terminal ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TerminalResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "terminals"
+        ],
+        "summary": "Update an existing terminal",
+        "description": "Update a terminal. Only provided fields are updated.\n\n**Updatable fields:**\n- `name`: Terminal name\n- `code`: Terminal code (must be unique within organization)\n- `device_id`: Physical device identifier (must be globally unique)\n\n**Note:** Cannot change branch_id through this endpoint.",
+        "operationId": "update_terminal_api_organizations__organization_id__branches__branch_id__terminals__terminal_id__patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "branch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Branch identifier",
+              "title": "Branch Id"
+            },
+            "description": "Branch identifier"
+          },
+          {
+            "name": "terminal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Terminal ID",
+              "title": "Terminal Id"
+            },
+            "description": "Terminal ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TerminalUpdateRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TerminalResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "terminals"
+        ],
+        "summary": "Delete a terminal",
+        "description": "Delete a terminal.\n\n**Validation:**\n- Cannot delete if terminal has active assignments\n\nReturns 204 No Content on success.",
+        "operationId": "delete_terminal_api_organizations__organization_id__branches__branch_id__terminals__terminal_id__delete",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "branch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Branch identifier",
+              "title": "Branch Id"
+            },
+            "description": "Branch identifier"
+          },
+          {
+            "name": "terminal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Terminal ID",
+              "title": "Terminal Id"
+            },
+            "description": "Terminal ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/branches/{branch_id}/terminals/{terminal_id}/status": {
+      "patch": {
+        "tags": [
+          "terminals"
+        ],
+        "summary": "Update terminal status",
+        "description": "Update the status of a terminal (1=Active, 2=Inactive, 3=Deleted)",
+        "operationId": "update_terminal_status_api_organizations__organization_id__branches__branch_id__terminals__terminal_id__status_patch",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "branch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Branch identifier",
+              "title": "Branch Id"
+            },
+            "description": "Branch identifier"
+          },
+          {
+            "name": "terminal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Terminal ID",
+              "title": "Terminal Id"
+            },
+            "description": "Terminal ID"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductStatusRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TerminalResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AssignmentCreateRequestDTO": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id",
+            "description": "UUID of the session"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "User ID of the cashier/supervisor"
+          },
+          "branch_id": {
+            "type": "string",
+            "title": "Branch Id",
+            "description": "UUID of the branch"
+          },
+          "terminal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terminal Id",
+            "description": "Optional UUID of the terminal"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "cashier",
+              "supervisor"
+            ],
+            "title": "Role",
+            "description": "Role: 'cashier' or 'supervisor'"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start Time",
+            "description": "Assignment start time (ISO timestamp)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "user_id",
+          "branch_id",
+          "role",
+          "start_time"
+        ],
+        "title": "AssignmentCreateRequestDTO",
+        "description": "Request DTO for creating an assignment with snake_case fields."
+      },
+      "AssignmentListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentResponse"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "AssignmentListResponse",
+        "description": "List of assignments with pagination."
+      },
+      "AssignmentResponse": {
+        "properties": {
+          "assignment_id": {
+            "type": "string",
+            "title": "Assignment Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "branch_id": {
+            "type": "string",
+            "title": "Branch Id"
+          },
+          "terminal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terminal Id"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "start_time": {
+            "type": "string",
+            "title": "Start Time"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
+          },
+          "status": {
+            "type": "integer",
+            "title": "Status"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "created_by": {
+            "type": "string",
+            "title": "Created By"
+          },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssignmentUserDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "assignment_id",
+          "organization_id",
+          "session_id",
+          "user_id",
+          "branch_id",
+          "role",
+          "start_time",
+          "status",
+          "created_by"
+        ],
+        "title": "AssignmentResponse",
+        "description": "Assignment response DTO."
+      },
+      "AssignmentUpdateRequestDTO": {
+        "properties": {
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time",
+            "description": "Assignment end time (ISO timestamp)"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Whether the assignment is active"
+          },
+          "terminal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terminal Id",
+            "description": "UUID of the terminal"
+          }
+        },
+        "type": "object",
+        "title": "AssignmentUpdateRequestDTO",
+        "description": "Request DTO for updating an assignment with snake_case fields."
+      },
+      "AssignmentUserDTO": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email"
+        ],
+        "title": "AssignmentUserDTO",
+        "description": "Embedded user details for assignment responses (read from shared users table)."
+      },
+      "BranchCreateRequestDTO": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "stand",
+              "restaurant"
+            ],
+            "title": "Type"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "code",
+          "type"
+        ],
+        "title": "BranchCreateRequestDTO",
+        "description": "Request DTO for creating a branch with snake_case fields."
+      },
+      "BranchListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/BranchResponse"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "BranchListResponse",
+        "description": "List of branches with pagination."
+      },
+      "BranchResponse": {
+        "properties": {
+          "branch_id": {
+            "type": "string",
+            "title": "Branch Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "status": {
+            "type": "integer",
+            "title": "Status"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "created_by": {
+            "type": "string",
+            "title": "Created By"
+          },
+          "terminals": {
+            "items": {
+              "$ref": "#/components/schemas/TerminalResponse"
+            },
+            "type": "array",
+            "title": "Terminals",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "branch_id",
+          "organization_id",
+          "name",
+          "code",
+          "type",
+          "status",
+          "created_by"
+        ],
+        "title": "BranchResponse",
+        "description": "Branch response DTO."
+      },
+      "BranchUpdateRequestDTO": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "stand",
+                  "restaurant"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          }
+        },
+        "type": "object",
+        "title": "BranchUpdateRequestDTO",
+        "description": "Request DTO for updating a branch with snake_case fields."
+      },
       "CabysInputDTO": {
         "properties": {
           "code": {
@@ -2895,7 +6336,7 @@
             ],
             "title": "Description"
           },
-          "backgroundColor": {
+          "background_color": {
             "anyOf": [
               {
                 "type": "string"
@@ -2904,9 +6345,9 @@
                 "type": "null"
               }
             ],
-            "title": "Backgroundcolor"
+            "title": "Background Color"
           },
-          "buttonColor": {
+          "button_color": {
             "anyOf": [
               {
                 "type": "string"
@@ -2915,9 +6356,9 @@
                 "type": "null"
               }
             ],
-            "title": "Buttoncolor"
+            "title": "Button Color"
           },
-          "image1": {
+          "image_1": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ImageDTO"
@@ -2927,7 +6368,7 @@
               }
             ]
           },
-          "image2": {
+          "image_2": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ImageDTO"
@@ -2937,7 +6378,7 @@
               }
             ]
           },
-          "sortOrder": {
+          "sort_order": {
             "anyOf": [
               {
                 "type": "integer"
@@ -2946,7 +6387,7 @@
                 "type": "null"
               }
             ],
-            "title": "Sortorder"
+            "title": "Sort Order"
           }
         },
         "type": "object",
@@ -2974,7 +6415,7 @@
       },
       "ClientRequestDTO": {
         "properties": {
-          "clientName": {
+          "client_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -2983,9 +6424,9 @@
                 "type": "null"
               }
             ],
-            "title": "Clientname"
+            "title": "Client Name"
           },
-          "clientGln": {
+          "client_gln": {
             "anyOf": [
               {
                 "type": "string"
@@ -2994,7 +6435,7 @@
                 "type": "null"
               }
             ],
-            "title": "Clientgln"
+            "title": "Client Gln"
           },
           "identification": {
             "anyOf": [
@@ -3006,7 +6447,7 @@
               }
             ]
           },
-          "businessName": {
+          "business_name": {
             "anyOf": [
               {
                 "type": "string",
@@ -3016,7 +6457,7 @@
                 "type": "null"
               }
             ],
-            "title": "Businessname"
+            "title": "Business Name"
           },
           "nationality": {
             "anyOf": [
@@ -3069,15 +6510,15 @@
       },
       "ClientResponse": {
         "properties": {
-          "clientId": {
+          "client_id": {
             "type": "string",
-            "title": "Clientid"
+            "title": "Client Id"
           },
-          "companyId": {
+          "company_id": {
             "type": "string",
-            "title": "Companyid"
+            "title": "Company Id"
           },
-          "clientName": {
+          "client_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -3086,9 +6527,9 @@
                 "type": "null"
               }
             ],
-            "title": "Clientname"
+            "title": "Client Name"
           },
-          "clientGln": {
+          "client_gln": {
             "anyOf": [
               {
                 "type": "string"
@@ -3097,7 +6538,7 @@
                 "type": "null"
               }
             ],
-            "title": "Clientgln"
+            "title": "Client Gln"
           },
           "status": {
             "type": "integer",
@@ -3113,7 +6554,7 @@
               }
             ]
           },
-          "businessName": {
+          "business_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -3122,7 +6563,7 @@
                 "type": "null"
               }
             ],
-            "title": "Businessname"
+            "title": "Business Name"
           },
           "nationality": {
             "anyOf": [
@@ -3169,11 +6610,326 @@
         },
         "type": "object",
         "required": [
-          "clientId",
-          "companyId",
+          "client_id",
+          "company_id",
           "status"
         ],
         "title": "ClientResponse"
+      },
+      "ClosingCreateRequestDTO": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id",
+            "description": "UUID of the session"
+          },
+          "assignment_id": {
+            "type": "string",
+            "title": "Assignment Id",
+            "description": "UUID of the assignment"
+          },
+          "declared_cash": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Declared Cash",
+            "description": "Declared cash amount"
+          },
+          "declared_sinpe": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Declared Sinpe",
+            "description": "Declared SINPE amount"
+          },
+          "declared_card": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Declared Card",
+            "description": "Declared card amount"
+          },
+          "declared_total": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Declared Total",
+            "description": "Declared total amount"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Optional notes from cashier"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "assignment_id",
+          "declared_cash",
+          "declared_sinpe",
+          "declared_card",
+          "declared_total"
+        ],
+        "title": "ClosingCreateRequestDTO",
+        "description": "Request DTO for creating a closing with snake_case fields."
+      },
+      "ClosingListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ClosingResponse"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "ClosingListResponse",
+        "description": "List of closings with pagination."
+      },
+      "ClosingResponse": {
+        "properties": {
+          "closing_id": {
+            "type": "string",
+            "title": "Closing Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "assignment_id": {
+            "type": "string",
+            "title": "Assignment Id"
+          },
+          "branch_id": {
+            "type": "string",
+            "title": "Branch Id"
+          },
+          "terminal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terminal Id"
+          },
+          "cashier_id": {
+            "type": "string",
+            "title": "Cashier Id"
+          },
+          "expected_cash": {
+            "type": "number",
+            "title": "Expected Cash"
+          },
+          "expected_sinpe": {
+            "type": "number",
+            "title": "Expected Sinpe"
+          },
+          "expected_card": {
+            "type": "number",
+            "title": "Expected Card"
+          },
+          "expected_total": {
+            "type": "number",
+            "title": "Expected Total"
+          },
+          "declared_cash": {
+            "type": "number",
+            "title": "Declared Cash"
+          },
+          "declared_sinpe": {
+            "type": "number",
+            "title": "Declared Sinpe"
+          },
+          "declared_card": {
+            "type": "number",
+            "title": "Declared Card"
+          },
+          "declared_total": {
+            "type": "number",
+            "title": "Declared Total"
+          },
+          "cash_difference": {
+            "type": "number",
+            "title": "Cash Difference"
+          },
+          "sinpe_difference": {
+            "type": "number",
+            "title": "Sinpe Difference"
+          },
+          "card_difference": {
+            "type": "number",
+            "title": "Card Difference"
+          },
+          "total_difference": {
+            "type": "number",
+            "title": "Total Difference"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "reviewed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed By"
+          },
+          "reviewed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "closing_id",
+          "organization_id",
+          "session_id",
+          "assignment_id",
+          "branch_id",
+          "cashier_id",
+          "expected_cash",
+          "expected_sinpe",
+          "expected_card",
+          "expected_total",
+          "declared_cash",
+          "declared_sinpe",
+          "declared_card",
+          "declared_total",
+          "cash_difference",
+          "sinpe_difference",
+          "card_difference",
+          "total_difference",
+          "status",
+          "created_at"
+        ],
+        "title": "ClosingResponse",
+        "description": "Closing response DTO with snake_case fields as per design specification."
+      },
+      "ClosingUpdateRequestDTO": {
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "approved",
+                  "rejected"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status",
+            "description": "Closing status: 'pending', 'approved', or 'rejected'"
+          },
+          "reviewed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed By",
+            "description": "User ID of the reviewer (manager)"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Optional notes"
+          }
+        },
+        "type": "object",
+        "title": "ClosingUpdateRequestDTO",
+        "description": "Request DTO for updating a closing with snake_case fields."
       },
       "ConfirmationListResponse": {
         "properties": {
@@ -3344,6 +7100,118 @@
         ],
         "title": "ConfirmationResponse"
       },
+      "ConsecutiveCreateRequestDTO": {
+        "properties": {
+          "terminal_id": {
+            "type": "string",
+            "title": "Terminal Id"
+          },
+          "document_type_id": {
+            "type": "integer",
+            "title": "Document Type Id"
+          },
+          "initial_number": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Number"
+          }
+        },
+        "type": "object",
+        "required": [
+          "terminal_id",
+          "document_type_id"
+        ],
+        "title": "ConsecutiveCreateRequestDTO"
+      },
+      "ConsecutiveListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ConsecutiveResponse"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "ConsecutiveListResponse",
+        "description": "List of consecutives with pagination."
+      },
+      "ConsecutiveResponse": {
+        "properties": {
+          "consecutive_id": {
+            "type": "string",
+            "title": "Consecutive Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "terminal_id": {
+            "type": "string",
+            "title": "Terminal Id"
+          },
+          "document_type_id": {
+            "type": "integer",
+            "title": "Document Type Id"
+          },
+          "current_number": {
+            "type": "integer",
+            "title": "Current Number"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "created_by": {
+            "type": "string",
+            "title": "Created By"
+          }
+        },
+        "type": "object",
+        "required": [
+          "consecutive_id",
+          "organization_id",
+          "terminal_id",
+          "document_type_id",
+          "current_number",
+          "created_by"
+        ],
+        "title": "ConsecutiveResponse",
+        "description": "Consecutive (document sequence counter) response DTO."
+      },
       "CreateConfirmationDTO": {
         "properties": {
           "confirmation_number": {
@@ -3370,9 +7238,9 @@
       },
       "CreateDepartmentDTO": {
         "properties": {
-          "departmentCode": {
+          "department_code": {
             "type": "string",
-            "title": "Departmentcode"
+            "title": "Department Code"
           },
           "name": {
             "anyOf": [
@@ -3385,7 +7253,7 @@
             ],
             "title": "Name"
           },
-          "supplierCode": {
+          "supplier_code": {
             "anyOf": [
               {
                 "type": "string"
@@ -3394,12 +7262,12 @@
                 "type": "null"
               }
             ],
-            "title": "Suppliercode"
+            "title": "Supplier Code"
           }
         },
         "type": "object",
         "required": [
-          "departmentCode"
+          "department_code"
         ],
         "title": "CreateDepartmentDTO"
       },
@@ -3710,11 +7578,51 @@
         "title": "CrossDockingTotalsDTO",
         "description": "Crossdocking totals."
       },
+      "DashboardDataResponse": {
+        "properties": {
+          "stands": {
+            "items": {
+              "$ref": "#/components/schemas/StandData"
+            },
+            "type": "array",
+            "title": "Stands"
+          },
+          "total_revenue": {
+            "type": "number",
+            "title": "Total Revenue"
+          },
+          "total_sales": {
+            "type": "integer",
+            "title": "Total Sales"
+          },
+          "avg_ticket": {
+            "type": "number",
+            "title": "Avg Ticket"
+          },
+          "product_ranking": {
+            "items": {
+              "$ref": "#/components/schemas/ProductRanking"
+            },
+            "type": "array",
+            "title": "Product Ranking"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stands",
+          "total_revenue",
+          "total_sales",
+          "avg_ticket",
+          "product_ranking"
+        ],
+        "title": "DashboardDataResponse",
+        "description": "Dashboard data response DTO with snake_case fields as per design specification.\n\nThis is a computed/aggregated response, not a database model."
+      },
       "DepartmentDTO": {
         "properties": {
-          "departmentCode": {
+          "department_code": {
             "type": "string",
-            "title": "Departmentcode"
+            "title": "Department Code"
           },
           "name": {
             "anyOf": [
@@ -3727,7 +7635,7 @@
             ],
             "title": "Name"
           },
-          "supplierCode": {
+          "supplier_code": {
             "anyOf": [
               {
                 "type": "string"
@@ -3736,12 +7644,12 @@
                 "type": "null"
               }
             ],
-            "title": "Suppliercode"
+            "title": "Supplier Code"
           }
         },
         "type": "object",
         "required": [
-          "departmentCode"
+          "department_code"
         ],
         "title": "DepartmentDTO",
         "description": "Lightweight department info embedded in order responses."
@@ -3768,21 +7676,21 @@
       },
       "DepartmentResponse": {
         "properties": {
-          "departmentId": {
+          "department_id": {
             "type": "string",
-            "title": "Departmentid"
+            "title": "Department Id"
           },
-          "companyId": {
+          "company_id": {
             "type": "string",
-            "title": "Companyid"
+            "title": "Company Id"
           },
-          "clientId": {
+          "client_id": {
             "type": "string",
-            "title": "Clientid"
+            "title": "Client Id"
           },
-          "departmentCode": {
+          "department_code": {
             "type": "string",
-            "title": "Departmentcode"
+            "title": "Department Code"
           },
           "name": {
             "anyOf": [
@@ -3795,7 +7703,7 @@
             ],
             "title": "Name"
           },
-          "supplierCode": {
+          "supplier_code": {
             "anyOf": [
               {
                 "type": "string"
@@ -3804,15 +7712,15 @@
                 "type": "null"
               }
             ],
-            "title": "Suppliercode"
+            "title": "Supplier Code"
           }
         },
         "type": "object",
         "required": [
-          "departmentId",
-          "companyId",
-          "clientId",
-          "departmentCode"
+          "department_id",
+          "company_id",
+          "client_id",
+          "department_code"
         ],
         "title": "DepartmentResponse"
       },
@@ -3922,17 +7830,6 @@
       },
       "IdentificationRequestDTO": {
         "properties": {
-          "type": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Type"
-          },
           "code": {
             "anyOf": [
               {
@@ -3964,17 +7861,6 @@
       },
       "IdentificationResponse": {
         "properties": {
-          "type": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Type"
-          },
           "code": {
             "anyOf": [
               {
@@ -5029,7 +8915,7 @@
       },
       "PhoneRequestDTO": {
         "properties": {
-          "countryCode": {
+          "country_code": {
             "anyOf": [
               {
                 "type": "string",
@@ -5039,9 +8925,9 @@
                 "type": "null"
               }
             ],
-            "title": "Countrycode"
+            "title": "Country Code"
           },
-          "areaCode": {
+          "area_code": {
             "anyOf": [
               {
                 "type": "string",
@@ -5051,7 +8937,7 @@
                 "type": "null"
               }
             ],
-            "title": "Areacode"
+            "title": "Area Code"
           },
           "number": {
             "anyOf": [
@@ -5083,7 +8969,7 @@
       },
       "PhoneResponse": {
         "properties": {
-          "countryCode": {
+          "country_code": {
             "anyOf": [
               {
                 "type": "string"
@@ -5092,9 +8978,9 @@
                 "type": "null"
               }
             ],
-            "title": "Countrycode"
+            "title": "Country Code"
           },
-          "areaCode": {
+          "area_code": {
             "anyOf": [
               {
                 "type": "string"
@@ -5103,7 +8989,7 @@
                 "type": "null"
               }
             ],
-            "title": "Areacode"
+            "title": "Area Code"
           },
           "number": {
             "anyOf": [
@@ -5133,9 +9019,9 @@
       },
       "ProductCodeDTO": {
         "properties": {
-          "codeTypeId": {
+          "code_type_id": {
             "type": "string",
-            "title": "Codetypeid"
+            "title": "Code Type Id"
           },
           "number": {
             "type": "string",
@@ -5155,16 +9041,16 @@
         },
         "type": "object",
         "required": [
-          "codeTypeId",
+          "code_type_id",
           "number"
         ],
         "title": "ProductCodeDTO"
       },
       "ProductCodeResponse": {
         "properties": {
-          "codeTypeId": {
+          "code_type_id": {
             "type": "string",
-            "title": "Codetypeid"
+            "title": "Code Type Id"
           },
           "number": {
             "type": "string",
@@ -5184,16 +9070,16 @@
         },
         "type": "object",
         "required": [
-          "codeTypeId",
+          "code_type_id",
           "number"
         ],
         "title": "ProductCodeResponse"
       },
       "ProductDiscountDTO": {
         "properties": {
-          "discountTypeId": {
+          "discount_type_id": {
             "type": "string",
-            "title": "Discounttypeid"
+            "title": "Discount Type Id"
           },
           "percentage": {
             "anyOf": [
@@ -5217,7 +9103,7 @@
             ],
             "title": "Reason"
           },
-          "isAmount": {
+          "is_amount": {
             "anyOf": [
               {
                 "type": "boolean"
@@ -5226,21 +9112,21 @@
                 "type": "null"
               }
             ],
-            "title": "Isamount"
+            "title": "Is Amount"
           }
         },
         "type": "object",
         "required": [
-          "discountTypeId"
+          "discount_type_id"
         ],
         "title": "ProductDiscountDTO",
         "description": "Discount input — no 'amount' field; discount amounts are backend-calculated."
       },
       "ProductDiscountResponse": {
         "properties": {
-          "discountTypeId": {
+          "discount_type_id": {
             "type": "string",
-            "title": "Discounttypeid"
+            "title": "Discount Type Id"
           },
           "percentage": {
             "anyOf": [
@@ -5275,7 +9161,7 @@
             ],
             "title": "Reason"
           },
-          "isAmount": {
+          "is_amount": {
             "anyOf": [
               {
                 "type": "boolean"
@@ -5284,12 +9170,12 @@
                 "type": "null"
               }
             ],
-            "title": "Isamount"
+            "title": "Is Amount"
           }
         },
         "type": "object",
         "required": [
-          "discountTypeId"
+          "discount_type_id"
         ],
         "title": "ProductDiscountResponse"
       },
@@ -5312,6 +9198,35 @@
           "pagination"
         ],
         "title": "ProductListResponse"
+      },
+      "ProductRanking": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "emoji": {
+            "type": "string",
+            "title": "Emoji"
+          },
+          "units": {
+            "type": "integer",
+            "title": "Units"
+          },
+          "revenue": {
+            "type": "number",
+            "title": "Revenue"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "emoji",
+          "units",
+          "revenue"
+        ],
+        "title": "ProductRanking",
+        "description": "Product ranking data for dashboard with snake_case fields."
       },
       "ProductRequestDTO": {
         "properties": {
@@ -5337,7 +9252,7 @@
             ],
             "title": "Description"
           },
-          "unitsPerBox": {
+          "units_per_box": {
             "anyOf": [
               {
                 "type": "integer"
@@ -5346,7 +9261,7 @@
                 "type": "null"
               }
             ],
-            "title": "Unitsperbox"
+            "title": "Units Per Box"
           },
           "price": {
             "anyOf": [
@@ -5359,7 +9274,7 @@
             ],
             "title": "Price"
           },
-          "categoryId": {
+          "category_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -5368,7 +9283,7 @@
                 "type": "null"
               }
             ],
-            "title": "Categoryid"
+            "title": "Category Id"
           },
           "image": {
             "anyOf": [
@@ -5380,6 +9295,94 @@
               }
             ]
           },
+          "stock_quantity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stock Quantity"
+          },
+          "low_stock_threshold": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Low Stock Threshold"
+          },
+          "track_inventory": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Track Inventory"
+          },
+          "is_service": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Service"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          },
+          "on_sale": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Sale"
+          },
+          "original_price": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Price"
+          },
+          "discount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount"
+          },
           "cabys": {
             "anyOf": [
               {
@@ -5390,7 +9393,7 @@
               }
             ]
           },
-          "unitId": {
+          "unit_id": {
             "anyOf": [
               {
                 "type": "integer"
@@ -5399,9 +9402,9 @@
                 "type": "null"
               }
             ],
-            "title": "Unitid"
+            "title": "Unit Id"
           },
-          "commercialUnitMeasure": {
+          "commercial_unit_measure": {
             "anyOf": [
               {
                 "type": "string"
@@ -5410,9 +9413,9 @@
                 "type": "null"
               }
             ],
-            "title": "Commercialunitmeasure"
+            "title": "Commercial Unit Measure"
           },
-          "isPackaged": {
+          "is_packaged": {
             "anyOf": [
               {
                 "type": "boolean"
@@ -5421,7 +9424,7 @@
                 "type": "null"
               }
             ],
-            "title": "Ispackaged"
+            "title": "Is Packaged"
           },
           "quantity": {
             "anyOf": [
@@ -5434,7 +9437,7 @@
             ],
             "title": "Quantity"
           },
-          "unitPrice": {
+          "unit_price": {
             "anyOf": [
               {
                 "type": "number"
@@ -5443,9 +9446,9 @@
                 "type": "null"
               }
             ],
-            "title": "Unitprice"
+            "title": "Unit Price"
           },
-          "customsPart": {
+          "customs_part": {
             "anyOf": [
               {
                 "type": "string"
@@ -5454,7 +9457,7 @@
                 "type": "null"
               }
             ],
-            "title": "Customspart"
+            "title": "Customs Part"
           },
           "codes": {
             "anyOf": [
@@ -5498,7 +9501,7 @@
             ],
             "title": "Taxes"
           },
-          "baseAmount": {
+          "base_amount": {
             "anyOf": [
               {
                 "type": "number"
@@ -5507,7 +9510,7 @@
                 "type": "null"
               }
             ],
-            "title": "Baseamount"
+            "title": "Base Amount"
           }
         },
         "type": "object",
@@ -5515,13 +9518,13 @@
       },
       "ProductResponse": {
         "properties": {
-          "productId": {
+          "product_id": {
             "type": "string",
-            "title": "Productid"
+            "title": "Product Id"
           },
-          "companyId": {
+          "company_id": {
             "type": "string",
-            "title": "Companyid"
+            "title": "Company Id"
           },
           "name": {
             "anyOf": [
@@ -5545,7 +9548,7 @@
             ],
             "title": "Description"
           },
-          "unitsPerBox": {
+          "units_per_box": {
             "anyOf": [
               {
                 "type": "integer"
@@ -5554,7 +9557,7 @@
                 "type": "null"
               }
             ],
-            "title": "Unitsperbox"
+            "title": "Units Per Box"
           },
           "price": {
             "anyOf": [
@@ -5567,7 +9570,7 @@
             ],
             "title": "Price"
           },
-          "imageUrl": {
+          "image_url": {
             "anyOf": [
               {
                 "type": "string"
@@ -5576,7 +9579,7 @@
                 "type": "null"
               }
             ],
-            "title": "Imageurl"
+            "title": "Image Url"
           },
           "category": {
             "anyOf": [
@@ -5588,6 +9591,87 @@
               }
             ]
           },
+          "status": {
+            "type": "integer",
+            "title": "Status",
+            "default": 1
+          },
+          "stock_quantity": {
+            "type": "integer",
+            "title": "Stock Quantity",
+            "default": 0
+          },
+          "low_stock_threshold": {
+            "type": "integer",
+            "title": "Low Stock Threshold",
+            "default": 10
+          },
+          "track_inventory": {
+            "type": "boolean",
+            "title": "Track Inventory",
+            "default": true
+          },
+          "is_service": {
+            "type": "boolean",
+            "title": "Is Service",
+            "default": false
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "product"
+          },
+          "on_sale": {
+            "type": "boolean",
+            "title": "On Sale",
+            "default": false
+          },
+          "original_price": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Price"
+          },
+          "discount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount"
+          },
+          "created_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created On"
+          },
+          "updated_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated On"
+          },
           "cabys": {
             "anyOf": [
               {
@@ -5598,7 +9682,7 @@
               }
             ]
           },
-          "unitId": {
+          "unit_id": {
             "anyOf": [
               {
                 "type": "integer"
@@ -5607,9 +9691,9 @@
                 "type": "null"
               }
             ],
-            "title": "Unitid"
+            "title": "Unit Id"
           },
-          "commercialUnitMeasure": {
+          "commercial_unit_measure": {
             "anyOf": [
               {
                 "type": "string"
@@ -5618,9 +9702,9 @@
                 "type": "null"
               }
             ],
-            "title": "Commercialunitmeasure"
+            "title": "Commercial Unit Measure"
           },
-          "isPackaged": {
+          "is_packaged": {
             "anyOf": [
               {
                 "type": "boolean"
@@ -5629,7 +9713,7 @@
                 "type": "null"
               }
             ],
-            "title": "Ispackaged"
+            "title": "Is Packaged"
           },
           "quantity": {
             "anyOf": [
@@ -5642,7 +9726,7 @@
             ],
             "title": "Quantity"
           },
-          "unitPrice": {
+          "unit_price": {
             "anyOf": [
               {
                 "type": "number"
@@ -5651,9 +9735,9 @@
                 "type": "null"
               }
             ],
-            "title": "Unitprice"
+            "title": "Unit Price"
           },
-          "customsPart": {
+          "customs_part": {
             "anyOf": [
               {
                 "type": "string"
@@ -5662,7 +9746,7 @@
                 "type": "null"
               }
             ],
-            "title": "Customspart"
+            "title": "Customs Part"
           },
           "codes": {
             "items": {
@@ -5685,7 +9769,7 @@
             "type": "array",
             "title": "Taxes"
           },
-          "baseAmount": {
+          "base_amount": {
             "anyOf": [
               {
                 "type": "number"
@@ -5694,9 +9778,9 @@
                 "type": "null"
               }
             ],
-            "title": "Baseamount"
+            "title": "Base Amount"
           },
-          "salePrice": {
+          "sale_price": {
             "anyOf": [
               {
                 "type": "number"
@@ -5705,13 +9789,13 @@
                 "type": "null"
               }
             ],
-            "title": "Saleprice"
+            "title": "Sale Price"
           }
         },
         "type": "object",
         "required": [
-          "productId",
-          "companyId"
+          "product_id",
+          "company_id"
         ],
         "title": "ProductResponse"
       },
@@ -5738,11 +9822,11 @@
       },
       "ProductTaxDTO": {
         "properties": {
-          "taxTypeId": {
+          "tax_type_id": {
             "type": "string",
-            "title": "Taxtypeid"
+            "title": "Tax Type Id"
           },
-          "taxRate": {
+          "tax_rate": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/TaxRateDTO"
@@ -5752,7 +9836,7 @@
               }
             ]
           },
-          "taxFactor": {
+          "tax_factor": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/TaxFactorDTO"
@@ -5762,7 +9846,7 @@
               }
             ]
           },
-          "otherTaxType": {
+          "other_tax_type": {
             "anyOf": [
               {
                 "type": "string"
@@ -5771,9 +9855,9 @@
                 "type": "null"
               }
             ],
-            "title": "Othertaxtype"
+            "title": "Other Tax Type"
           },
-          "specialFields": {
+          "special_fields": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/TaxSpecialFieldsDTO"
@@ -5783,7 +9867,7 @@
               }
             ]
           },
-          "isAmount": {
+          "is_amount": {
             "anyOf": [
               {
                 "type": "boolean"
@@ -5792,21 +9876,21 @@
                 "type": "null"
               }
             ],
-            "title": "Isamount"
+            "title": "Is Amount"
           }
         },
         "type": "object",
         "required": [
-          "taxTypeId"
+          "tax_type_id"
         ],
         "title": "ProductTaxDTO",
         "description": "Tax input — no 'amount' field; tax amounts are backend-calculated."
       },
       "ProductTaxResponse": {
         "properties": {
-          "taxTypeId": {
+          "tax_type_id": {
             "type": "string",
-            "title": "Taxtypeid"
+            "title": "Tax Type Id"
           },
           "amount": {
             "anyOf": [
@@ -5819,7 +9903,7 @@
             ],
             "title": "Amount"
           },
-          "taxRate": {
+          "tax_rate": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/TaxRateResponse"
@@ -5829,7 +9913,7 @@
               }
             ]
           },
-          "taxFactor": {
+          "tax_factor": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/TaxFactorResponse"
@@ -5839,7 +9923,7 @@
               }
             ]
           },
-          "otherTaxType": {
+          "other_tax_type": {
             "anyOf": [
               {
                 "type": "string"
@@ -5848,9 +9932,9 @@
                 "type": "null"
               }
             ],
-            "title": "Othertaxtype"
+            "title": "Other Tax Type"
           },
-          "specialFields": {
+          "special_fields": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/TaxSpecialFieldsResponse"
@@ -5860,7 +9944,7 @@
               }
             ]
           },
-          "isAmount": {
+          "is_amount": {
             "anyOf": [
               {
                 "type": "boolean"
@@ -5869,12 +9953,12 @@
                 "type": "null"
               }
             ],
-            "title": "Isamount"
+            "title": "Is Amount"
           }
         },
         "type": "object",
         "required": [
-          "taxTypeId"
+          "tax_type_id"
         ],
         "title": "ProductTaxResponse"
       },
@@ -5890,7 +9974,7 @@
       },
       "ResidenceRequestDTO": {
         "properties": {
-          "stateId": {
+          "state_id": {
             "anyOf": [
               {
                 "type": "integer",
@@ -5900,9 +9984,9 @@
                 "type": "null"
               }
             ],
-            "title": "Stateid"
+            "title": "State Id"
           },
-          "countyId": {
+          "county_id": {
             "anyOf": [
               {
                 "type": "integer",
@@ -5912,9 +9996,9 @@
                 "type": "null"
               }
             ],
-            "title": "Countyid"
+            "title": "County Id"
           },
-          "districtId": {
+          "district_id": {
             "anyOf": [
               {
                 "type": "integer",
@@ -5924,7 +10008,7 @@
                 "type": "null"
               }
             ],
-            "title": "Districtid"
+            "title": "District Id"
           },
           "address": {
             "anyOf": [
@@ -5944,7 +10028,7 @@
       },
       "ResidenceResponse": {
         "properties": {
-          "stateId": {
+          "state_id": {
             "anyOf": [
               {
                 "type": "integer"
@@ -5953,9 +10037,9 @@
                 "type": "null"
               }
             ],
-            "title": "Stateid"
+            "title": "State Id"
           },
-          "countyId": {
+          "county_id": {
             "anyOf": [
               {
                 "type": "integer"
@@ -5964,9 +10048,9 @@
                 "type": "null"
               }
             ],
-            "title": "Countyid"
+            "title": "County Id"
           },
-          "districtId": {
+          "district_id": {
             "anyOf": [
               {
                 "type": "integer"
@@ -5975,7 +10059,7 @@
                 "type": "null"
               }
             ],
-            "title": "Districtid"
+            "title": "District Id"
           },
           "address": {
             "anyOf": [
@@ -6009,6 +10093,367 @@
         "type": "object",
         "title": "SelectColorDTO",
         "description": "Request body for selecting a report color scheme (used in reprocess)."
+      },
+      "SessionCreateRequestDTO": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "description": "Session name (e.g., 'Partido vs Herediano', 'Turno Mañana')"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Session type: 'match' or 'shift'"
+          },
+          "context": {
+            "type": "string",
+            "title": "Context",
+            "description": "Session context: 'gradas', 'mesa', or 'caja'"
+          },
+          "branch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch Id",
+            "description": "Optional UUID of the branch for this session"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start Time",
+            "description": "Session start time (ISO timestamp)"
+          },
+          "expected_revenue": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revenue",
+            "description": "Expected revenue for this session"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "context",
+          "start_time"
+        ],
+        "title": "SessionCreateRequestDTO",
+        "description": "Request DTO for creating a session with snake_case fields."
+      },
+      "SessionListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/SessionResponse"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "SessionListResponse",
+        "description": "List of sessions with pagination."
+      },
+      "SessionResponse": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "branch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "context": {
+            "type": "string",
+            "title": "Context"
+          },
+          "start_time": {
+            "type": "string",
+            "title": "Start Time"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
+          },
+          "status": {
+            "type": "integer",
+            "title": "Status"
+          },
+          "expected_revenue": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revenue"
+          },
+          "actual_revenue": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual Revenue"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "created_by": {
+            "type": "string",
+            "title": "Created By"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "organization_id",
+          "name",
+          "type",
+          "context",
+          "start_time",
+          "status",
+          "created_by"
+        ],
+        "title": "SessionResponse",
+        "description": "Session response DTO."
+      },
+      "SessionUpdateRequestDTO": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type",
+            "description": "Session type: 'match' or 'shift'"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context",
+            "description": "Session context: 'gradas', 'mesa', or 'caja'"
+          },
+          "branch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch Id",
+            "description": "UUID of the branch for this session"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time",
+            "description": "Session end time (ISO timestamp)"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Whether the session is active"
+          },
+          "expected_revenue": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revenue"
+          },
+          "actual_revenue": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual Revenue"
+          }
+        },
+        "type": "object",
+        "title": "SessionUpdateRequestDTO",
+        "description": "Request DTO for updating a session with snake_case fields."
+      },
+      "StandData": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "cashier_name": {
+            "type": "string",
+            "title": "Cashier Name"
+          },
+          "context": {
+            "type": "string",
+            "title": "Context"
+          },
+          "total_revenue": {
+            "type": "number",
+            "title": "Total Revenue"
+          },
+          "sales_count": {
+            "type": "integer",
+            "title": "Sales Count"
+          },
+          "cash": {
+            "type": "number",
+            "title": "Cash"
+          },
+          "sinpe": {
+            "type": "number",
+            "title": "Sinpe"
+          },
+          "card": {
+            "type": "number",
+            "title": "Card"
+          },
+          "last_sync_at": {
+            "type": "integer",
+            "title": "Last Sync At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "cashier_name",
+          "context",
+          "total_revenue",
+          "sales_count",
+          "cash",
+          "sinpe",
+          "card",
+          "last_sync_at"
+        ],
+        "title": "StandData",
+        "description": "Stand data for dashboard with snake_case fields."
       },
       "StatusRequestDTO": {
         "properties": {
@@ -6053,7 +10498,7 @@
       },
       "StoreRequestDTO": {
         "properties": {
-          "storeCode": {
+          "store_code": {
             "anyOf": [
               {
                 "type": "string"
@@ -6062,9 +10507,9 @@
                 "type": "null"
               }
             ],
-            "title": "Storecode"
+            "title": "Store Code"
           },
-          "storeName": {
+          "store_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -6073,9 +10518,9 @@
                 "type": "null"
               }
             ],
-            "title": "Storename"
+            "title": "Store Name"
           },
-          "slotId": {
+          "slot_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -6084,7 +10529,7 @@
                 "type": "null"
               }
             ],
-            "title": "Slotid"
+            "title": "Slot Id"
           },
           "chain": {
             "anyOf": [
@@ -6103,23 +10548,23 @@
       },
       "StoreResponse": {
         "properties": {
-          "storeId": {
+          "store_id": {
             "type": "string",
-            "title": "Storeid"
+            "title": "Store Id"
           },
-          "companyId": {
+          "company_id": {
             "type": "string",
-            "title": "Companyid"
+            "title": "Company Id"
           },
-          "clientId": {
+          "client_id": {
             "type": "string",
-            "title": "Clientid"
+            "title": "Client Id"
           },
-          "storeCode": {
+          "store_code": {
             "type": "string",
-            "title": "Storecode"
+            "title": "Store Code"
           },
-          "storeName": {
+          "store_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -6128,9 +10573,9 @@
                 "type": "null"
               }
             ],
-            "title": "Storename"
+            "title": "Store Name"
           },
-          "slotId": {
+          "slot_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -6139,7 +10584,7 @@
                 "type": "null"
               }
             ],
-            "title": "Slotid"
+            "title": "Slot Id"
           },
           "chain": {
             "anyOf": [
@@ -6166,10 +10611,10 @@
         },
         "type": "object",
         "required": [
-          "storeId",
-          "companyId",
-          "clientId",
-          "storeCode"
+          "store_id",
+          "company_id",
+          "client_id",
+          "store_code"
         ],
         "title": "StoreResponse"
       },
@@ -6328,7 +10773,7 @@
             ],
             "title": "Proportion"
           },
-          "volumeConsumption": {
+          "volume_consumption": {
             "anyOf": [
               {
                 "type": "number"
@@ -6337,9 +10782,9 @@
                 "type": "null"
               }
             ],
-            "title": "Volumeconsumption"
+            "title": "Volume Consumption"
           },
-          "taxAmount": {
+          "tax_amount": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/TaxAmountDTO"
@@ -6388,7 +10833,7 @@
             ],
             "title": "Proportion"
           },
-          "volumeConsumption": {
+          "volume_consumption": {
             "anyOf": [
               {
                 "type": "number"
@@ -6397,9 +10842,9 @@
                 "type": "null"
               }
             ],
-            "title": "Volumeconsumption"
+            "title": "Volume Consumption"
           },
-          "taxAmount": {
+          "tax_amount": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/TaxAmountResponse"
@@ -6412,6 +10857,230 @@
         },
         "type": "object",
         "title": "TaxSpecialFieldsResponse"
+      },
+      "TerminalCreateRequestDTO": {
+        "properties": {
+          "branch_id": {
+            "type": "string",
+            "title": "Branch Id",
+            "description": "UUID of the branch this terminal belongs to"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code"
+          },
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "branch_id",
+          "name",
+          "code"
+        ],
+        "title": "TerminalCreateRequestDTO",
+        "description": "Request DTO for creating a terminal with snake_case fields."
+      },
+      "TerminalListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/TerminalResponse"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "TerminalListResponse",
+        "description": "List of terminals with pagination."
+      },
+      "TerminalResponse": {
+        "properties": {
+          "terminal_id": {
+            "type": "string",
+            "title": "Terminal Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "branch_id": {
+            "type": "string",
+            "title": "Branch Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id"
+          },
+          "status": {
+            "type": "integer",
+            "title": "Status"
+          },
+          "registered_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registered At"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "terminal_id",
+          "organization_id",
+          "branch_id",
+          "name",
+          "code",
+          "status"
+        ],
+        "title": "TerminalResponse",
+        "description": "Terminal response DTO."
+      },
+      "TerminalUpdateRequestDTO": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "branch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch Id",
+            "description": "UUID of the branch this terminal belongs to"
+          }
+        },
+        "type": "object",
+        "title": "TerminalUpdateRequestDTO",
+        "description": "Request DTO for updating a terminal with snake_case fields."
       },
       "UpdateConfirmationDTO": {
         "properties": {
@@ -6433,7 +11102,7 @@
       },
       "UpdateDepartmentDTO": {
         "properties": {
-          "departmentCode": {
+          "department_code": {
             "anyOf": [
               {
                 "type": "string"
@@ -6442,7 +11111,7 @@
                 "type": "null"
               }
             ],
-            "title": "Departmentcode"
+            "title": "Department Code"
           },
           "name": {
             "anyOf": [
@@ -6455,7 +11124,7 @@
             ],
             "title": "Name"
           },
-          "supplierCode": {
+          "supplier_code": {
             "anyOf": [
               {
                 "type": "string"
@@ -6464,7 +11133,7 @@
                 "type": "null"
               }
             ],
-            "title": "Suppliercode"
+            "title": "Supplier Code"
           }
         },
         "type": "object",
@@ -6512,13 +11181,13 @@
       },
       "app__dtos__responses__category_dto__CategoryResponse": {
         "properties": {
-          "categoryId": {
+          "category_id": {
             "type": "string",
-            "title": "Categoryid"
+            "title": "Category Id"
           },
-          "organizationId": {
+          "organization_id": {
             "type": "string",
-            "title": "Organizationid"
+            "title": "Organization Id"
           },
           "name": {
             "type": "string",
@@ -6532,15 +11201,15 @@
             "type": "string",
             "title": "Description"
           },
-          "backgroundColor": {
+          "background_color": {
             "type": "string",
-            "title": "Backgroundcolor"
+            "title": "Background Color"
           },
-          "buttonColor": {
+          "button_color": {
             "type": "string",
-            "title": "Buttoncolor"
+            "title": "Button Color"
           },
-          "image1Url": {
+          "image_1_url": {
             "anyOf": [
               {
                 "type": "string"
@@ -6549,9 +11218,9 @@
                 "type": "null"
               }
             ],
-            "title": "Image1Url"
+            "title": "Image 1 Url"
           },
-          "image2Url": {
+          "image_2_url": {
             "anyOf": [
               {
                 "type": "string"
@@ -6560,36 +11229,36 @@
                 "type": "null"
               }
             ],
-            "title": "Image2Url"
+            "title": "Image 2 Url"
           },
-          "isActive": {
+          "is_active": {
             "type": "boolean",
-            "title": "Isactive"
+            "title": "Is Active"
           },
-          "sortOrder": {
+          "sort_order": {
             "type": "integer",
-            "title": "Sortorder"
+            "title": "Sort Order"
           }
         },
         "type": "object",
         "required": [
-          "categoryId",
-          "organizationId",
+          "category_id",
+          "organization_id",
           "name",
           "slug",
           "description",
-          "backgroundColor",
-          "buttonColor",
-          "isActive",
-          "sortOrder"
+          "background_color",
+          "button_color",
+          "is_active",
+          "sort_order"
         ],
         "title": "CategoryResponse"
       },
       "app__dtos__responses__product_dto__CategoryResponse": {
         "properties": {
-          "categoryId": {
+          "category_id": {
             "type": "string",
-            "title": "Categoryid"
+            "title": "Category Id"
           },
           "name": {
             "anyOf": [
@@ -6605,7 +11274,7 @@
         },
         "type": "object",
         "required": [
-          "categoryId"
+          "category_id"
         ],
         "title": "CategoryResponse"
       }

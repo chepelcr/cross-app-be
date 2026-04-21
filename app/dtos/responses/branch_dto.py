@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
 from app.dtos.responses.pagination_dto import PaginationResponse
-
-if TYPE_CHECKING:
-    from app.dtos.responses.terminal_dto import TerminalResponse
 
 
 class BranchResponse(BaseModel):
@@ -24,7 +21,7 @@ class BranchResponse(BaseModel):
     created_at: Optional[str] = None  # ISO timestamp
     updated_at: Optional[str] = None  # ISO timestamp
     created_by: str  # user_id
-    terminals: List[TerminalResponse] = []
+    terminals: List["TerminalResponse"] = []  # Forward reference as string
 
     model_config = {"from_attributes": True}
 
@@ -34,3 +31,8 @@ class BranchListResponse(BaseModel):
 
     data: List[BranchResponse]
     pagination: PaginationResponse
+
+
+# Import at the end to avoid circular imports
+from app.dtos.responses.terminal_dto import TerminalResponse
+BranchResponse.model_rebuild()  # Rebuild model with actual TerminalResponse

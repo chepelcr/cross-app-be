@@ -31,47 +31,114 @@ def refresh_swagger():
 
     print("Refreshing swagger/backend.json from app/main.py...")
 
-    # Inline script: set fake DB env vars, import app, dump openapi spec
-    inline = (
-        "import sys, json, os; "
-        f"sys.path.insert(0, r'{root_dir}'); "
-        "os.environ.setdefault('DATABASE_HOST', 'localhost'); "
-        "os.environ.setdefault('DATABASE_PORT', '5432'); "
-        "os.environ.setdefault('DATABASE_USERNAME', 'fake'); "
-        "os.environ.setdefault('DATABASE_PASSWORD', 'fake'); "
-        "os.environ.setdefault('DATABASE_DBNAME', 'fake'); "
-        "os.environ.setdefault('ENVIRONMENT', 'development'); "
-        "from app.main import app; "
-        "print(json.dumps(app.openapi()))"
-    )
+    # Create a temporary script that mocks the database connection
+    temp_script = os.path.join(root_dir, "_temp_swagger_gen.py")
+    script_content = f"""
+import sys
+import json
+import os
 
-    ok = fail = 0
+sys.path.insert(0, r'{root_dir}')
+
+# Set fake DB credentials
+os.environ['DATABASE_HOST'] = 'localhost'
+os.environ['DATABASE_PORT'] = '5432'
+os.environ['DATABASE_USERNAME'] = 'fake'
+os.environ['DATABASE_PASSWORD'] = 'fake'
+os.environ['DATABASE_DBNAME'] = 'fake'
+os.environ['ENVIRONMENT'] = 'development'
+
+import sys
+import json
+import os
+
+sys.path.insert(0, r'{root_dir}')
+
+# Set fake DB credentials
+os.environ['DATABASE_HOST'] = 'localhost'
+os.environ['DATABASE_PORT'] = '5432'
+os.environ['DATABASE_USERNAME'] = 'fake'
+os.environ['DATABASE_PASSWORD'] = 'fake'
+os.environ['DATABASE_DBNAME'] = 'fake'
+os.environ['ENVIRONMENT'] = 'development'
+
+# Mock database connection BEFORE any app imports
+from unittest.mock import MagicMock, patch
+import sys
+
+# Create mock objects
+mock_conn = MagicMock()
+mock_engine = MagicMock()
+mock_engine.connect.return_value.__enter__ = lambda self: mock_conn
+mock_engine.connect.return_value.__exit__ = lambda self, *args: None
+mock_engine.dispose = MagicMock()
+
+# Patch at the module level before importing anything from app
+sys.modules['psycopg'] = MagicMock()
+sys.modules['psycopg'].connect = MagicMock(return_value=mock_conn)
+
+# Now patch sqlalchemy and import
+with patch('sqlalchemy.create_engine', return_value=mock_engine):
+    from app.configuration.fast_api_config import FastApiConfig
+    app = FastApiConfig().get_app()
+    print(json.dumps(app.openapi()))
+"""
+    
     try:
-        result = subprocess.run(
-            [sys.executable, "-c", inline],
-            capture_output=True, text=True, timeout=30,
-            cwd=root_dir,
-        )
-        if result.returncode != 0:
-            err = result.stderr.strip().splitlines()
-            last = "\n".join(err[-5:]) if err else "(no stderr)"
-            print(f"  [FAIL] backend:\n    {last}")
+        with open(temp_script, 'w', encoding='utf-8') as f:
+            f.write(script_content)
+        
+        ok = fail = 0
+        try:
+            result = subprocess.run(
+                [sys.executable, temp_script],
+                capture_output=True, text=True, timeout=120,  # Increased to 120 seconds
+                cwd=root_dir,
+            )
+            if result.returncode != 0:
+                err = result.stderr.strip().splitlines()
+                last = "\n".join(err[-5:]) if err else "(no stderr)"
+                print(f"  [FAIL] backend:\n    {last}")
+                fail += 1
+            else:
+                try:
+                    spec = json.loads(result.stdout)
+                    out_path = os.path.join(swagger_dir, "backend.json")
+                    with open(out_path, "w", encoding="utf-8") as f:
+                        json.dump(spec, f, ensure_ascii=False, indent=2)
+                    print(f"  [OK]   backend")
+                    ok += 1
+                except json.JSONDecodeError as e:
+                    print(f"  [FAIL] backend: Invalid JSON output - {e}")
+                    fail += 1
+        except subprocess.TimeoutExpired:
+            print(f"  [FAIL] backend: timed out")
             fail += 1
-        else:
-            spec = json.loads(result.stdout)
-            out_path = os.path.join(swagger_dir, "backend.json")
-            with open(out_path, "w", encoding="utf-8") as f:
-                json.dump(spec, f, ensure_ascii=False, indent=2)
-            print(f"  [OK]   backend")
-            ok += 1
-    except subprocess.TimeoutExpired:
-        print(f"  [FAIL] backend: timed out")
-        fail += 1
-    except Exception as e:
-        print(f"  [FAIL] backend: {e}")
-        fail += 1
+        except Exception as e:
+            print(f"  [FAIL] backend: {e}")
+            fail += 1
+    finally:
+        # Clean up temp script
+        if os.path.exists(temp_script):
+            os.remove(temp_script)
 
     print(f"Swagger refresh complete: {ok} ok, 0 skipped, {fail} failed\n")
+    
+    # If refresh failed and swagger file doesn't exist or is invalid, exit
+    if fail > 0:
+        swagger_path = os.path.join(swagger_dir, "backend.json")
+        if not os.path.exists(swagger_path):
+            print("ERROR: Swagger refresh failed and no existing swagger file found.")
+            print("Cannot generate template without swagger spec.")
+            sys.exit(1)
+        try:
+            with open(swagger_path, 'r', encoding='utf-8') as f:
+                json.load(f)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            print("ERROR: Swagger refresh failed and existing swagger file is corrupted.")
+            print("Please fix or delete swagger/backend.json and try again.")
+            sys.exit(1)
+        print("WARNING: Swagger refresh failed but using existing swagger file.")
 
 
 # ── helpers ────────────────────────────────────────────────────────────────────
@@ -109,14 +176,19 @@ if not args.skip_refresh:
 all_paths = {}   # path -> {method: op}
 path_file = "swagger/backend.json"
 if os.path.exists(path_file):
-    with open(path_file, encoding="utf-8") as f:
-        spec = json.load(f)
-    for path, path_item in spec.get("paths", {}).items():
-        if any(path.startswith(p) for p in SKIP_PREFIXES):
-            continue
-        methods = {m: path_item[m] for m in HTTP_METHODS if m in path_item}
-        if methods:
-            all_paths[path] = methods
+    try:
+        with open(path_file, encoding="utf-8") as f:
+            spec = json.load(f)
+        for path, path_item in spec.get("paths", {}).items():
+            if any(path.startswith(p) for p in SKIP_PREFIXES):
+                continue
+            methods = {m: path_item[m] for m in HTTP_METHODS if m in path_item}
+            if methods:
+                all_paths[path] = methods
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        print(f"ERROR: Failed to read {path_file}: {e}")
+        print("The swagger file may be corrupted. Please fix it or delete it and regenerate.")
+        sys.exit(1)
 
 # ── build YAML lines ──────────────────────────────────────────────────────────
 lines = []
