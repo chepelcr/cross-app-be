@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 import uuid
 
 from sqlalchemy import func, select, and_
@@ -68,31 +68,85 @@ class TerminalRepository(DatabaseConnection):
             )
             raise
 
-    def find_all_by_organization(
+    def find_all_paginated(
         self,
         organization_id: str,
-        is_active: Optional[bool] = None,
-        branch_id: Optional[str] = None,
-    ) -> List[Terminal]:
-        """Find all terminals for an organization with optional filters."""
+        filters: list = None,
+        order_by=None,
+        page: int = 1,
+        page_size: int = 12,
+    ) -> Tuple[List[Terminal], int]:
+        """Find terminals for an organization with pagination."""
         try:
-            filters = [Terminal.organization_id == organization_id]
-
-            if is_active is not None:
-                filters.append(Terminal.is_active == is_active)
-
-            if branch_id is not None:
-                filters.append(Terminal.branch_id == uuid.UUID(branch_id))
-
-            stmt = select(Terminal).where(and_(*filters)).order_by(Terminal.name)
-
-            terminals = list(self.session.execute(stmt).scalars().all())
-            return terminals
+            base = [
+                Terminal.organization_id == organization_id,
+                Terminal.deleted_on.is_(None),
+            ]
+            if filters:
+                base.extend(filters)
+            stmt = select(Terminal).where(and_(*base))
+            total = self.session.execute(
+                select(func.count()).select_from(stmt.subquery())
+            ).scalar() or 0
+            if order_by is not None:
+                stmt = stmt.order_by(order_by)
+            else:
+                stmt = stmt.order_by(Terminal.name)
+            items = list(
+                self.session.execute(
+                    stmt.offset((page - 1) * page_size).limit(page_size)
+                ).scalars().all()
+            )
+            return items, total
         except SQLAlchemyError as e:
             logger.error(
-                f"Error finding terminals for organization {organization_id}: {e}",
+                f"Error finding paginated terminals for organization {organization_id}: {e}",
                 exc_info=True,
             )
+            raise
+
+    def find_all_by_branch(self, branch_id: str) -> List[Terminal]:
+        """Find all non-deleted terminals for a branch."""
+        try:
+            stmt = select(Terminal).where(
+                and_(
+                    Terminal.branch_id == uuid.UUID(branch_id),
+                    Terminal.deleted_on.is_(None),
+                )
+            ).order_by(Terminal.name)
+            return list(self.session.execute(stmt).scalars().all())
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error finding terminals for branch {branch_id}: {e}",
+                exc_info=True,
+            )
+            raise
+
+    def find_all_by_branch_ids(self, branch_ids: List[str]) -> Dict[str, List[Terminal]]:
+        """Batch query terminals by list of branch IDs.
+
+        Returns a dict keyed by branch_id string, each value being a list of
+        non-deleted terminals for that branch.
+        """
+        if not branch_ids:
+            return {}
+        try:
+            uuids = [uuid.UUID(bid) for bid in branch_ids]
+            stmt = select(Terminal).where(
+                and_(
+                    Terminal.branch_id.in_(uuids),
+                    Terminal.deleted_on.is_(None),
+                )
+            ).order_by(Terminal.name)
+            terminals = list(self.session.execute(stmt).scalars().all())
+            result: Dict[str, List[Terminal]] = {bid: [] for bid in branch_ids}
+            for terminal in terminals:
+                key = str(terminal.branch_id)
+                if key in result:
+                    result[key].append(terminal)
+            return result
+        except SQLAlchemyError as e:
+            logger.error(f"Error finding terminals by branch ids: {e}", exc_info=True)
             raise
 
     def save(self, terminal: Terminal) -> Terminal:

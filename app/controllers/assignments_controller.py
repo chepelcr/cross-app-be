@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, List, Optional
+from typing import Annotated, Optional
 
 from fastapi import Body, FastAPI, HTTPException, Path, Query
 
@@ -8,7 +8,8 @@ from app.dtos.requests.assignment_request_dto import (
     AssignmentCreateRequestDTO,
     AssignmentUpdateRequestDTO,
 )
-from app.dtos.responses.assignment_dto import AssignmentResponse
+from app.dtos.requests.product_status_request_dto import ProductStatusRequestDTO
+from app.dtos.responses.assignment_dto import AssignmentListResponse, AssignmentResponse
 from app.services import assignment_service
 
 
@@ -20,20 +21,21 @@ class AssignmentsController:
 
         @app.get(
             "/api/users/{user_id}/organization/{organization_id}/assignments",
-            response_model=List[AssignmentResponse],
+            response_model=AssignmentListResponse,
             tags=["assignments"],
             summary="Get all assignments for an organization",
-            description="""Get a list of assignments with optional filters.
+            description="""Get a paginated list of assignments with optional search filters.
 
 **Query Parameters:**
-- `is_active`: Filter by active status (true/false)
+- `search`: Search filter string (field:value syntax)
+- `page`: Page number (1-indexed)
+- `pageSize`: Items per page
 - `session_id`: Filter by session UUID
 - `assigned_user_id`: Filter by assigned user ID
 - `branch_id`: Filter by branch UUID
 
 **Examples:**
 - Get all assignments: `/api/users/{userId}/organization/{orgId}/assignments`
-- Get active assignments: `/api/users/{userId}/organization/{orgId}/assignments?is_active=true`
 - Get assignments for a session: `/api/users/{userId}/organization/{orgId}/assignments?session_id={sessionId}`
 - Get assignments for a user: `/api/users/{userId}/organization/{orgId}/assignments?assigned_user_id={userId}`
 """,
@@ -41,9 +43,16 @@ class AssignmentsController:
         async def list_assignments(
             user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
-            is_active: Optional[bool] = Query(
-                None, description="Filter by active status"
+            search: Optional[str] = Query(
+                None,
+                description=(
+                    "Search filter string. Syntax: field:value,field2:value2. "
+                    "Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). "
+                    "Example: role:cashier,orderBy>start_time"
+                ),
             ),
+            page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+            pageSize: int = Query(12, ge=1, le=100, description="Items per page"),
             session_id: Optional[str] = Query(
                 None, description="Filter by session UUID"
             ),
@@ -53,18 +62,13 @@ class AssignmentsController:
             branch_id: Optional[str] = Query(
                 None, description="Filter by branch UUID"
             ),
-        ):
+        ) -> AssignmentListResponse:
             try:
                 return assignment_service.get_assignments(
-                    organization_id,
-                    user_id,
-                    is_active=is_active,
-                    session_id=session_id,
-                    assigned_user_id=assigned_user_id,
-                    branch_id=branch_id,
+                    organization_id, user_id, page=page, page_size=pageSize, search=search
                 )
             except ValueError as e:
-                raise HTTPException(status_code=400, detail=str(e))
+                raise HTTPException(status_code=422, detail=str(e))
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
@@ -161,6 +165,33 @@ class AssignmentsController:
                 raise
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.patch(
+            "/api/users/{user_id}/organization/{organization_id}/assignments/{assignment_id}/status",
+            response_model=AssignmentResponse,
+            tags=["assignments"],
+            summary="Update assignment status",
+            description="Update the status of an assignment (1=Active, 2=Inactive, 3=Deleted)",
+        )
+        async def update_assignment_status(
+            user_id: Annotated[str, Path(description="User identifier")],
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            assignment_id: Annotated[str, Path(description="Assignment ID")],
+            body: ProductStatusRequestDTO,
+        ) -> AssignmentResponse:
+            try:
+                result = assignment_service.update_assignment_status(
+                    organization_id, user_id, assignment_id, body.status
+                )
+                if not result:
+                    raise HTTPException(status_code=404, detail="Assignment not found")
+                return result
+            except HTTPException:
+                raise
+            except ValueError as e:
+                raise HTTPException(status_code=422, detail=str(e))
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 

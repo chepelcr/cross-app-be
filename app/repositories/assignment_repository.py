@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import uuid
 
 from sqlalchemy import func, select, and_
@@ -68,6 +68,43 @@ class AssignmentRepository(DatabaseConnection):
         except SQLAlchemyError as e:
             logger.error(
                 f"Error finding assignments for organization {organization_id}: {e}",
+                exc_info=True,
+            )
+            raise
+
+    def find_all_paginated(
+        self,
+        organization_id: str,
+        filters: list = None,
+        order_by=None,
+        page: int = 1,
+        page_size: int = 12,
+    ) -> Tuple[List[Assignment], int]:
+        """Find assignments for an organization with pagination."""
+        try:
+            base = [
+                Assignment.organization_id == organization_id,
+                Assignment.deleted_on.is_(None),
+            ]
+            if filters:
+                base.extend(filters)
+            stmt = select(Assignment).where(and_(*base))
+            total = self.session.execute(
+                select(func.count()).select_from(stmt.subquery())
+            ).scalar() or 0
+            if order_by is not None:
+                stmt = stmt.order_by(order_by)
+            else:
+                stmt = stmt.order_by(Assignment.start_time.desc())
+            items = list(
+                self.session.execute(
+                    stmt.offset((page - 1) * page_size).limit(page_size)
+                ).scalars().all()
+            )
+            return items, total
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error finding paginated assignments for organization {organization_id}: {e}",
                 exc_info=True,
             )
             raise

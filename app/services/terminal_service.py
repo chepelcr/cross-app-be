@@ -9,9 +9,12 @@ from app.dtos.requests.terminal_request_dto import (
     TerminalCreateRequestDTO,
     TerminalUpdateRequestDTO,
 )
-from app.dtos.responses.terminal_dto import TerminalResponse
+from app.dtos.responses.pagination_dto import PaginationResponse
+from app.dtos.responses.terminal_dto import TerminalListResponse, TerminalResponse
+from app.enums.terminal_search_filters import TerminalSearchFilters
 from app.models.terminal import Terminal
 from app.repositories.terminal_repository import TerminalRepository
+from app.utils.search_utils import SearchUtils
 
 logger = logging.getLogger(__name__)
 
@@ -19,18 +22,36 @@ logger = logging.getLogger(__name__)
 def get_terminals(
     organization_id: str,
     user_id: str,
-    is_active: Optional[bool] = None,
-    branch_id: Optional[str] = None,
-) -> List[TerminalResponse]:
-    """Get all terminals for an organization with optional filters."""
+    page: int = 1,
+    page_size: int = 12,
+    search: Optional[str] = None,
+) -> TerminalListResponse:
+    """Get all terminals for an organization with pagination and optional filters."""
+    filters, order_by = (
+        SearchUtils.parse_search_filter(search, Terminal, TerminalSearchFilters)
+        if search
+        else ([], None)
+    )
+
     with TerminalRepository() as repo:
-        terminals = repo.find_all_by_organization(
+        terminals, total = repo.find_all_paginated(
             organization_id,
-            is_active=is_active,
-            branch_id=branch_id,
+            filters=filters,
+            order_by=order_by,
+            page=page,
+            page_size=page_size,
         )
 
-    return [_map_terminal(t) for t in terminals]
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+    return TerminalListResponse(
+        data=[_map_terminal(t) for t in terminals],
+        pagination=PaginationResponse(
+            page=page,
+            pageSize=page_size,
+            totalElements=total,
+            totalPages=total_pages,
+        ),
+    )
 
 
 def get_terminal(
@@ -82,7 +103,6 @@ def create_terminal(
             name=dto.name,
             code=dto.code,
             device_id=dto.device_id,
-            is_active=True,
             registered_at=now,
         )
         terminal = repo.save(terminal)
@@ -132,10 +152,29 @@ def update_terminal(
             terminal.code = dto.code
         if dto.device_id is not None:
             terminal.device_id = dto.device_id
-        if dto.is_active is not None:
-            terminal.is_active = dto.is_active
         if dto.branch_id is not None:
             terminal.branch_id = uuid.UUID(dto.branch_id)
+
+        terminal = repo.save(terminal)
+
+    return _map_terminal(terminal)
+
+
+def update_terminal_status(
+    organization_id: str,
+    user_id: str,
+    terminal_id: str,
+    status: int,
+) -> Optional[TerminalResponse]:
+    """Update the status of a terminal. Status 3 (Deleted) sets deleted_on."""
+    with TerminalRepository() as repo:
+        terminal = repo.find_by_id_and_organization(terminal_id, organization_id)
+        if not terminal:
+            return None
+
+        terminal.status = status
+        if status == 3:
+            terminal.deleted_on = datetime.now(timezone.utc)
 
         terminal = repo.save(terminal)
 
@@ -168,9 +207,9 @@ def _map_terminal(terminal: Terminal) -> TerminalResponse:
         name=terminal.name,
         code=terminal.code,
         device_id=terminal.device_id,
-        is_active=terminal.is_active,
-        registered_at=terminal.registered_at.isoformat() if terminal.registered_at else "",
+        status=terminal.status,
+        registered_at=terminal.registered_at.isoformat() if terminal.registered_at else None,
         last_seen_at=terminal.last_seen_at.isoformat() if terminal.last_seen_at else None,
-        created_at=terminal.created_at.isoformat() if terminal.created_at else "",
-        updated_at=terminal.updated_at.isoformat() if terminal.updated_at else "",
+        created_at=terminal.created_on.isoformat() if terminal.created_on else None,
+        updated_at=terminal.updated_on.isoformat() if terminal.updated_on else None,
     )

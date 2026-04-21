@@ -262,6 +262,8 @@ for path in sorted(all_paths.keys()):
         L(I[8] + "passthroughBehavior: when_no_match")
         L(I[8] + "contentHandling: CONVERT_TO_TEXT")
         L(I[8] + "type: aws_proxy")
+        L(I[8] + "requestParameters:")
+        L(I[9] + "integration.request.header.x-user-id: context.authorizer.claims.sub")
 
     # OPTIONS (CORS preflight) — allowed methods derived from actual path methods
     L(I[6] + "options:")
@@ -282,7 +284,7 @@ for path in sorted(all_paths.keys()):
     L(I[9] + "  statusCode: '200'")
     L(I[9] + "  responseParameters:")
     L(I[9] + "    method.response.header.Access-Control-Allow-Headers:"
-       " \"'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'\"")
+       " \"'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id'\"")
     L(I[9] + "    method.response.header.Access-Control-Allow-Methods: \"'" + allowed_methods + "'\"")
     L(I[9] + "    method.response.header.Access-Control-Allow-Origin: \"'*'\"")
 
@@ -296,7 +298,7 @@ for rtype in ("DEFAULT_4XX", "DEFAULT_5XX", "UNAUTHORIZED", "ACCESS_DENIED"):
     L(I[2] + "Properties:")
     L(I[3] + "ResponseParameters:")
     L(I[4] + "gatewayresponse.header.Access-Control-Allow-Headers:"
-       " \"'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'\"")
+       " \"'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id'\"")
     L(I[4] + "gatewayresponse.header.Access-Control-Allow-Methods: \"'GET,POST,PUT,PATCH,DELETE,OPTIONS'\"")
     L(I[4] + "gatewayresponse.header.Access-Control-Allow-Origin: \"'*'\"")
     L(I[3] + "ResponseType: " + rtype)

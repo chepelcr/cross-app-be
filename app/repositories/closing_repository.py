@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import uuid
 from decimal import Decimal
 
@@ -65,6 +65,43 @@ class ClosingRepository(DatabaseConnection):
         except SQLAlchemyError as e:
             logger.error(
                 f"Error finding closings for organization {organization_id}: {e}",
+                exc_info=True,
+            )
+            raise
+
+    def find_all_paginated(
+        self,
+        organization_id: str,
+        filters: list = None,
+        order_by=None,
+        page: int = 1,
+        page_size: int = 12,
+    ) -> Tuple[List[Closing], int]:
+        """Find closings for an organization with pagination."""
+        try:
+            base = [
+                Closing.organization_id == organization_id,
+                Closing.deleted_on.is_(None),
+            ]
+            if filters:
+                base.extend(filters)
+            stmt = select(Closing).where(and_(*base))
+            total = self.session.execute(
+                select(func.count()).select_from(stmt.subquery())
+            ).scalar() or 0
+            if order_by is not None:
+                stmt = stmt.order_by(order_by)
+            else:
+                stmt = stmt.order_by(Closing.created_on.desc())
+            items = list(
+                self.session.execute(
+                    stmt.offset((page - 1) * page_size).limit(page_size)
+                ).scalars().all()
+            )
+            return items, total
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error finding paginated closings for organization {organization_id}: {e}",
                 exc_info=True,
             )
             raise
@@ -141,21 +178,21 @@ class ClosingRepository(DatabaseConnection):
 
     def calculate_expected_amounts(self, assignment_id: str) -> dict:
         """Calculate expected amounts from orders for an assignment.
-        
+
         NOTE: This assumes a sales_orders table exists with columns:
         - assignment_id (UUID)
         - payment_method (string: 'cash', 'sinpe', 'card')
         - total (decimal)
-        
+
         If the table doesn't exist yet, this will return zeros.
         """
         try:
             # Check if sales_orders table exists
             # For now, we'll use a raw SQL query to handle the case where the table might not exist
             from sqlalchemy import text
-            
+
             query = text("""
-                SELECT 
+                SELECT
                     COALESCE(SUM(CASE WHEN payment_method = 'cash' THEN total ELSE 0 END), 0) as cash,
                     COALESCE(SUM(CASE WHEN payment_method = 'sinpe' THEN total ELSE 0 END), 0) as sinpe,
                     COALESCE(SUM(CASE WHEN payment_method = 'card' THEN total ELSE 0 END), 0) as card,
@@ -163,7 +200,7 @@ class ClosingRepository(DatabaseConnection):
                 FROM sales_orders
                 WHERE assignment_id = :assignment_id
             """)
-            
+
             result = self.session.execute(query, {"assignment_id": str(assignment_id)}).one()
 
             return {

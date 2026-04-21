@@ -10,30 +10,56 @@ from app.dtos.requests.closing_request_dto import (
     ClosingCreateRequestDTO,
     ClosingUpdateRequestDTO,
 )
-from app.dtos.responses.closing_dto import ClosingResponse
+from app.dtos.responses.closing_dto import ClosingListResponse, ClosingResponse
+from app.dtos.responses.pagination_dto import PaginationResponse
+from app.enums.closing_search_filters import ClosingSearchFilters
 from app.models.closing import Closing
 from app.repositories.closing_repository import ClosingRepository
+from app.utils.search_utils import SearchUtils
 
 logger = logging.getLogger(__name__)
+
+# Map integer status codes to closing string statuses
+_STATUS_INT_TO_STR = {
+    1: "pending",
+    2: "approved",
+    3: "rejected",
+}
 
 
 def get_closings(
     organization_id: str,
     user_id: str,
-    session_id: Optional[str] = None,
-    status: Optional[str] = None,
-    branch_id: Optional[str] = None,
-) -> List[ClosingResponse]:
-    """Get all closings for an organization with optional filters."""
+    page: int = 1,
+    page_size: int = 12,
+    search: Optional[str] = None,
+) -> ClosingListResponse:
+    """Get all closings for an organization with pagination and optional filters."""
+    filters, order_by = (
+        SearchUtils.parse_search_filter(search, Closing, ClosingSearchFilters)
+        if search
+        else ([], None)
+    )
+
     with ClosingRepository() as repo:
-        closings = repo.find_all_by_organization(
+        closings, total = repo.find_all_paginated(
             organization_id,
-            session_id=session_id,
-            status=status,
-            branch_id=branch_id,
+            filters=filters,
+            order_by=order_by,
+            page=page,
+            page_size=page_size,
         )
 
-    return [_map_closing(c) for c in closings]
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+    return ClosingListResponse(
+        data=[_map_closing(c) for c in closings],
+        pagination=PaginationResponse(
+            page=page,
+            pageSize=page_size,
+            totalElements=total,
+            totalPages=total_pages,
+        ),
+    )
 
 
 def get_closing(
@@ -115,7 +141,7 @@ def update_closing(
 ) -> Optional[ClosingResponse]:
     """
     Update an existing closing (typically for approval/rejection).
-    
+
     Args:
         organization_id: Organization identifier
         user_id: User making the update
@@ -123,10 +149,10 @@ def update_closing(
         dto: Update data
         is_manager: Whether the user has manager role (default: True for backward compatibility)
                    In production, this should be determined by API Gateway/auth layer
-    
+
     Raises:
         PermissionError: If user attempts to approve/reject without manager role
-    
+
     Note:
         Authorization enforcement should be done at API Gateway/auth layer.
         This service-level check provides defense in depth.
@@ -144,7 +170,7 @@ def update_closing(
                     "Only managers can approve or reject closings. "
                     "User must have manager role for this organization."
                 )
-            
+
             closing.status = dto.status
             # When approving or rejecting, set reviewed_by and reviewed_at
             if dto.status in ['approved', 'rejected']:
@@ -154,6 +180,36 @@ def update_closing(
         # Update notes if provided
         if dto.notes is not None:
             closing.notes = dto.notes
+
+        closing = repo.save(closing)
+
+    return _map_closing(closing)
+
+
+def update_closing_status(
+    organization_id: str,
+    user_id: str,
+    closing_id: str,
+    status: int,
+) -> Optional[ClosingResponse]:
+    """Update closing status using integer status codes.
+
+    Maps: 1 -> 'pending', 2 -> 'approved', 3 -> 'rejected'.
+    For statuses 2 and 3, sets reviewed_by and reviewed_at.
+    """
+    status_str = _STATUS_INT_TO_STR.get(status)
+    if status_str is None:
+        raise ValueError(f"Invalid closing status code: {status}. Must be 1 (pending), 2 (approved), or 3 (rejected).")
+
+    with ClosingRepository() as repo:
+        closing = repo.find_by_id_and_organization(closing_id, organization_id)
+        if not closing:
+            return None
+
+        closing.status = status_str
+        if status in (2, 3):
+            closing.reviewed_by = user_id
+            closing.reviewed_at = datetime.now(timezone.utc)
 
         closing = repo.save(closing)
 
@@ -199,5 +255,5 @@ def _map_closing(closing: Closing) -> ClosingResponse:
         status=closing.status,
         reviewed_by=closing.reviewed_by,
         reviewed_at=closing.reviewed_at.isoformat() if closing.reviewed_at else None,
-        created_at=closing.created_at.isoformat() if closing.created_at else "",
+        created_at=closing.created_on.isoformat() if closing.created_on else "",
     )

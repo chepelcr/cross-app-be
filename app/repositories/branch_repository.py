@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 import uuid
 
-from sqlalchemy import func, select, and_, or_
+from sqlalchemy import func, select, and_
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.configuration.database_connection import DatabaseConnection
@@ -56,31 +56,54 @@ class BranchRepository(DatabaseConnection):
             )
             raise
 
-    def find_all_by_organization(
+    def find_all_paginated(
         self,
         organization_id: str,
-        is_active: Optional[bool] = None,
-        branch_type: Optional[str] = None,
-    ) -> List[Branch]:
-        """Find all branches for an organization with optional filters."""
+        filters: list = None,
+        order_by=None,
+        page: int = 1,
+        page_size: int = 12,
+    ) -> Tuple[List[Branch], int]:
+        """Find branches for an organization with pagination."""
         try:
-            filters = [Branch.organization_id == organization_id]
-
-            if is_active is not None:
-                filters.append(Branch.is_active == is_active)
-
-            if branch_type is not None:
-                filters.append(Branch.type == branch_type)
-
-            stmt = select(Branch).where(and_(*filters)).order_by(Branch.name)
-
-            branches = list(self.session.execute(stmt).scalars().all())
-            return branches
+            base = [
+                Branch.organization_id == organization_id,
+                Branch.deleted_on.is_(None),
+            ]
+            if filters:
+                base.extend(filters)
+            stmt = select(Branch).where(and_(*base))
+            total = self.session.execute(
+                select(func.count()).select_from(stmt.subquery())
+            ).scalar() or 0
+            if order_by is not None:
+                stmt = stmt.order_by(order_by)
+            else:
+                stmt = stmt.order_by(Branch.name)
+            items = list(
+                self.session.execute(
+                    stmt.offset((page - 1) * page_size).limit(page_size)
+                ).scalars().all()
+            )
+            return items, total
         except SQLAlchemyError as e:
             logger.error(
-                f"Error finding branches for organization {organization_id}: {e}",
+                f"Error finding paginated branches for organization {organization_id}: {e}",
                 exc_info=True,
             )
+            raise
+
+    def find_all_by_branch_ids(self, branch_ids: List[str]) -> Dict[str, Branch]:
+        """Find branches by list of IDs. Returns dict keyed by branch_id string."""
+        if not branch_ids:
+            return {}
+        try:
+            uuids = [uuid.UUID(bid) for bid in branch_ids]
+            stmt = select(Branch).where(Branch.branch_id.in_(uuids))
+            branches = list(self.session.execute(stmt).scalars().all())
+            return {str(b.branch_id): b for b in branches}
+        except SQLAlchemyError as e:
+            logger.error(f"Error finding branches by ids: {e}", exc_info=True)
             raise
 
     def save(self, branch: Branch) -> Branch:
@@ -115,7 +138,7 @@ class BranchRepository(DatabaseConnection):
             stmt = select(func.count()).select_from(Terminal).where(
                 and_(
                     Terminal.branch_id == uuid.UUID(branch_id),
-                    Terminal.is_active == True,
+                    Terminal.status == 1,
                 )
             )
             count = self.session.execute(stmt).scalar() or 0

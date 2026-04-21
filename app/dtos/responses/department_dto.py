@@ -10,21 +10,21 @@ from app.dtos.responses.pagination_dto import PaginationResponse
 class DepartmentDTO(BaseModel):
     """Lightweight department info embedded in order responses."""
 
-    department_code: str = Field(..., alias="departmentCode")
+    department_code: str = Field(...)
     name: Optional[str] = Field(None)
-    supplier_code: Optional[str] = Field(None, alias="supplierCode")
+    supplier_code: Optional[str] = Field(None)
 
     class Config:
         populate_by_name = True
 
 
 class DepartmentResponse(BaseModel):
-    department_id: str = Field(..., alias="departmentId")
-    company_id: str = Field(..., alias="companyId")
-    client_id: str = Field(..., alias="clientId")
-    department_code: str = Field(..., alias="departmentCode")
+    department_id: str = Field(...)
+    company_id: str = Field(...)
+    client_id: str = Field(...)
+    department_code: str = Field(...)
     name: Optional[str] = Field(None)
-    supplier_code: Optional[str] = Field(None, alias="supplierCode")
+    supplier_code: Optional[str] = Field(None)
 
     class Config:
         populate_by_name = True

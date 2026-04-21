@@ -8,12 +8,12 @@ from app.dtos.responses.pagination_dto import PaginationResponse
 
 
 class StoreResponse(BaseModel):
-    store_id: str = Field(..., alias="storeId")
-    company_id: str = Field(..., alias="companyId")
-    client_id: str = Field(..., alias="clientId")
-    store_code: str = Field(..., alias="storeCode")
-    store_name: Optional[str] = Field(None, alias="storeName")
-    slot_id: Optional[str] = Field(None, alias="slotId")
+    store_id: str = Field(...)
+    company_id: str = Field(...)
+    client_id: str = Field(...)
+    store_code: str = Field(...)
+    store_name: Optional[str] = Field(None)
+    slot_id: Optional[str] = Field(None)
     chain: Optional[str] = Field(None)
     gln: Optional[str] = Field(None)
 

@@ -2,14 +2,23 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from app.dtos.responses.pagination_dto import PaginationResponse
 
 
+class AssignmentUserDTO(BaseModel):
+    """Embedded user details for assignment responses (read from shared users table)."""
+
+    id: str
+    email: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+
+
 class AssignmentResponse(BaseModel):
-    """Assignment response DTO with snake_case fields as per design specification."""
-    
+    """Assignment response DTO."""
+
     assignment_id: str
     organization_id: str
     session_id: str
@@ -19,17 +28,17 @@ class AssignmentResponse(BaseModel):
     role: str  # 'cashier' or 'supervisor'
     start_time: str  # ISO timestamp
     end_time: Optional[str] = None  # ISO timestamp (null if active)
-    is_active: bool
-    created_at: str  # ISO timestamp
-    updated_at: str  # ISO timestamp
+    status: int  # 1=Active 2=Inactive 3=Deleted
+    created_at: Optional[str] = None  # ISO timestamp
+    updated_at: Optional[str] = None  # ISO timestamp
     created_by: str  # Manager user_id
+    user: Optional[AssignmentUserDTO] = None  # Enriched user data from shared DB
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class AssignmentListResponse(BaseModel):
     """List of assignments with pagination."""
-    
+
     data: List[AssignmentResponse]
     pagination: PaginationResponse

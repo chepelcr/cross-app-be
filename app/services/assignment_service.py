@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
+from typing import Dict, List, Optional
 import uuid
 from datetime import datetime, timezone
 
@@ -9,9 +9,13 @@ from app.dtos.requests.assignment_request_dto import (
     AssignmentCreateRequestDTO,
     AssignmentUpdateRequestDTO,
 )
-from app.dtos.responses.assignment_dto import AssignmentResponse
+from app.dtos.responses.assignment_dto import AssignmentListResponse, AssignmentResponse, AssignmentUserDTO
+from app.dtos.responses.pagination_dto import PaginationResponse
+from app.enums.assignment_search_filters import AssignmentSearchFilters
 from app.models.assignment import Assignment
 from app.repositories.assignment_repository import AssignmentRepository
+from app.repositories.user_repository import UserRepository
+from app.utils.search_utils import SearchUtils
 
 logger = logging.getLogger(__name__)
 
@@ -19,22 +23,43 @@ logger = logging.getLogger(__name__)
 def get_assignments(
     organization_id: str,
     user_id: str,
-    is_active: Optional[bool] = None,
-    session_id: Optional[str] = None,
-    assigned_user_id: Optional[str] = None,
-    branch_id: Optional[str] = None,
-) -> List[AssignmentResponse]:
-    """Get all assignments for an organization with optional filters."""
+    page: int = 1,
+    page_size: int = 12,
+    search: Optional[str] = None,
+) -> AssignmentListResponse:
+    """Get all assignments for an organization with pagination and optional filters."""
+    filters, order_by = (
+        SearchUtils.parse_search_filter(search, Assignment, AssignmentSearchFilters)
+        if search
+        else ([], None)
+    )
+
     with AssignmentRepository() as repo:
-        assignments = repo.find_all_by_organization(
+        assignments, total = repo.find_all_paginated(
             organization_id,
-            is_active=is_active,
-            session_id=session_id,
-            user_id=assigned_user_id,
-            branch_id=branch_id,
+            filters=filters,
+            order_by=order_by,
+            page=page,
+            page_size=page_size,
         )
 
-    return [_map_assignment(a) for a in assignments]
+    # Batch-enrich with user data
+    user_ids = list({a.user_id for a in assignments})
+    users_map: Dict[str, object] = {}
+    if user_ids:
+        with UserRepository() as user_repo:
+            users_map = user_repo.find_by_ids(user_ids)
+
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+    return AssignmentListResponse(
+        data=[_map_assignment(a, user=users_map.get(a.user_id)) for a in assignments],
+        pagination=PaginationResponse(
+            page=page,
+            pageSize=page_size,
+            totalElements=total,
+            totalPages=total_pages,
+        ),
+    )
 
 
 def get_assignment(
@@ -45,7 +70,14 @@ def get_assignment(
         assignment = repo.find_by_id_and_organization(assignment_id, organization_id)
     if not assignment:
         return None
-    return _map_assignment(assignment)
+
+    # Enrich with user data
+    user = None
+    with UserRepository() as user_repo:
+        users_map = user_repo.find_by_ids([assignment.user_id])
+        user = users_map.get(assignment.user_id)
+
+    return _map_assignment(assignment, user=user)
 
 
 def create_assignment(
@@ -139,6 +171,29 @@ def update_assignment(
     return _map_assignment(assignment)
 
 
+def update_assignment_status(
+    organization_id: str,
+    user_id: str,
+    assignment_id: str,
+    status: int,
+) -> Optional[AssignmentResponse]:
+    """Update the status of an assignment. Status 3 (Deleted) sets deleted_on."""
+    with AssignmentRepository() as repo:
+        assignment = repo.find_by_id_and_organization(assignment_id, organization_id)
+        if not assignment:
+            return None
+
+        assignment.status = status
+        if status != 1 and assignment.end_time is None:
+            assignment.end_time = datetime.now(timezone.utc)
+        if status == 3:
+            assignment.deleted_on = datetime.now(timezone.utc)
+
+        assignment = repo.save(assignment)
+
+    return _map_assignment(assignment)
+
+
 def delete_assignment(organization_id: str, user_id: str, assignment_id: str) -> bool:
     """Delete an assignment."""
     with AssignmentRepository() as repo:
@@ -149,8 +204,23 @@ def delete_assignment(organization_id: str, user_id: str, assignment_id: str) ->
         return repo.delete(assignment_id)
 
 
-def _map_assignment(assignment: Assignment) -> AssignmentResponse:
+def _map_assignment(assignment: Assignment, user=None) -> AssignmentResponse:
     """Map Assignment model to AssignmentResponse DTO."""
+    # Derive status: prefer explicit status field if present, else derive from is_active
+    try:
+        status = int(assignment.status)
+    except (AttributeError, TypeError):
+        status = 1 if assignment.is_active else 2
+
+    user_dto: Optional[AssignmentUserDTO] = None
+    if user is not None:
+        user_dto = AssignmentUserDTO(
+            id=user.id,
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+        )
+
     return AssignmentResponse(
         assignment_id=str(assignment.assignment_id),
         organization_id=assignment.organization_id,
@@ -161,8 +231,9 @@ def _map_assignment(assignment: Assignment) -> AssignmentResponse:
         role=assignment.role,
         start_time=assignment.start_time.isoformat() if assignment.start_time else "",
         end_time=assignment.end_time.isoformat() if assignment.end_time else None,
-        is_active=assignment.is_active,
-        created_at=assignment.created_at.isoformat() if assignment.created_at else "",
-        updated_at=assignment.updated_at.isoformat() if assignment.updated_at else "",
+        status=status,
+        created_at=assignment.created_on.isoformat() if assignment.created_on else None,
+        updated_at=assignment.updated_on.isoformat() if assignment.updated_on else None,
         created_by=assignment.created_by,
+        user=user_dto,
     )

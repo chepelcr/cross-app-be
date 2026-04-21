@@ -4,14 +4,14 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, StatusMixin, TimestampMixin
 
 
-class Terminal(Base, TimestampMixin):
+class Terminal(Base, TimestampMixin, StatusMixin):
     __tablename__ = "terminals"
 
     terminal_id: Mapped[uuid.UUID] = mapped_column(
@@ -24,7 +24,6 @@ class Terminal(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     code: Mapped[str] = mapped_column(String(50), nullable=False)
     device_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     registered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False
     )
@@ -35,7 +34,7 @@ class Terminal(Base, TimestampMixin):
     __table_args__ = (
         Index("idx_terminals_branch", "branch_id"),
         Index("idx_terminals_org", "organization_id"),
-        Index("idx_terminals_active", "organization_id", "is_active"),
+        Index("idx_terminals_status", "organization_id", "status"),
         Index("idx_terminals_org_code", "organization_id", "code", unique=True),
         Index("idx_terminals_device_id", "device_id", unique=True),
     )

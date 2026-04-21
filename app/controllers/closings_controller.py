@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, List, Optional
+from typing import Annotated, Optional
 
 from fastapi import Body, FastAPI, HTTPException, Path, Query
 
@@ -8,7 +8,8 @@ from app.dtos.requests.closing_request_dto import (
     ClosingCreateRequestDTO,
     ClosingUpdateRequestDTO,
 )
-from app.dtos.responses.closing_dto import ClosingResponse
+from app.dtos.requests.product_status_request_dto import ProductStatusRequestDTO
+from app.dtos.responses.closing_dto import ClosingListResponse, ClosingResponse
 from app.services import closing_service
 
 
@@ -20,12 +21,15 @@ class ClosingsController:
 
         @app.get(
             "/api/users/{user_id}/organization/{organization_id}/closings",
-            response_model=List[ClosingResponse],
+            response_model=ClosingListResponse,
             tags=["closings"],
             summary="Get all closings for an organization",
-            description="""Get a list of closings with optional filters.
+            description="""Get a paginated list of closings with optional search filters.
 
 **Query Parameters:**
+- `search`: Search filter string (field:value syntax)
+- `page`: Page number (1-indexed)
+- `pageSize`: Items per page
 - `session_id`: Filter by session UUID
 - `status`: Filter by status ('pending', 'approved', 'rejected')
 - `branch_id`: Filter by branch UUID
@@ -40,6 +44,16 @@ class ClosingsController:
         async def list_closings(
             user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
+            search: Optional[str] = Query(
+                None,
+                description=(
+                    "Search filter string. Syntax: field:value,field2:value2. "
+                    "Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). "
+                    "Example: status:pending,orderBy>created_on"
+                ),
+            ),
+            page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+            pageSize: int = Query(12, ge=1, le=100, description="Items per page"),
             session_id: Optional[str] = Query(
                 None, description="Filter by session UUID"
             ),
@@ -49,17 +63,13 @@ class ClosingsController:
             branch_id: Optional[str] = Query(
                 None, description="Filter by branch UUID"
             ),
-        ):
+        ) -> ClosingListResponse:
             try:
                 return closing_service.get_closings(
-                    organization_id,
-                    user_id,
-                    session_id=session_id,
-                    status=status,
-                    branch_id=branch_id,
+                    organization_id, user_id, page=page, page_size=pageSize, search=search
                 )
             except ValueError as e:
-                raise HTTPException(status_code=400, detail=str(e))
+                raise HTTPException(status_code=422, detail=str(e))
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
@@ -166,7 +176,7 @@ class ClosingsController:
                 # In production, this should be extracted from JWT claims or auth context:
                 # is_manager = request.state.user_role == 'manager'
                 is_manager = True  # Placeholder - should be determined by auth layer
-                
+
                 result = closing_service.update_closing(
                     organization_id, user_id, closing_id, body, is_manager=is_manager
                 )
@@ -179,6 +189,33 @@ class ClosingsController:
                 raise HTTPException(status_code=403, detail=str(e))
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.patch(
+            "/api/users/{user_id}/organization/{organization_id}/closings/{closing_id}/status",
+            response_model=ClosingResponse,
+            tags=["closings"],
+            summary="Update closing status",
+            description="Update the status of a closing (1=pending, 2=approved, 3=rejected)",
+        )
+        async def update_closing_status(
+            user_id: Annotated[str, Path(description="User identifier")],
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            closing_id: Annotated[str, Path(description="Closing ID")],
+            body: ProductStatusRequestDTO,
+        ) -> ClosingResponse:
+            try:
+                result = closing_service.update_closing_status(
+                    organization_id, user_id, closing_id, body.status
+                )
+                if not result:
+                    raise HTTPException(status_code=404, detail="Closing not found")
+                return result
+            except HTTPException:
+                raise
+            except ValueError as e:
+                raise HTTPException(status_code=422, detail=str(e))
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 

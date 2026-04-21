@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from typing import Annotated, List, Optional
+from typing import Annotated, Optional
 
 from fastapi import Body, FastAPI, HTTPException, Path, Query
 
+from app.dtos.requests.product_status_request_dto import ProductStatusRequestDTO
 from app.dtos.requests.session_request_dto import (
     SessionCreateRequestDTO,
     SessionUpdateRequestDTO,
 )
-from app.dtos.responses.session_dto import SessionResponse
+from app.dtos.responses.session_dto import SessionListResponse, SessionResponse
 from app.services import session_service
 
 
@@ -20,20 +21,21 @@ class SessionsController:
 
         @app.get(
             "/api/users/{user_id}/organization/{organization_id}/sessions",
-            response_model=List[SessionResponse],
+            response_model=SessionListResponse,
             tags=["sessions"],
             summary="Get all sessions for an organization",
-            description="""Get a list of sessions with optional filters.
+            description="""Get a paginated list of sessions with optional search filters.
 
 **Query Parameters:**
-- `is_active`: Filter by active status (true/false)
+- `search`: Search filter string (field:value syntax)
+- `page`: Page number (1-indexed)
+- `pageSize`: Items per page
 - `branch_id`: Filter by branch UUID
 - `type`: Filter by session type ('match' or 'shift')
 - `context`: Filter by session context ('gradas', 'mesa', or 'caja')
 
 **Examples:**
 - Get all sessions: `/api/users/{userId}/organization/{orgId}/sessions`
-- Get active sessions: `/api/users/{userId}/organization/{orgId}/sessions?is_active=true`
 - Get match sessions: `/api/users/{userId}/organization/{orgId}/sessions?type=match`
 - Get sessions for a branch: `/api/users/{userId}/organization/{orgId}/sessions?branch_id={branchId}`
 """,
@@ -41,9 +43,16 @@ class SessionsController:
         async def list_sessions(
             user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
-            is_active: Optional[bool] = Query(
-                None, description="Filter by active status"
+            search: Optional[str] = Query(
+                None,
+                description=(
+                    "Search filter string. Syntax: field:value,field2:value2. "
+                    "Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). "
+                    "Example: name:*partido*,orderBy>start_time"
+                ),
             ),
+            page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+            pageSize: int = Query(12, ge=1, le=100, description="Items per page"),
             branch_id: Optional[str] = Query(
                 None, description="Filter by branch UUID"
             ),
@@ -53,18 +62,13 @@ class SessionsController:
             context: Optional[str] = Query(
                 None, description="Filter by session context (gradas/mesa/caja)"
             ),
-        ):
+        ) -> SessionListResponse:
             try:
                 return session_service.get_sessions(
-                    organization_id,
-                    user_id,
-                    is_active=is_active,
-                    branch_id=branch_id,
-                    session_type=type,
-                    context=context,
+                    organization_id, user_id, page=page, page_size=pageSize, search=search
                 )
             except ValueError as e:
-                raise HTTPException(status_code=400, detail=str(e))
+                raise HTTPException(status_code=422, detail=str(e))
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
@@ -162,6 +166,33 @@ class SessionsController:
                 raise
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.patch(
+            "/api/users/{user_id}/organization/{organization_id}/sessions/{session_id}/status",
+            response_model=SessionResponse,
+            tags=["sessions"],
+            summary="Update session status",
+            description="Update the status of a session (1=Active, 2=Inactive, 3=Deleted)",
+        )
+        async def update_session_status(
+            user_id: Annotated[str, Path(description="User identifier")],
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            session_id: Annotated[str, Path(description="Session ID")],
+            body: ProductStatusRequestDTO,
+        ) -> SessionResponse:
+            try:
+                result = session_service.update_session_status(
+                    organization_id, user_id, session_id, body.status
+                )
+                if not result:
+                    raise HTTPException(status_code=404, detail="Session not found")
+                return result
+            except HTTPException:
+                raise
+            except ValueError as e:
+                raise HTTPException(status_code=422, detail=str(e))
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 

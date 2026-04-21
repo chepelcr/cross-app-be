@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from app.middleware.user_id_middleware import UserIdMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
 from app.controllers.assignments_controller import AssignmentsController
@@ -7,6 +8,7 @@ from app.controllers.categories_controller import CategoriesController
 from app.controllers.clients_controller import ClientsController
 from app.controllers.closings_controller import ClosingsController
 from app.controllers.confirmations_controller import ConfirmationsController
+from app.controllers.consecutives_controller import ConsecutivesController
 from app.controllers.dashboard_controller import DashboardController
 from app.controllers.departments_controller import DepartmentsController
 from app.controllers.orders_controller import OrdersController
@@ -20,12 +22,14 @@ class FastApiConfig:
     def __init__(self):
         self.app = self._create_app()
         self._configure_cors()
+        self.app.add_middleware(UserIdMiddleware)
         AssignmentsController(self.app)
         BranchesController(self.app)
         CategoriesController(self.app)
         ClientsController(self.app)
         ClosingsController(self.app)
         ConfirmationsController(self.app)
+        ConsecutivesController(self.app)
         DashboardController(self.app)
         DepartmentsController(self.app)
         OrdersController(self.app)

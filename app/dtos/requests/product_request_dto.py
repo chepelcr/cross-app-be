@@ -14,40 +14,40 @@ from app.dtos.files import ImageDTO
 class TaxRateDTO(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    id: Optional[str] = Field(None, alias="id")
-    percentage: float = Field(..., alias="percentage")
+    id: Optional[str] = Field(None)
+    percentage: float = Field(...)
 
 
 class TaxFactorDTO(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    id: str = Field(..., alias="id")
-    factor: float = Field(..., alias="factor")
+    id: str = Field(...)
+    factor: float = Field(...)
 
 
 class TaxAmountDTO(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    id: str = Field(..., alias="id")
-    amount: float = Field(..., alias="amount")
+    id: str = Field(...)
+    amount: float = Field(...)
 
 
 class TaxSpecialFieldsDTO(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    quantity: Optional[float] = Field(None, alias="quantity")
-    percentage: Optional[float] = Field(None, alias="percentage")
-    proportion: Optional[float] = Field(None, alias="proportion")
-    volume_consumption: Optional[float] = Field(None, alias="volumeConsumption")
-    tax_amount: Optional[TaxAmountDTO] = Field(None, alias="taxAmount")
+    quantity: Optional[float] = Field(None)
+    percentage: Optional[float] = Field(None)
+    proportion: Optional[float] = Field(None)
+    volume_consumption: Optional[float] = Field(None)
+    tax_amount: Optional[TaxAmountDTO] = Field(None)
 
 
 class ProductCodeDTO(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    code_type_id: str = Field(..., alias="codeTypeId")
-    number: str = Field(..., alias="number")
-    description: Optional[str] = Field(None, alias="description")
+    code_type_id: str = Field(...)
+    number: str = Field(...)
+    description: Optional[str] = Field(None)
 
 
 class ProductDiscountDTO(BaseModel):
@@ -55,10 +55,10 @@ class ProductDiscountDTO(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    discount_type_id: str = Field(..., alias="discountTypeId")
-    percentage: Optional[float] = Field(None, alias="percentage")
-    reason: Optional[str] = Field(None, alias="reason")
-    is_amount: Optional[bool] = Field(None, alias="isAmount")
+    discount_type_id: str = Field(...)
+    percentage: Optional[float] = Field(None)
+    reason: Optional[str] = Field(None)
+    is_amount: Optional[bool] = Field(None)
 
 
 class ProductTaxDTO(BaseModel):
@@ -66,12 +66,12 @@ class ProductTaxDTO(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    tax_type_id: str = Field(..., alias="taxTypeId")
-    tax_rate: Optional[TaxRateDTO] = Field(None, alias="taxRate")
-    tax_factor: Optional[TaxFactorDTO] = Field(None, alias="taxFactor")
-    other_tax_type: Optional[str] = Field(None, alias="otherTaxType")
-    special_fields: Optional[TaxSpecialFieldsDTO] = Field(None, alias="specialFields")
-    is_amount: Optional[bool] = Field(None, alias="isAmount")
+    tax_type_id: str = Field(...)
+    tax_rate: Optional[TaxRateDTO] = Field(None)
+    tax_factor: Optional[TaxFactorDTO] = Field(None)
+    other_tax_type: Optional[str] = Field(None)
+    special_fields: Optional[TaxSpecialFieldsDTO] = Field(None)
+    is_amount: Optional[bool] = Field(None)
 
 
 class CabysInputDTO(BaseModel):
@@ -79,9 +79,9 @@ class CabysInputDTO(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    code: str = Field(..., alias="code")
-    name: str = Field(..., alias="name")
-    type: int = Field(..., alias="type")
+    code: str = Field(...)
+    name: str = Field(...)
+    type: int = Field(...)
 
 
 # ---------------------------------------------------------------------------
@@ -92,24 +92,34 @@ class ProductRequestDTO(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     # Basic product fields
-    name: Optional[str] = Field(None, alias="name")
-    description: Optional[str] = Field(None, alias="description")
-    units_per_box: Optional[int] = Field(None, alias="unitsPerBox")
-    price: Optional[int] = Field(None, alias="price")
-    category_id: Optional[str] = Field(None, alias="categoryId")
-    image: Optional[ImageDTO] = Field(None, alias="image")
+    name: Optional[str] = Field(None)
+    description: Optional[str] = Field(None)
+    units_per_box: Optional[int] = Field(None)
+    price: Optional[int] = Field(None)
+    category_id: Optional[str] = Field(None)
+    image: Optional[ImageDTO] = Field(None)
+
+    # Inventory / catalogue fields
+    stock_quantity: Optional[int] = Field(None)
+    low_stock_threshold: Optional[int] = Field(None)
+    track_inventory: Optional[bool] = Field(None)
+    is_service: Optional[bool] = Field(None)
+    type: Optional[str] = Field(None)
+    on_sale: Optional[bool] = Field(None)
+    original_price: Optional[int] = Field(None)
+    discount: Optional[int] = Field(None)
 
     # Fiscal / Hacienda e-invoicing fields
-    cabys: Optional[CabysInputDTO] = Field(None, alias="cabys")
-    unit_id: Optional[int] = Field(None, alias="unitId")
-    commercial_unit_measure: Optional[str] = Field(None, alias="commercialUnitMeasure")
-    is_packaged: Optional[bool] = Field(None, alias="isPackaged")
-    quantity: Optional[float] = Field(None, alias="quantity")
-    unit_price: Optional[float] = Field(None, alias="unitPrice")
-    customs_part: Optional[str] = Field(None, alias="customsPart")
-    codes: Optional[List[ProductCodeDTO]] = Field(None, alias="codes")
-    discounts: Optional[List[ProductDiscountDTO]] = Field(None, alias="discounts")
-    taxes: Optional[List[ProductTaxDTO]] = Field(None, alias="taxes")
+    cabys: Optional[CabysInputDTO] = Field(None)
+    unit_id: Optional[int] = Field(None)
+    commercial_unit_measure: Optional[str] = Field(None)
+    is_packaged: Optional[bool] = Field(None)
+    quantity: Optional[float] = Field(None)
+    unit_price: Optional[float] = Field(None)
+    customs_part: Optional[str] = Field(None)
+    codes: Optional[List[ProductCodeDTO]] = Field(None)
+    discounts: Optional[List[ProductDiscountDTO]] = Field(None)
+    taxes: Optional[List[ProductTaxDTO]] = Field(None)
     # Manual override for IVACE-07 only; not required in other scenarios
-    base_amount: Optional[float] = Field(None, alias="baseAmount")
+    base_amount: Optional[float] = Field(None)
     # salePrice is NEVER a request field — always computed by the backend

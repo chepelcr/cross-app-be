@@ -9,9 +9,12 @@ from app.dtos.requests.session_request_dto import (
     SessionCreateRequestDTO,
     SessionUpdateRequestDTO,
 )
-from app.dtos.responses.session_dto import SessionResponse
+from app.dtos.responses.pagination_dto import PaginationResponse
+from app.dtos.responses.session_dto import SessionListResponse, SessionResponse
+from app.enums.session_search_filters import SessionSearchFilters
 from app.models.session import Session
 from app.repositories.session_repository import SessionRepository
+from app.utils.search_utils import SearchUtils
 
 logger = logging.getLogger(__name__)
 
@@ -19,22 +22,36 @@ logger = logging.getLogger(__name__)
 def get_sessions(
     organization_id: str,
     user_id: str,
-    is_active: Optional[bool] = None,
-    branch_id: Optional[str] = None,
-    session_type: Optional[str] = None,
-    context: Optional[str] = None,
-) -> List[SessionResponse]:
-    """Get all sessions for an organization with optional filters."""
+    page: int = 1,
+    page_size: int = 12,
+    search: Optional[str] = None,
+) -> SessionListResponse:
+    """Get all sessions for an organization with pagination and optional filters."""
+    filters, order_by = (
+        SearchUtils.parse_search_filter(search, Session, SessionSearchFilters)
+        if search
+        else ([], None)
+    )
+
     with SessionRepository() as repo:
-        sessions = repo.find_all_by_organization(
+        sessions, total = repo.find_all_paginated(
             organization_id,
-            is_active=is_active,
-            branch_id=branch_id,
-            session_type=session_type,
-            context=context,
+            filters=filters,
+            order_by=order_by,
+            page=page,
+            page_size=page_size,
         )
 
-    return [_map_session(s) for s in sessions]
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+    return SessionListResponse(
+        data=[_map_session(s) for s in sessions],
+        pagination=PaginationResponse(
+            page=page,
+            pageSize=page_size,
+            totalElements=total,
+            totalPages=total_pages,
+        ),
+    )
 
 
 def get_session(
@@ -116,12 +133,39 @@ def update_session(
         if dto.actual_revenue is not None:
             session.actual_revenue = dto.actual_revenue
 
-        # Handle session deactivation
+        # Handle session deactivation via is_active flag (legacy update path)
         if dto.is_active is not None:
             session.is_active = dto.is_active
             # When deactivating, set end_time if not already set
             if not dto.is_active and session.end_time is None:
                 session.end_time = datetime.now(timezone.utc)
+
+        session = repo.save(session)
+
+    return _map_session(session)
+
+
+def update_session_status(
+    organization_id: str,
+    user_id: str,
+    session_id: str,
+    status: int,
+) -> Optional[SessionResponse]:
+    """Update the status of a session.
+
+    Status values: 1=Active, 2=Inactive, 3=Deleted.
+    For any status other than 1, end_time is set to now if not already set.
+    """
+    with SessionRepository() as repo:
+        session = repo.find_by_id_and_organization(session_id, organization_id)
+        if not session:
+            return None
+
+        session.status = status
+        if status != 1 and session.end_time is None:
+            session.end_time = datetime.now(timezone.utc)
+        if status == 3:
+            session.deleted_on = datetime.now(timezone.utc)
 
         session = repo.save(session)
 
@@ -147,6 +191,12 @@ def delete_session(organization_id: str, user_id: str, session_id: str) -> bool:
 
 def _map_session(session: Session) -> SessionResponse:
     """Map Session model to SessionResponse DTO."""
+    # Derive status from is_active for models that still use Boolean flag
+    if hasattr(session, 'status'):
+        status = session.status
+    else:
+        status = 1 if session.is_active else 2
+
     return SessionResponse(
         session_id=str(session.session_id),
         organization_id=session.organization_id,
@@ -156,10 +206,10 @@ def _map_session(session: Session) -> SessionResponse:
         context=session.context,
         start_time=session.start_time.isoformat() if session.start_time else "",
         end_time=session.end_time.isoformat() if session.end_time else None,
-        is_active=session.is_active,
+        status=status,
         expected_revenue=float(session.expected_revenue) if session.expected_revenue else None,
         actual_revenue=float(session.actual_revenue) if session.actual_revenue else None,
-        created_at=session.created_at.isoformat() if session.created_at else "",
-        updated_at=session.updated_at.isoformat() if session.updated_at else "",
+        created_at=session.created_on.isoformat() if session.created_on else None,
+        updated_at=session.updated_on.isoformat() if session.updated_on else None,
         created_by=session.created_by,
     )

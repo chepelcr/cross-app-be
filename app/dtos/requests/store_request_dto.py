@@ -8,9 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class StoreRequestDTO(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    store_code: Optional[str] = Field(None, alias="storeCode")
-    store_name: Optional[str] = Field(None, alias="storeName")
-    slot_id: Optional[str] = Field(None, alias="slotId")
+    store_code: Optional[str] = Field(None)
+    store_name: Optional[str] = Field(None)
+    slot_id: Optional[str] = Field(None)
     chain: Optional[str] = Field(None)
 
     @field_validator("store_code")

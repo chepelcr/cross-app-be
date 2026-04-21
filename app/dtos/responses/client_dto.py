@@ -16,8 +16,8 @@ class IdentificationResponse(BaseModel):
 
 
 class PhoneResponse(BaseModel):
-    country_code: Optional[str] = Field(None, alias="countryCode")
-    area_code: Optional[str] = Field(None, alias="areaCode")
+    country_code: Optional[str] = Field(None)
+    area_code: Optional[str] = Field(None)
     number: Optional[str] = Field(None)
     description: Optional[str] = Field(None)
 
@@ -26,9 +26,9 @@ class PhoneResponse(BaseModel):
 
 
 class ResidenceResponse(BaseModel):
-    state_id: Optional[int] = Field(None, alias="stateId")
-    county_id: Optional[int] = Field(None, alias="countyId")
-    district_id: Optional[int] = Field(None, alias="districtId")
+    state_id: Optional[int] = Field(None)
+    county_id: Optional[int] = Field(None)
+    district_id: Optional[int] = Field(None)
     address: Optional[str] = Field(None)
 
     class Config:
@@ -36,13 +36,13 @@ class ResidenceResponse(BaseModel):
 
 
 class ClientResponse(BaseModel):
-    client_id: str = Field(..., alias="clientId")
-    company_id: str = Field(..., alias="companyId")
-    client_name: Optional[str] = Field(None, alias="clientName")
-    client_gln: Optional[str] = Field(None, alias="clientGln")
+    client_id: str = Field(...)
+    company_id: str = Field(...)
+    client_name: Optional[str] = Field(None)
+    client_gln: Optional[str] = Field(None)
     status: int = Field(...)
     identification: Optional[IdentificationResponse] = Field(None)
-    business_name: Optional[str] = Field(None, alias="businessName")
+    business_name: Optional[str] = Field(None)
     nationality: Optional[str] = Field(None)
     email: Optional[str] = Field(None)
     phone: Optional[PhoneResponse] = Field(None)
