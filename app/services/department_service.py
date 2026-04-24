@@ -52,9 +52,9 @@ def get_departments(
         data=[_map_department(d) for d in departments],
         pagination=PaginationResponse(
             page=page,
-            pageSize=page_size,
-            totalElements=total,
-            totalPages=total_pages,
+            page_size=page_size,
+            total_elements=total,
+            total_pages=total_pages,
         ),
     )
 
@@ -146,10 +146,10 @@ def delete_department(company_id: str, department_id_str: str) -> bool:
 
 def _map_department(dept: Department) -> DepartmentResponse:
     return DepartmentResponse(
-        departmentId=str(dept.department_id),
-        companyId=dept.company_id,
-        clientId=str(dept.client_id),
-        departmentCode=dept.department_code,
+        department_id=str(dept.department_id),
+        company_id=dept.company_id,
+        client_id=str(dept.client_id),
+        department_code=dept.department_code,
         name=dept.name,
-        supplierCode=dept.supplier_code,
+        supplier_code=dept.supplier_code,
     )

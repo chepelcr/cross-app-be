@@ -131,9 +131,9 @@ def get_products(
         data=data,
         pagination=PaginationResponse(
             page=page,
-            pageSize=page_size,
-            totalElements=total,
-            totalPages=total_pages,
+            page_size=page_size,
+            total_elements=total,
+            total_pages=total_pages,
         ),
     )
 
@@ -362,7 +362,7 @@ def _map_product(product: Product) -> ProductResponse:
     category = None
     if product.category:
         category = CategoryResponse(
-            categoryId=product.category_id,
+            category_id=product.category_id,
             name=product.category.name if hasattr(product.category, "name") else None,
         )
 
@@ -377,7 +377,7 @@ def _map_product(product: Product) -> ProductResponse:
 
     codes = [
         ProductCodeResponse(
-            codeTypeId=c.get("codeTypeId", ""),
+            code_type_id=c.get("codeTypeId", ""),
             number=c.get("number", ""),
             description=c.get("description"),
         )
@@ -386,11 +386,11 @@ def _map_product(product: Product) -> ProductResponse:
 
     discounts = [
         ProductDiscountResponse(
-            discountTypeId=d.get("discountTypeId", ""),
+            discount_type_id=d.get("discountTypeId", ""),
             percentage=d.get("percentage"),
             amount=d.get("amount"),
             reason=d.get("reason"),
-            isAmount=d.get("isAmount"),
+            is_amount=d.get("isAmount"),
         )
         for d in _coerce_list(product.discounts)
     ]
@@ -422,40 +422,40 @@ def _map_product(product: Product) -> ProductResponse:
                 quantity=sf.get("quantity"),
                 percentage=sf.get("percentage"),
                 proportion=sf.get("proportion"),
-                volumeConsumption=sf.get("volumeConsumption"),
-                taxAmount=tax_amount_resp,
+                volume_consumption=sf.get("volumeConsumption"),
+                tax_amount=tax_amount_resp,
             )
         taxes.append(
             ProductTaxResponse(
-                taxTypeId=t.get("taxTypeId", ""),
+                tax_type_id=t.get("taxTypeId", ""),
                 amount=t.get("amount"),
-                taxRate=tax_rate,
-                taxFactor=tax_factor,
-                otherTaxType=t.get("otherTaxType"),
-                specialFields=special_fields,
-                isAmount=t.get("isAmount"),
+                tax_rate=tax_rate,
+                tax_factor=tax_factor,
+                other_tax_type=t.get("otherTaxType"),
+                special_fields=special_fields,
+                is_amount=t.get("isAmount"),
             )
         )
 
     return ProductResponse(
-        productId=product.id,
-        companyId=product.organization_id,
+        product_id=product.id,
+        company_id=product.organization_id,
         name=product.name,
         description=product.description,
-        unitsPerBox=product.units_per_box,
+        units_per_box=product.units_per_box,
         price=product.price,
-        imageUrl=product.image_url,
+        image_url=product.image_url,
         category=category,
         cabys=cabys_response,
-        unitId=product.unit_id,
-        commercialUnitMeasure=product.commercial_unit_measure,
-        isPackaged=product.is_packaged,
+        unit_id=product.unit_id,
+        commercial_unit_measure=product.commercial_unit_measure,
+        is_packaged=product.is_packaged,
         quantity=float(product.quantity) if product.quantity is not None else None,
-        unitPrice=float(product.unit_price) if product.unit_price is not None else None,
-        customsPart=product.customs_part,
+        unit_price=float(product.unit_price) if product.unit_price is not None else None,
+        customs_part=product.customs_part,
         codes=codes,
         discounts=discounts,
         taxes=taxes,
-        baseAmount=float(product.base_amount) if product.base_amount is not None else None,
-        salePrice=float(product.sale_price) if product.sale_price is not None else None,
+        base_amount=float(product.base_amount) if product.base_amount is not None else None,
+        sale_price=float(product.sale_price) if product.sale_price is not None else None,
     )

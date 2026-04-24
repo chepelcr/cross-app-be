@@ -16,6 +16,10 @@ class BranchResponse(BaseModel):
     code: str
     type: str  # 'stand' | 'restaurant'
     status: int  # 1=Active 2=Inactive 3=Deleted
+    state_id: Optional[int] = None
+    county_id: Optional[int] = None
+    district_id: Optional[int] = None
+    neighborhood: Optional[str] = None
     address: Optional[str] = None
     phone: Optional[str] = None
     created_at: Optional[str] = None  # ISO timestamp

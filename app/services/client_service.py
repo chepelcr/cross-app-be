@@ -54,9 +54,9 @@ def get_clients(
         data=[_map_client(c) for c in clients],
         pagination=PaginationResponse(
             page=page,
-            pageSize=page_size,
-            totalElements=total,
-            totalPages=total_pages,
+            page_size=page_size,
+            total_elements=total,
+            total_pages=total_pages,
         ),
     )
 
@@ -217,8 +217,8 @@ def _map_client(client: Client) -> ClientResponse:
     phone = None
     if client.phone_number:
         phone = PhoneResponse(
-            countryCode=client.phone_country_code,
-            areaCode=client.phone_area_code,
+            country_code=client.phone_country_code,
+            area_code=client.phone_area_code,
             number=client.phone_number,
             description=client.phone_description,
         )
@@ -226,20 +226,20 @@ def _map_client(client: Client) -> ClientResponse:
     residence = None
     if client.state_id or client.county_id or client.district_id or client.address:
         residence = ResidenceResponse(
-            stateId=client.state_id,
-            countyId=client.county_id,
-            districtId=client.district_id,
+            state_id=client.state_id,
+            county_id=client.county_id,
+            district_id=client.district_id,
             address=client.address,
         )
     
     return ClientResponse(
-        clientId=str(client.client_id),
-        companyId=client.company_id,
-        clientName=client.client_name,
-        clientGln=client.client_gln,
+        client_id=str(client.client_id),
+        company_id=client.company_id,
+        client_name=client.client_name,
+        client_gln=client.client_gln,
         status=client.status,
         identification=identification,
-        businessName=client.business_name,
+        business_name=client.business_name,
         nationality=client.nationality,
         phone=phone,
         residence=residence,

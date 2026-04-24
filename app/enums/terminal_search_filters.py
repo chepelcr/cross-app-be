@@ -12,10 +12,10 @@ class TerminalSearchFilters(Enum):
     NAME = ("name", "name", False, None, True, ENTITY_ALL, True, False, True, False)
     CODE = ("code", "code", False, None, True, ENTITY_ALL, True, False, True, False)
     STATUS = ("status", "status", False, None, True, ENTITY_ALL, False, False, True, False)
-    BRANCH_ID = ("branch_id", "branchId", False, None, True, ENTITY_ALL, False, False, True, False)
-    DEVICE_ID = ("device_id", "deviceId", False, None, True, ENTITY_ALL, False, False, True, False)
-    CREATED_ON = ("created_on", "createdOn", False, None, True, ENTITY_ALL, False, False, True, False)
-    ORDER_BY = (None, "orderBy", False, None, False, ENTITY_ALL, False, False, False, False)
+    BRANCH_ID = ("branch_id", "branch_id", False, None, True, ENTITY_ALL, False, False, True, False)
+    DEVICE_ID = ("device_id", "device_id", False, None, True, ENTITY_ALL, False, False, True, False)
+    CREATED_ON = ("created_on", "created_on", False, None, True, ENTITY_ALL, False, False, True, False)
+    ORDER_BY = (None, "order_by", False, None, False, ENTITY_ALL, False, False, False, False)
 
     def __init__(self, entity_field, json_field, is_join_field, join_field, is_controller_filter,
                  applicable_entities=None, allows_like=False, allows_between=False, sortable=False, always_like=False):

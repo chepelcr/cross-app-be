@@ -47,9 +47,9 @@ def get_sessions(
         data=[_map_session(s) for s in sessions],
         pagination=PaginationResponse(
             page=page,
-            pageSize=page_size,
-            totalElements=total,
-            totalPages=total_pages,
+            page_size=page_size,
+            total_elements=total,
+            total_pages=total_pages,
         ),
     )
 

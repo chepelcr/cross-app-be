@@ -64,9 +64,9 @@ def get_branches(
         data=[_map_branch(b, terminals_map=terminals_map) for b in branches],
         pagination=PaginationResponse(
             page=page,
-            pageSize=page_size,
-            totalElements=total,
-            totalPages=total_pages,
+            page_size=page_size,
+            total_elements=total,
+            total_pages=total_pages,
         ),
     )
 
@@ -104,6 +104,10 @@ def create_branch(
             name=dto.name,
             code=dto.code,
             type=dto.type,
+            state_id=dto.state_id,
+            county_id=dto.county_id,
+            district_id=dto.district_id,
+            neighborhood=dto.neighborhood,
             address=dto.address,
             phone=dto.phone,
             created_by=user_id,
@@ -140,6 +144,14 @@ def update_branch(
             branch.code = dto.code
         if dto.type is not None:
             branch.type = dto.type
+        if dto.state_id is not None:
+            branch.state_id = dto.state_id
+        if dto.county_id is not None:
+            branch.county_id = dto.county_id
+        if dto.district_id is not None:
+            branch.district_id = dto.district_id
+        if dto.neighborhood is not None:
+            branch.neighborhood = dto.neighborhood
         if dto.address is not None:
             branch.address = dto.address
         if dto.phone is not None:
@@ -216,6 +228,10 @@ def _map_branch(
         code=branch.code,
         type=branch.type,
         status=branch.status,
+        state_id=branch.state_id,
+        county_id=branch.county_id,
+        district_id=branch.district_id,
+        neighborhood=branch.neighborhood,
         address=branch.address,
         phone=branch.phone,
         created_at=branch.created_on.isoformat() if branch.created_on else None,

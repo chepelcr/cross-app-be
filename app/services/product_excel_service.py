@@ -148,9 +148,9 @@ class ProductExcelService:
             data=product_responses,
             pagination=PaginationResponse(
                 page=1,
-                pageSize=len(product_responses),
-                totalElements=len(product_responses),
-                totalPages=1,
+                page_size=len(product_responses),
+                total_elements=len(product_responses),
+                total_pages=1,
             )
         )
 

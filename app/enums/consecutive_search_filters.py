@@ -9,10 +9,10 @@ ENTITY_ALL = {ENTITY_CONSECUTIVE}
 
 
 class ConsecutiveSearchFilters(Enum):
-    TERMINAL_ID = ("terminal_id", "terminalId", False, None, True, ENTITY_ALL, False, False, True, False)
-    DOCUMENT_TYPE_ID = ("document_type_id", "documentTypeId", False, None, True, ENTITY_ALL, False, False, True, False)
-    CURRENT_NUMBER = ("current_number", "currentNumber", False, None, True, ENTITY_ALL, False, True, True, False)
-    ORDER_BY = (None, "orderBy", False, None, False, ENTITY_ALL, False, False, False, False)
+    TERMINAL_ID = ("terminal_id", "terminal_id", False, None, True, ENTITY_ALL, False, False, True, False)
+    DOCUMENT_TYPE_ID = ("document_type_id", "document_type_id", False, None, True, ENTITY_ALL, False, False, True, False)
+    CURRENT_NUMBER = ("current_number", "current_number", False, None, True, ENTITY_ALL, False, True, True, False)
+    ORDER_BY = (None, "order_by", False, None, False, ENTITY_ALL, False, False, False, False)
 
     def __init__(self, entity_field, json_field, is_join_field, join_field, is_controller_filter,
                  applicable_entities=None, allows_like=False, allows_between=False, sortable=False, always_like=False):

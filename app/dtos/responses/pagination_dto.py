@@ -18,21 +18,21 @@ class PaginationResponse(BaseModel):
         examples=[0, 1, 2]
     )
     
-    pageSize: int = Field(
+    page_size: int = Field(
         ...,
         description="Number of items per page",
         ge=1,
         examples=[10, 20, 50]
     )
     
-    totalElements: int = Field(
+    total_elements: int = Field(
         ...,
         description="Total number of elements across all pages",
         ge=0,
         examples=[100, 250, 1000]
     )
     
-    totalPages: int = Field(
+    total_pages: int = Field(
         ...,
         description="Total number of pages",
         ge=0,

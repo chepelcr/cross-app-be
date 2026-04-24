@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-from sqlalchemy import ForeignKey, Index, Integer, String
+from sqlalchemy import ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -20,8 +20,17 @@ class Branch(Base, TimestampMixin, StatusMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     code: Mapped[str] = mapped_column(String(50), nullable=False)
     type: Mapped[str] = mapped_column(String(50), nullable=False)
-    address: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    
+    # Location structure (matching clients)
+    state_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    county_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    district_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    neighborhood: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Contact
     phone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    
     created_by: Mapped[str] = mapped_column(String(255), nullable=False)
 
     __table_args__ = (

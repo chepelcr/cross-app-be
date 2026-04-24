@@ -43,9 +43,9 @@ def get_categories(
         data=[_map_category(c) for c in categories],
         pagination=PaginationResponse(
             page=page,
-            pageSize=page_size,
-            totalElements=total,
-            totalPages=total_pages,
+            page_size=page_size,
+            total_elements=total,
+            total_pages=total_pages,
         ),
     )
 
@@ -203,15 +203,15 @@ def _save_category_image(organization_id: str, category_id: str, image: ImageDTO
 
 def _map_category(category: Category) -> CategoryResponse:
     return CategoryResponse(
-        categoryId=category.id,
-        organizationId=category.organization_id,
+        category_id=category.id,
+        organization_id=category.organization_id,
         name=category.name,
         slug=category.slug,
         description=category.description,
-        backgroundColor=category.background_color,
-        buttonColor=category.button_color,
-        image1Url=category.image_1_url,
-        image2Url=category.image_2_url,
-        isActive=category.is_active,
-        sortOrder=category.sort_order,
+        background_color=category.background_color,
+        button_color=category.button_color,
+        image_1_url=category.image_1_url,
+        image_2_url=category.image_2_url,
+        is_active=category.is_active,
+        sort_order=category.sort_order,
     )

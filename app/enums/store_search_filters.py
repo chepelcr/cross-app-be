@@ -15,13 +15,13 @@ class StoreSearchFilters(Enum):
     Format: (entity_field, json_field, is_join, join_field, is_controller, entities, allows_like, allows_between, sortable)
     """
 
-    STORE_CODE = ("store_code", "storeCode", False, None, True, ENTITY_ALL, False, False, True, False)
-    STORE_NAME = ("store_name", "storeName", False, None, True, ENTITY_ALL, True, False, True, False)
+    STORE_CODE = ("store_code", "store_code", False, None, True, ENTITY_ALL, False, False, True, False)
+    STORE_NAME = ("store_name", "store_name", False, None, True, ENTITY_ALL, True, False, True, False)
     CHAIN = ("chain", "chain", False, None, True, ENTITY_ALL, True, False, True, False)
-    SLOT_ID = ("slot_id", "slotId", False, None, True, ENTITY_ALL, False, False, True, False)
-    CREATED_ON = ("created_on", "createdOn", False, None, True, ENTITY_ALL, False, False, True, False)
-    UPDATED_ON = ("updated_on", "updatedOn", False, None, True, ENTITY_ALL, False, False, True, False)
-    ORDER_BY = (None, "orderBy", False, None, False, ENTITY_ALL, False, False, False, False)
+    SLOT_ID = ("slot_id", "slot_id", False, None, True, ENTITY_ALL, False, False, True, False)
+    CREATED_ON = ("created_on", "created_on", False, None, True, ENTITY_ALL, False, False, True, False)
+    UPDATED_ON = ("updated_on", "updated_on", False, None, True, ENTITY_ALL, False, False, True, False)
+    ORDER_BY = (None, "order_by", False, None, False, ENTITY_ALL, False, False, False, False)
 
     def __init__(
         self,

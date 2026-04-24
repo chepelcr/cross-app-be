@@ -55,9 +55,9 @@ def get_assignments(
         data=[_map_assignment(a, user=users_map.get(a.user_id)) for a in assignments],
         pagination=PaginationResponse(
             page=page,
-            pageSize=page_size,
-            totalElements=total,
-            totalPages=total_pages,
+            page_size=page_size,
+            total_elements=total,
+            total_pages=total_pages,
         ),
     )
 

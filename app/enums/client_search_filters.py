@@ -15,14 +15,14 @@ class ClientSearchFilters(Enum):
     Format: (entity_field, json_field, is_join, join_field, is_controller, entities, allows_like, allows_between, sortable)
     """
 
-    CLIENT_NAME = ("client_name", "clientName", False, None, True, ENTITY_ALL, True, False, True, False)
-    CLIENT_GLN = ("client_gln", "clientGln", False, None, True, ENTITY_ALL, False, False, True, False)
+    CLIENT_NAME = ("client_name", "client_name", False, None, True, ENTITY_ALL, True, False, True, False)
+    CLIENT_GLN = ("client_gln", "client_gln", False, None, True, ENTITY_ALL, False, False, True, False)
     STATUS = ("status", "status", False, None, True, ENTITY_ALL, False, False, True, False)
     NATIONALITY = ("nationality", "nationality", False, None, True, ENTITY_ALL, False, False, True, False)
-    ID_NUMBER = ("identification_number", "idNumber", False, None, True, ENTITY_ALL, False, False, True, False)
-    CREATED_ON = ("created_on", "createdOn", False, None, True, ENTITY_ALL, False, False, True, False)
-    UPDATED_ON = ("updated_on", "updatedOn", False, None, True, ENTITY_ALL, False, False, True, False)
-    ORDER_BY = (None, "orderBy", False, None, False, ENTITY_ALL, False, False, False, False)
+    ID_NUMBER = ("identification_number", "id_number", False, None, True, ENTITY_ALL, False, False, True, False)
+    CREATED_ON = ("created_on", "created_on", False, None, True, ENTITY_ALL, False, False, True, False)
+    UPDATED_ON = ("updated_on", "updated_on", False, None, True, ENTITY_ALL, False, False, True, False)
+    ORDER_BY = (None, "order_by", False, None, False, ENTITY_ALL, False, False, False, False)
 
     def __init__(
         self,

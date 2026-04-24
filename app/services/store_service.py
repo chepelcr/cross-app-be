@@ -57,9 +57,9 @@ def get_stores(
         data=[_map_store(s) for s in stores],
         pagination=PaginationResponse(
             page=page,
-            pageSize=page_size,
-            totalElements=total,
-            totalPages=total_pages,
+            page_size=page_size,
+            total_elements=total,
+            total_pages=total_pages,
         ),
     )
 
@@ -211,12 +211,12 @@ def get_slot_map(company_id: str, client_id: str) -> Dict[str, str]:
 
 def _map_store(store: Store) -> StoreResponse:
     return StoreResponse(
-        storeId=str(store.store_id),
-        companyId=store.company_id,
-        clientId=str(store.client_id),
-        storeCode=store.store_code,
-        storeName=store.store_name,
-        slotId=store.slot_id,
+        store_id=str(store.store_id),
+        company_id=store.company_id,
+        client_id=str(store.client_id),
+        store_code=store.store_code,
+        store_name=store.store_name,
+        slot_id=store.slot_id,
         chain=store.chain,
         gln=store.gln,
     )

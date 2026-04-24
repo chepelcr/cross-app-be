@@ -53,9 +53,9 @@ def get_terminals(
         data=[_map_terminal(t) for t in terminals],
         pagination=PaginationResponse(
             page=page,
-            pageSize=page_size,
-            totalElements=total,
-            totalPages=total_pages,
+            page_size=page_size,
+            total_elements=total,
+            total_pages=total_pages,
         ),
     )
 
