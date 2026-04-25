@@ -4,20 +4,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from app.dtos.common.location_dto import LocationResponse
 from app.dtos.responses.pagination_dto import PaginationResponse
-
-
-class LocationResponse(BaseModel):
-    """Nested location object for branch address data."""
-
-    state_id: Optional[int] = None
-    county_id: Optional[int] = None
-    district_id: Optional[int] = None
-    neighborhood: Optional[str] = None
-    address: Optional[str] = None
-
-    class Config:
-        populate_by_name = True
 
 
 class BranchResponse(BaseModel):

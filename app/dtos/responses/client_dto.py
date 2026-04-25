@@ -29,6 +29,7 @@ class ResidenceResponse(BaseModel):
     state_id: Optional[int] = Field(None)
     county_id: Optional[int] = Field(None)
     district_id: Optional[int] = Field(None)
+    neighborhood_id: Optional[int] = Field(None)
     address: Optional[str] = Field(None)
 
     class Config:

@@ -98,6 +98,7 @@ def create_client(
             existing.state_id = dto.residence.state_id if dto.residence else None
             existing.county_id = dto.residence.county_id if dto.residence else None
             existing.district_id = dto.residence.district_id if dto.residence else None
+            existing.neighborhood_id = dto.residence.neighborhood_id if dto.residence else None
             existing.address = dto.residence.address if dto.residence else None
             client = repo.save(existing)
         else:
@@ -119,6 +120,7 @@ def create_client(
                 state_id=dto.residence.state_id if dto.residence else None,
                 county_id=dto.residence.county_id if dto.residence else None,
                 district_id=dto.residence.district_id if dto.residence else None,
+                neighborhood_id=dto.residence.neighborhood_id if dto.residence else None,
                 address=dto.residence.address if dto.residence else None,
             )
             client = repo.save(client)
@@ -173,6 +175,8 @@ def update_client(
                 client.county_id = dto.residence.county_id
             if dto.residence.district_id is not None:
                 client.district_id = dto.residence.district_id
+            if dto.residence.neighborhood_id is not None:
+                client.neighborhood_id = dto.residence.neighborhood_id
             if dto.residence.address is not None:
                 client.address = dto.residence.address
 
@@ -224,11 +228,12 @@ def _map_client(client: Client) -> ClientResponse:
         )
     
     residence = None
-    if client.state_id or client.county_id or client.district_id or client.address:
+    if client.state_id or client.county_id or client.district_id or client.neighborhood_id or client.address:
         residence = ResidenceResponse(
             state_id=client.state_id,
             county_id=client.county_id,
             district_id=client.district_id,
+            neighborhood_id=client.neighborhood_id,
             address=client.address,
         )
     

@@ -4,17 +4,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-
-class LocationRequestDTO(BaseModel):
-    """Nested location object for branch address data."""
-
-    model_config = ConfigDict(populate_by_name=True)
-
-    state_id: Optional[int] = Field(None)
-    county_id: Optional[int] = Field(None)
-    district_id: Optional[int] = Field(None)
-    neighborhood: Optional[str] = Field(None, max_length=255)
-    address: Optional[str] = Field(None)
+from app.dtos.common.location_dto import LocationRequestDTO
 
 
 class BranchCreateRequestDTO(BaseModel):

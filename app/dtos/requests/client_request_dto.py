@@ -27,6 +27,7 @@ class ResidenceRequestDTO(BaseModel):
     state_id: Optional[int] = Field(None, ge=0)
     county_id: Optional[int] = Field(None, ge=0)
     district_id: Optional[int] = Field(None, ge=0)
+    neighborhood_id: Optional[int] = Field(None, ge=0)
     address: Optional[str] = Field(None, max_length=500)
 
 

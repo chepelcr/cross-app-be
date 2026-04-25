@@ -40,6 +40,7 @@ class Client(Base, AuditMixin):
     state_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     county_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     district_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    neighborhood_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Relationships

@@ -108,7 +108,7 @@ def create_branch(
             state_id=loc.state_id if loc else None,
             county_id=loc.county_id if loc else None,
             district_id=loc.district_id if loc else None,
-            neighborhood=loc.neighborhood if loc else None,
+            neighborhood_id=loc.neighborhood_id if loc else None,
             address=loc.address if loc else None,
             phone=dto.phone,
             created_by=user_id,
@@ -153,8 +153,8 @@ def update_branch(
                 branch.county_id = loc.county_id
             if loc.district_id is not None:
                 branch.district_id = loc.district_id
-            if loc.neighborhood is not None:
-                branch.neighborhood = loc.neighborhood
+            if loc.neighborhood_id is not None:
+                branch.neighborhood_id = loc.neighborhood_id
             if loc.address is not None:
                 branch.address = loc.address
         if dto.phone is not None:
@@ -226,13 +226,13 @@ def _map_branch(
 
     has_location = any([
         branch.state_id, branch.county_id, branch.district_id,
-        branch.neighborhood, branch.address,
+        branch.neighborhood_id, branch.address,
     ])
     location = LocationResponse(
         state_id=branch.state_id,
         county_id=branch.county_id,
         district_id=branch.district_id,
-        neighborhood=branch.neighborhood,
+        neighborhood_id=branch.neighborhood_id,
         address=branch.address,
     ) if has_location else None
 

@@ -25,7 +25,7 @@ class Branch(Base, TimestampMixin, StatusMixin):
     state_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     county_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     district_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    neighborhood: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    neighborhood_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
     # Contact
