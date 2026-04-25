@@ -9,7 +9,7 @@ from app.dtos.requests.branch_request_dto import (
     BranchCreateRequestDTO,
     BranchUpdateRequestDTO,
 )
-from app.dtos.responses.branch_dto import BranchListResponse, BranchResponse
+from app.dtos.responses.branch_dto import BranchListResponse, BranchResponse, LocationResponse
 from app.dtos.responses.pagination_dto import PaginationResponse
 from app.dtos.responses.terminal_dto import TerminalResponse
 from app.enums.branch_search_filters import BranchSearchFilters
@@ -98,17 +98,18 @@ def create_branch(
 
         branch_id = uuid.uuid4()
 
+        loc = dto.location
         branch = Branch(
             branch_id=branch_id,
             organization_id=organization_id,
             name=dto.name,
             code=dto.code,
             type=dto.type,
-            state_id=dto.state_id,
-            county_id=dto.county_id,
-            district_id=dto.district_id,
-            neighborhood=dto.neighborhood,
-            address=dto.address,
+            state_id=loc.state_id if loc else None,
+            county_id=loc.county_id if loc else None,
+            district_id=loc.district_id if loc else None,
+            neighborhood=loc.neighborhood if loc else None,
+            address=loc.address if loc else None,
             phone=dto.phone,
             created_by=user_id,
         )
@@ -144,16 +145,18 @@ def update_branch(
             branch.code = dto.code
         if dto.type is not None:
             branch.type = dto.type
-        if dto.state_id is not None:
-            branch.state_id = dto.state_id
-        if dto.county_id is not None:
-            branch.county_id = dto.county_id
-        if dto.district_id is not None:
-            branch.district_id = dto.district_id
-        if dto.neighborhood is not None:
-            branch.neighborhood = dto.neighborhood
-        if dto.address is not None:
-            branch.address = dto.address
+        if dto.location is not None:
+            loc = dto.location
+            if loc.state_id is not None:
+                branch.state_id = loc.state_id
+            if loc.county_id is not None:
+                branch.county_id = loc.county_id
+            if loc.district_id is not None:
+                branch.district_id = loc.district_id
+            if loc.neighborhood is not None:
+                branch.neighborhood = loc.neighborhood
+            if loc.address is not None:
+                branch.address = loc.address
         if dto.phone is not None:
             branch.phone = dto.phone
 
@@ -221,6 +224,18 @@ def _map_branch(
 
     terminals = [_map_terminal_embed(t) for t in raw_terminals]
 
+    has_location = any([
+        branch.state_id, branch.county_id, branch.district_id,
+        branch.neighborhood, branch.address,
+    ])
+    location = LocationResponse(
+        state_id=branch.state_id,
+        county_id=branch.county_id,
+        district_id=branch.district_id,
+        neighborhood=branch.neighborhood,
+        address=branch.address,
+    ) if has_location else None
+
     return BranchResponse(
         branch_id=str(branch.branch_id),
         organization_id=branch.organization_id,
@@ -228,11 +243,7 @@ def _map_branch(
         code=branch.code,
         type=branch.type,
         status=branch.status,
-        state_id=branch.state_id,
-        county_id=branch.county_id,
-        district_id=branch.district_id,
-        neighborhood=branch.neighborhood,
-        address=branch.address,
+        location=location,
         phone=branch.phone,
         created_at=branch.created_on.isoformat() if branch.created_on else None,
         updated_at=branch.updated_on.isoformat() if branch.updated_on else None,

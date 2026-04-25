@@ -5,19 +5,27 @@ from typing import Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-class BranchCreateRequestDTO(BaseModel):
-    """Request DTO for creating a branch with snake_case fields."""
-    
+class LocationRequestDTO(BaseModel):
+    """Nested location object for branch address data."""
+
     model_config = ConfigDict(populate_by_name=True)
 
-    name: str = Field(..., min_length=1, max_length=255)
-    code: str = Field(..., min_length=1, max_length=50)
-    type: Literal['stand', 'restaurant'] = Field(...)
     state_id: Optional[int] = Field(None)
     county_id: Optional[int] = Field(None)
     district_id: Optional[int] = Field(None)
     neighborhood: Optional[str] = Field(None, max_length=255)
     address: Optional[str] = Field(None)
+
+
+class BranchCreateRequestDTO(BaseModel):
+    """Request DTO for creating a branch with snake_case fields."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: str = Field(..., min_length=1, max_length=255)
+    code: str = Field(..., min_length=1, max_length=50)
+    type: Literal['stand', 'restaurant'] = Field(...)
+    location: Optional[LocationRequestDTO] = Field(None)
     phone: Optional[str] = Field(None, max_length=50)
 
     @field_validator("name", "code")
@@ -30,18 +38,14 @@ class BranchCreateRequestDTO(BaseModel):
 
 class BranchUpdateRequestDTO(BaseModel):
     """Request DTO for updating a branch with snake_case fields."""
-    
+
     model_config = ConfigDict(populate_by_name=True)
 
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     code: Optional[str] = Field(None, min_length=1, max_length=50)
     type: Optional[Literal['stand', 'restaurant']] = Field(None)
     is_active: Optional[bool] = Field(None)
-    state_id: Optional[int] = Field(None)
-    county_id: Optional[int] = Field(None)
-    district_id: Optional[int] = Field(None)
-    neighborhood: Optional[str] = Field(None, max_length=255)
-    address: Optional[str] = Field(None)
+    location: Optional[LocationRequestDTO] = Field(None)
     phone: Optional[str] = Field(None, max_length=50)
 
     @field_validator("name", "code")
