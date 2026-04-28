@@ -14,6 +14,7 @@ from app.dtos.responses.session_dto import SessionListResponse, SessionResponse
 from app.enums.session_search_filters import SessionSearchFilters
 from app.models.session import Session
 from app.repositories.session_repository import SessionRepository
+from app.repositories.session_product_repository import SessionProductRepository
 from app.utils.search_utils import SearchUtils
 
 logger = logging.getLogger(__name__)
@@ -62,7 +63,13 @@ def get_session(
         session = repo.find_by_id_and_organization(session_id, organization_id)
     if not session:
         return None
-    return _map_session(session)
+    
+    # Get product IDs for this session
+    with SessionProductRepository() as sp_repo:
+        session_products = sp_repo.find_by_session(session_id)
+        product_ids = [sp.product_id for sp in session_products]
+    
+    return _map_session(session, product_ids)
 
 
 def create_session(
@@ -95,7 +102,18 @@ def create_session(
         )
         session = repo.save(session)
 
-    return _map_session(session)
+    # Save session products if provided
+    product_ids = []
+    if dto.product_ids:
+        with SessionProductRepository() as sp_repo:
+            sp_repo.bulk_create(
+                session_id=str(session_id),
+                organization_id=organization_id,
+                product_ids=dto.product_ids,
+            )
+            product_ids = dto.product_ids
+
+    return _map_session(session, product_ids)
 
 
 def update_session(
@@ -189,7 +207,7 @@ def delete_session(organization_id: str, user_id: str, session_id: str) -> bool:
         return repo.delete(session_id)
 
 
-def _map_session(session: Session) -> SessionResponse:
+def _map_session(session: Session, product_ids: Optional[List[str]] = None) -> SessionResponse:
     """Map Session model to SessionResponse DTO."""
     # Derive status from is_active for models that still use Boolean flag
     if hasattr(session, 'status'):
@@ -212,4 +230,5 @@ def _map_session(session: Session) -> SessionResponse:
         created_at=session.created_on.isoformat() if session.created_on else None,
         updated_at=session.updated_on.isoformat() if session.updated_on else None,
         created_by=session.created_by,
+        product_ids=product_ids,
     )

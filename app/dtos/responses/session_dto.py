@@ -24,6 +24,7 @@ class SessionResponse(BaseModel):
     created_at: Optional[str] = None  # ISO timestamp
     updated_at: Optional[str] = None  # ISO timestamp
     created_by: str
+    product_ids: Optional[List[str]] = None  # List of product IDs in this session
 
     model_config = {"from_attributes": True}
 

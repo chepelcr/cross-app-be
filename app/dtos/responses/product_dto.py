@@ -9,11 +9,10 @@ from app.dtos.responses.pagination_dto import PaginationResponse
 
 
 class CategoryResponse(BaseModel):
+    model_config = {"from_attributes": True}
+    
     category_id: str = Field(...)
     name: Optional[str] = Field(None)
-
-    class Config:
-        populate_by_name = True
 
 
 # ---------------------------------------------------------------------------
@@ -21,71 +20,66 @@ class CategoryResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 class CabysResponse(BaseModel):
+    model_config = {"from_attributes": True}
+    
     id: str = Field(...)
     code: str = Field(...)
     name: str = Field(...)
     type: int = Field(...)
 
-    class Config:
-        populate_by_name = True
-
 
 class ProductCodeResponse(BaseModel):
+    model_config = {"from_attributes": True}
+    
     code_type_id: str = Field(...)
     number: str = Field(...)
     description: Optional[str] = Field(None)
 
-    class Config:
-        populate_by_name = True
-
 
 class ProductDiscountResponse(BaseModel):
+    model_config = {"from_attributes": True}
+    
     discount_type_id: str = Field(...)
     percentage: Optional[float] = Field(None)
     amount: Optional[float] = Field(None)  # backend-computed
     reason: Optional[str] = Field(None)
     is_amount: Optional[bool] = Field(None)
 
-    class Config:
-        populate_by_name = True
-
 
 class TaxRateResponse(BaseModel):
+    model_config = {"from_attributes": True}
+    
     id: Optional[str] = Field(None)
     percentage: float = Field(...)
 
-    class Config:
-        populate_by_name = True
-
 
 class TaxFactorResponse(BaseModel):
+    model_config = {"from_attributes": True}
+    
     id: str = Field(...)
     factor: float = Field(...)
 
-    class Config:
-        populate_by_name = True
-
 
 class TaxAmountResponse(BaseModel):
+    model_config = {"from_attributes": True}
+    
     id: str = Field(...)
     amount: float = Field(...)
 
-    class Config:
-        populate_by_name = True
-
 
 class TaxSpecialFieldsResponse(BaseModel):
+    model_config = {"from_attributes": True}
+    
     quantity: Optional[float] = Field(None)
     percentage: Optional[float] = Field(None)
     proportion: Optional[float] = Field(None)
     volume_consumption: Optional[float] = Field(None)
     tax_amount: Optional[TaxAmountResponse] = Field(None)
 
-    class Config:
-        populate_by_name = True
-
 
 class ProductTaxResponse(BaseModel):
+    model_config = {"from_attributes": True}
+    
     tax_type_id: str = Field(...)
     amount: Optional[float] = Field(None)  # backend-computed
     tax_rate: Optional[TaxRateResponse] = Field(None)
@@ -93,9 +87,6 @@ class ProductTaxResponse(BaseModel):
     other_tax_type: Optional[str] = Field(None)
     special_fields: Optional[TaxSpecialFieldsResponse] = Field(None)
     is_amount: Optional[bool] = Field(None)
-
-    class Config:
-        populate_by_name = True
 
 
 # ---------------------------------------------------------------------------
@@ -140,8 +131,7 @@ class ProductResponse(BaseModel):
     base_amount: Optional[float] = Field(None)
     sale_price: Optional[float] = Field(None)
 
-    class Config:
-        populate_by_name = True
+    model_config = {"from_attributes": True}
 
 
 class ProductListResponse(BaseModel):

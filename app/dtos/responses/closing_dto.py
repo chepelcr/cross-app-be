@@ -42,8 +42,7 @@ class ClosingResponse(BaseModel):
     reviewed_at: Optional[str] = None  # ISO timestamp
     created_at: str  # ISO timestamp
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class ClosingListResponse(BaseModel):

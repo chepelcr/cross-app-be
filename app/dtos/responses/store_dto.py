@@ -17,8 +17,7 @@ class StoreResponse(BaseModel):
     chain: Optional[str] = Field(None)
     gln: Optional[str] = Field(None)
 
-    class Config:
-        populate_by_name = True
+    model_config = {"from_attributes": True}
 
 
 class StoreListResponse(BaseModel):

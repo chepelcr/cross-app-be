@@ -8,32 +8,29 @@ from app.dtos.responses.pagination_dto import PaginationResponse
 
 
 class IdentificationResponse(BaseModel):
+    model_config = {"from_attributes": True}
+    
     code: Optional[str] = Field(None)
     number: Optional[str] = Field(None)
 
-    class Config:
-        populate_by_name = True
-
 
 class PhoneResponse(BaseModel):
+    model_config = {"from_attributes": True}
+    
     country_code: Optional[str] = Field(None)
     area_code: Optional[str] = Field(None)
     number: Optional[str] = Field(None)
     description: Optional[str] = Field(None)
 
-    class Config:
-        populate_by_name = True
-
 
 class ResidenceResponse(BaseModel):
+    model_config = {"from_attributes": True}
+    
     state_id: Optional[int] = Field(None)
     county_id: Optional[int] = Field(None)
     district_id: Optional[int] = Field(None)
     neighborhood_id: Optional[int] = Field(None)
     address: Optional[str] = Field(None)
-
-    class Config:
-        populate_by_name = True
 
 
 class ClientResponse(BaseModel):
@@ -49,8 +46,7 @@ class ClientResponse(BaseModel):
     phone: Optional[PhoneResponse] = Field(None)
     residence: Optional[ResidenceResponse] = Field(None)
 
-    class Config:
-        populate_by_name = True
+    model_config = {"from_attributes": True}
 
 
 class ClientListResponse(BaseModel):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -17,6 +17,7 @@ class SessionCreateRequestDTO(BaseModel):
     branch_id: Optional[str] = Field(None, description="Optional UUID of the branch for this session")
     start_time: datetime = Field(..., description="Session start time (ISO timestamp)")
     expected_revenue: Optional[float] = Field(None, ge=0, description="Expected revenue for this session")
+    product_ids: Optional[List[str]] = Field(None, description="Optional list of product IDs to include in this session")
 
     @field_validator("name")
     @classmethod

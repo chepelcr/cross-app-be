@@ -78,6 +78,35 @@ class SessionsController:
             response_model=SessionResponse,
             tags=["sessions"],
             summary="Get a specific session by ID",
+            description="""Get detailed information about a specific session.
+
+**Response includes:**
+- Session details (name, type, context, times, status)
+- Branch information (if assigned)
+- Revenue information (expected and actual)
+- Product IDs (list of products available in this session)
+
+**Example Response:**
+```json
+{
+  "session_id": "660e8400-e29b-41d4-a716-446655440000",
+  "organization_id": "org-123",
+  "branch_id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Partido vs Herediano",
+  "type": "match",
+  "context": "caja",
+  "start_time": "2024-01-15T19:00:00Z",
+  "end_time": null,
+  "status": 1,
+  "expected_revenue": 50000.00,
+  "actual_revenue": 35000.00,
+  "created_at": "2024-01-15T18:00:00Z",
+  "updated_at": "2024-01-15T22:00:00Z",
+  "created_by": "user-123",
+  "product_ids": ["prod-1", "prod-2", "prod-3"]
+}
+```
+""",
         )
         async def get_session(
             organization_id: Annotated[str, Path(description="Organization identifier")],
@@ -112,9 +141,44 @@ class SessionsController:
 **Optional fields:**
 - `branch_id`: UUID of the branch for this session
 - `expected_revenue`: Expected revenue for this session
+- `product_ids`: List of product IDs to include in this session (for inventory tracking)
 
 **Validation:**
 - If branch_id is provided, the branch must exist and belong to the organization
+
+**Example Request:**
+```json
+{
+  "name": "Partido vs Herediano",
+  "type": "match",
+  "context": "caja",
+  "start_time": "2024-01-15T19:00:00Z",
+  "branch_id": "550e8400-e29b-41d4-a716-446655440000",
+  "expected_revenue": 50000.00,
+  "product_ids": ["prod-1", "prod-2", "prod-3"]
+}
+```
+
+**Example Response:**
+```json
+{
+  "session_id": "660e8400-e29b-41d4-a716-446655440000",
+  "organization_id": "org-123",
+  "branch_id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Partido vs Herediano",
+  "type": "match",
+  "context": "caja",
+  "start_time": "2024-01-15T19:00:00Z",
+  "end_time": null,
+  "status": 1,
+  "expected_revenue": 50000.00,
+  "actual_revenue": null,
+  "created_at": "2024-01-15T18:00:00Z",
+  "updated_at": "2024-01-15T18:00:00Z",
+  "created_by": "user-123",
+  "product_ids": ["prod-1", "prod-2", "prod-3"]
+}
+```
 """,
         )
         async def create_session(

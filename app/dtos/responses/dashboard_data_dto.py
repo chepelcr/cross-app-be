@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field
 class StandData(BaseModel):
     """Stand data for dashboard with snake_case fields."""
     
+    model_config = {"from_attributes": True}
+    
     id: str  # branch_id
     name: str
     cashier_name: str
@@ -19,20 +21,16 @@ class StandData(BaseModel):
     card: float
     last_sync_at: int  # timestamp
 
-    class Config:
-        from_attributes = True
-
 
 class ProductRanking(BaseModel):
     """Product ranking data for dashboard with snake_case fields."""
+    
+    model_config = {"from_attributes": True}
     
     name: str
     emoji: str
     units: int
     revenue: float
-
-    class Config:
-        from_attributes = True
 
 
 class DashboardDataResponse(BaseModel):
@@ -47,5 +45,4 @@ class DashboardDataResponse(BaseModel):
     avg_ticket: float
     product_ranking: List[ProductRanking]
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
