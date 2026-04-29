@@ -221,6 +221,41 @@ def _map_assignment(assignment: Assignment, user=None) -> AssignmentResponse:
             last_name=user.last_name,
         )
 
+    # Fetch products from session
+    products: Optional[List] = None
+    try:
+        from app.repositories.session_product_repository import SessionProductRepository
+        from app.repositories.product_repository import ProductRepository
+        from app.dtos.responses.assignment_dto import AssignmentProductDTO
+        
+        with SessionProductRepository() as sp_repo:
+            session_products = sp_repo.find_by_session(str(assignment.session_id))
+            
+            if session_products:
+                product_ids = [str(sp.product_id) for sp in session_products]
+                
+                # Fetch full product details
+                with ProductRepository() as prod_repo:
+                    products_list = []
+                    for product_id in product_ids:
+                        product = prod_repo.find_by_id(product_id, assignment.organization_id)
+                        if product and product.status == 1:  # Only active products
+                            products_list.append(AssignmentProductDTO(
+                                product_id=str(product.product_id),
+                                name=product.name or "",
+                                price=float(product.price or 0),
+                                image_url=product.image_url,
+                                category_id=str(product.category_id) if product.category_id else None,
+                                stock_quantity=product.stock_quantity or 0,
+                                track_inventory=product.track_inventory if hasattr(product, 'track_inventory') else True,
+                                status=product.status or 1,
+                            ))
+                    
+                    if products_list:
+                        products = products_list
+    except Exception as e:
+        logger.warning(f"Failed to fetch products for session {assignment.session_id}: {e}")
+
     return AssignmentResponse(
         assignment_id=str(assignment.assignment_id),
         organization_id=assignment.organization_id,
@@ -236,4 +271,5 @@ def _map_assignment(assignment: Assignment, user=None) -> AssignmentResponse:
         updated_at=assignment.updated_on.isoformat() if assignment.updated_on else None,
         created_by=assignment.created_by,
         user=user_dto,
+        products=products,
     )

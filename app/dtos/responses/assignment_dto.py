@@ -16,6 +16,21 @@ class AssignmentUserDTO(BaseModel):
     last_name: Optional[str] = None
 
 
+class AssignmentProductDTO(BaseModel):
+    """Lightweight product info for assignment responses."""
+    
+    product_id: str
+    name: str
+    price: float
+    image_url: Optional[str] = None
+    category_id: Optional[str] = None
+    stock_quantity: int = 0
+    track_inventory: bool = True
+    status: int = 1
+
+    model_config = {"from_attributes": True}
+
+
 class AssignmentResponse(BaseModel):
     """Assignment response DTO."""
 
@@ -33,6 +48,7 @@ class AssignmentResponse(BaseModel):
     updated_at: Optional[str] = None  # ISO timestamp
     created_by: str  # Manager user_id
     user: Optional[AssignmentUserDTO] = None  # Enriched user data from shared DB
+    products: Optional[List[AssignmentProductDTO]] = None  # Products from session
 
     model_config = {"from_attributes": True}
 
