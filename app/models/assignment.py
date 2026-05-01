@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, UniqueConstraint, text
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -15,6 +15,8 @@ class Assignment(Base, TimestampMixin):
     """
     Assignment model for cashier assignments to branches/terminals during sessions.
     Links users (cashiers) to branches and terminals for specific sales sessions.
+    
+    Status values: 1=Active, 2=Inactive, 3=Deleted
     """
     __tablename__ = "assignments"
 
@@ -39,15 +41,15 @@ class Assignment(Base, TimestampMixin):
     end_time: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    status: Mapped[int] = mapped_column(Integer, default=1, nullable=False)  # 1=Active, 2=Inactive, 3=Deleted
     created_by: Mapped[str] = mapped_column(String(255), nullable=False)
 
     __table_args__ = (
         Index("idx_assignments_session", "session_id"),
         Index("idx_assignments_user", "user_id"),
         Index("idx_assignments_branch", "branch_id"),
-        Index("idx_assignments_active", "session_id", "is_active"),
+        Index("idx_assignments_status", "session_id", "status"),
         # Constraint: User can only have one active assignment at a time
-        Index("idx_user_active_assignment", "user_id", "is_active", 
-              unique=True, postgresql_where=text("is_active = true")),
+        Index("idx_user_active_assignment", "user_id", "status", 
+              unique=True, postgresql_where=text("status = 1")),
     )

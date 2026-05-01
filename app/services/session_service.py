@@ -77,7 +77,7 @@ def create_session(
     user_id: str,
     dto: SessionCreateRequestDTO,
 ) -> SessionResponse:
-    """Create a new session."""
+    """Create a new session with optional assignments."""
     with SessionRepository() as repo:
         # Validate branch exists if branch_id is provided
         if dto.branch_id:
@@ -112,6 +112,27 @@ def create_session(
                 product_ids=dto.product_ids,
             )
             product_ids = dto.product_ids
+
+    # Create assignments if provided
+    if dto.assignments:
+        from app.repositories.assignment_repository import AssignmentRepository
+        from app.models.assignment import Assignment
+        
+        with AssignmentRepository() as assign_repo:
+            for assign_dto in dto.assignments:
+                assignment = Assignment(
+                    assignment_id=uuid.uuid4(),
+                    organization_id=organization_id,
+                    session_id=session_id,
+                    user_id=uuid.UUID(assign_dto.user_id),
+                    branch_id=uuid.UUID(assign_dto.branch_id),
+                    terminal_id=uuid.UUID(assign_dto.terminal_id) if assign_dto.terminal_id else None,
+                    role=assign_dto.role,
+                    start_time=dto.start_time,
+                    status=1,  # Active
+                    created_by=user_id,
+                )
+                assign_repo.save(assignment)
 
     return _map_session(session, product_ids)
 
@@ -173,11 +194,35 @@ def update_session_status(
 
     Status values: 1=Active, 2=Inactive, 3=Deleted.
     For any status other than 1, end_time is set to now if not already set.
+    When deactivating or deleting, all active assignments are automatically ended.
     """
     with SessionRepository() as repo:
         session = repo.find_by_id_and_organization(session_id, organization_id)
         if not session:
             return None
+
+        # End all active assignments when deactivating or deleting session
+        if status != 1:
+            from app.repositories.assignment_repository import AssignmentRepository
+            
+            with AssignmentRepository() as assign_repo:
+                # Find all active assignments for this session
+                active_assignments = assign_repo.find_all_by_organization(
+                    organization_id=organization_id,
+                    session_id=session_id,
+                    status=1  # Active
+                )
+                
+                # End each assignment
+                end_time = datetime.now(timezone.utc)
+                for assignment in active_assignments:
+                    assignment.end_time = end_time
+                    assignment.status = 2  # Inactive
+                    assign_repo.save(assignment)
+                
+                logger.info(
+                    f"Ended {len(active_assignments)} active assignments for session {session_id}"
+                )
 
         session.status = status
         if status != 1 and session.end_time is None:
@@ -191,17 +236,39 @@ def update_session_status(
 
 
 def delete_session(organization_id: str, user_id: str, session_id: str) -> bool:
-    """Delete a session if it has no active assignments."""
+    """Delete a session and automatically end all active assignments.
+    
+    This function will:
+    1. End all active assignments for the session
+    2. Delete the session
+    
+    Returns True if successful, False if session not found.
+    """
     with SessionRepository() as repo:
         session = repo.find_by_id_and_organization(session_id, organization_id)
         if not session:
             return False
 
-        # Check for active assignments
-        if repo.has_active_assignments(session_id):
-            raise ValueError(
-                "Cannot delete session with active assignments. "
-                "Please end all active assignments first."
+        # End all active assignments before deleting
+        from app.repositories.assignment_repository import AssignmentRepository
+        
+        with AssignmentRepository() as assign_repo:
+            # Find all active assignments for this session
+            active_assignments = assign_repo.find_all_by_organization(
+                organization_id=organization_id,
+                session_id=session_id,
+                status=1  # Active
+            )
+            
+            # End each assignment
+            end_time = datetime.now(timezone.utc)
+            for assignment in active_assignments:
+                assignment.end_time = end_time
+                assignment.status = 2  # Inactive
+                assign_repo.save(assignment)
+            
+            logger.info(
+                f"Ended {len(active_assignments)} active assignments before deleting session {session_id}"
             )
 
         return repo.delete(session_id)

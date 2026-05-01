@@ -40,17 +40,25 @@ class AssignmentRepository(DatabaseConnection):
     def find_all_by_organization(
         self,
         organization_id: str,
-        is_active: Optional[bool] = None,
+        status: Optional[int] = None,
         session_id: Optional[str] = None,
         user_id: Optional[str] = None,
         branch_id: Optional[str] = None,
     ) -> List[Assignment]:
-        """Find all assignments for an organization with optional filters."""
+        """Find all assignments for an organization with optional filters.
+        
+        Args:
+            organization_id: Organization UUID
+            status: Filter by status (1=Active, 2=Inactive, 3=Deleted)
+            session_id: Filter by session UUID
+            user_id: Filter by user ID
+            branch_id: Filter by branch UUID
+        """
         try:
             filters = [Assignment.organization_id == organization_id]
 
-            if is_active is not None:
-                filters.append(Assignment.is_active == is_active)
+            if status is not None:
+                filters.append(Assignment.status == status)
 
             if session_id is not None:
                 filters.append(Assignment.session_id == uuid.UUID(session_id))
@@ -115,7 +123,7 @@ class AssignmentRepository(DatabaseConnection):
             stmt = select(Assignment).where(
                 and_(
                     Assignment.user_id == user_id,
-                    Assignment.is_active == True,
+                    Assignment.status == 1,  # Active
                 )
             )
             return self.session.execute(stmt).scalar_one_or_none()
@@ -159,7 +167,7 @@ class AssignmentRepository(DatabaseConnection):
                 and_(
                     Session.session_id == uuid.UUID(session_id),
                     Session.organization_id == organization_id,
-                    Session.is_active == True,
+                    Session.status == 1,  # Active
                 )
             )
             count = self.session.execute(stmt).scalar() or 0

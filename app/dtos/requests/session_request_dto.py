@@ -6,6 +6,25 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
+class AssignmentCreateDTO(BaseModel):
+    """DTO for creating an assignment within a session."""
+    
+    model_config = ConfigDict(populate_by_name=True)
+    
+    user_id: str = Field(..., description="UUID of the user to assign")
+    branch_id: str = Field(..., description="UUID of the branch/station")
+    terminal_id: Optional[str] = Field(None, description="Optional UUID of the terminal")
+    role: str = Field(default="cashier", description="Role: 'cashier' or 'supervisor'")
+    
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v):
+        valid_roles = ["cashier", "supervisor"]
+        if v not in valid_roles:
+            raise ValueError(f"Role must be one of: {', '.join(valid_roles)}")
+        return v
+
+
 class SessionCreateRequestDTO(BaseModel):
     """Request DTO for creating a session with snake_case fields."""
     
@@ -18,6 +37,7 @@ class SessionCreateRequestDTO(BaseModel):
     start_time: datetime = Field(..., description="Session start time (ISO timestamp)")
     expected_revenue: Optional[float] = Field(None, ge=0, description="Expected revenue for this session")
     product_ids: Optional[List[str]] = Field(None, description="Optional list of product IDs to include in this session")
+    assignments: Optional[List[AssignmentCreateDTO]] = Field(None, description="Optional list of assignments to create with this session")
 
     @field_validator("name")
     @classmethod

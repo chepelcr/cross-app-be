@@ -130,7 +130,7 @@ class SessionsController:
             status_code=201,
             tags=["sessions"],
             summary="Create a new session",
-            description="""Create a new session for an organization.
+            description="""Create a new session for an organization with optional assignments.
 
 **Required fields:**
 - `name`: Session name (e.g., "Partido vs Herediano", "Turno Mañana")
@@ -142,20 +142,41 @@ class SessionsController:
 - `branch_id`: UUID of the branch for this session
 - `expected_revenue`: Expected revenue for this session
 - `product_ids`: List of product IDs to include in this session (for inventory tracking)
+- `assignments`: List of assignments to create with this session (creates all assignments in a single transaction)
+
+**Assignment fields:**
+- `user_id`: UUID of the user to assign (required)
+- `branch_id`: UUID of the branch/station (required)
+- `terminal_id`: UUID of the terminal (optional)
+- `role`: Role ('cashier' or 'supervisor', defaults to 'cashier')
 
 **Validation:**
 - If branch_id is provided, the branch must exist and belong to the organization
+- All assignment user_ids and branch_ids must be valid UUIDs
 
-**Example Request:**
+**Example Request (with assignments):**
 ```json
 {
   "name": "Partido vs Herediano",
   "type": "match",
-  "context": "caja",
+  "context": "gradas",
   "start_time": "2024-01-15T19:00:00Z",
-  "branch_id": "550e8400-e29b-41d4-a716-446655440000",
   "expected_revenue": 50000.00,
-  "product_ids": ["prod-1", "prod-2", "prod-3"]
+  "product_ids": ["prod-1", "prod-2", "prod-3"],
+  "assignments": [
+    {
+      "user_id": "user-123",
+      "branch_id": "branch-456",
+      "terminal_id": "terminal-789",
+      "role": "cashier"
+    },
+    {
+      "user_id": "user-456",
+      "branch_id": "branch-789",
+      "terminal_id": "terminal-012",
+      "role": "supervisor"
+    }
+  ]
 }
 ```
 
@@ -164,10 +185,10 @@ class SessionsController:
 {
   "session_id": "660e8400-e29b-41d4-a716-446655440000",
   "organization_id": "org-123",
-  "branch_id": "550e8400-e29b-41d4-a716-446655440000",
+  "branch_id": null,
   "name": "Partido vs Herediano",
   "type": "match",
-  "context": "caja",
+  "context": "gradas",
   "start_time": "2024-01-15T19:00:00Z",
   "end_time": null,
   "status": 1,
@@ -179,6 +200,11 @@ class SessionsController:
   "product_ids": ["prod-1", "prod-2", "prod-3"]
 }
 ```
+
+**Benefits:**
+- Single API call instead of multiple requests
+- Atomic transaction (all assignments created or none)
+- Better performance and reduced network overhead
 """,
         )
         async def create_session(
