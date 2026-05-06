@@ -137,21 +137,38 @@ class AssignmentsController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.patch(
+            "/api/organizations/{organization_id}/assignments/{assignment_id}/status",
+            response_model=AssignmentResponse,
+            tags=["assignments"],
+            summary="Update assignment status",
+            description="Update the status of an assignment (1=Active, 2=Inactive, 3=Deleted)",
+        )
+        async def update_assignment_status(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            assignment_id: Annotated[str, Path(description="Assignment ID")],
+            body: ProductStatusRequestDTO,
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
+        ) -> AssignmentResponse:
+            try:
+                result = assignment_service.update_assignment_status(
+                    organization_id, x_user_id, assignment_id, body.status
+                )
+                if not result:
+                    raise HTTPException(status_code=404, detail="Assignment not found")
+                return result
+            except HTTPException:
+                raise
+            except ValueError as e:
+                raise HTTPException(status_code=422, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.patch(
             "/api/organizations/{organization_id}/assignments/{assignment_id}",
             response_model=AssignmentResponse,
             tags=["assignments"],
             summary="Update an existing assignment",
-            description="""Update an assignment. Only provided fields are updated.
-
-**Updatable fields:**
-- `terminal_id`: UUID of the terminal
-- `end_time`: Assignment end time (ISO timestamp)
-- `is_active`: Active status (when set to false, end_time is automatically set if not provided)
-
-**Validation:**
-- Terminal must exist and belong to the branch (if terminal_id provided)
-- When deactivating (is_active=false), end_time is automatically set to current time if not already set
-""",
+            description="Update an assignment. Only provided fields are updated (terminal_id, end_time).",
         )
         async def update_assignment(
             organization_id: Annotated[str, Path(description="Organization identifier")],

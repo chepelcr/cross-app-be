@@ -126,7 +126,7 @@ def create_assignment(
             terminal_id=uuid.UUID(dto.terminal_id) if dto.terminal_id else None,
             role=dto.role,
             start_time=dto.start_time,
-            is_active=True,
+            status=1,
             created_by=user_id,
         )
         assignment = repo.save(assignment)
@@ -158,13 +158,6 @@ def update_assignment(
             assignment.terminal_id = uuid.UUID(dto.terminal_id)
         if dto.end_time is not None:
             assignment.end_time = dto.end_time
-
-        # Handle assignment deactivation
-        if dto.is_active is not None:
-            assignment.is_active = dto.is_active
-            # When deactivating, set end_time if not already set
-            if not dto.is_active and assignment.end_time is None:
-                assignment.end_time = datetime.now(timezone.utc)
 
         assignment = repo.save(assignment)
 

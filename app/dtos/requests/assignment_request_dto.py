@@ -32,5 +32,4 @@ class AssignmentUpdateRequestDTO(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     end_time: Optional[datetime] = Field(None, description="Assignment end time (ISO timestamp)")
-    is_active: Optional[bool] = Field(None, description="Whether the assignment is active")
     terminal_id: Optional[str] = Field(None, description="UUID of the terminal")
