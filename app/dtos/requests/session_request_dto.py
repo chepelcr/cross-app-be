@@ -73,7 +73,6 @@ class SessionUpdateRequestDTO(BaseModel):
     context: Optional[str] = Field(None, description="Session context: 'gradas', 'mesa', or 'caja'")
     branch_id: Optional[str] = Field(None, description="UUID of the branch for this session")
     end_time: Optional[datetime] = Field(None, description="Session end time (ISO timestamp)")
-    is_active: Optional[bool] = Field(None, description="Whether the session is active")
     expected_revenue: Optional[float] = Field(None, ge=0)
     actual_revenue: Optional[float] = Field(None, ge=0)
 

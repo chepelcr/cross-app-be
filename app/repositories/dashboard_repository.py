@@ -35,7 +35,7 @@ class DashboardRepository(DatabaseConnection):
                     FROM sales_sessions
                     WHERE organization_id = :org_id 
                       AND session_id = :session_id
-                      AND is_active = true
+                      AND status = 1
                 """)
                 result = self.session.execute(
                     query, 
@@ -45,8 +45,8 @@ class DashboardRepository(DatabaseConnection):
                 query = text("""
                     SELECT session_id, name, type, context
                     FROM sales_sessions
-                    WHERE organization_id = :org_id 
-                      AND is_active = true
+                    WHERE organization_id = :org_id
+                      AND status = 1
                 """)
                 result = self.session.execute(query, {"org_id": organization_id}).fetchall()
             
@@ -93,7 +93,7 @@ class DashboardRepository(DatabaseConnection):
                 FROM assignments a
                 JOIN branches b ON a.branch_id = b.branch_id
                 WHERE a.session_id = ANY(:session_ids)
-                  AND a.is_active = true
+                  AND a.status = 1
             """)
             
             result = self.session.execute(

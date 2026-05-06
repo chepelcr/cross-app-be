@@ -233,13 +233,12 @@ class SessionsController:
 - `context`: Session context ('gradas', 'mesa', or 'caja')
 - `branch_id`: UUID of the branch for this session
 - `end_time`: Session end time (ISO timestamp)
-- `is_active`: Active status (when set to false, end_time is automatically set if not provided)
 - `expected_revenue`: Expected revenue
 - `actual_revenue`: Actual revenue
 
 **Validation:**
 - If branch_id is provided, the branch must exist and belong to the organization
-- When deactivating (is_active=false), end_time is automatically set to current time if not already set
+- To deactivate a session use PATCH `/sessions/{id}/status` with `{"status": 2}`
 """,
         )
         async def update_session(

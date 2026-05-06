@@ -40,7 +40,7 @@ class SessionRepository(DatabaseConnection):
     def find_all_by_organization(
         self,
         organization_id: str,
-        is_active: Optional[bool] = None,
+        status: Optional[int] = None,
         branch_id: Optional[str] = None,
         session_type: Optional[str] = None,
         context: Optional[str] = None,
@@ -49,8 +49,8 @@ class SessionRepository(DatabaseConnection):
         try:
             filters = [Session.organization_id == organization_id]
 
-            if is_active is not None:
-                filters.append(Session.is_active == is_active)
+            if status is not None:
+                filters.append(Session.status == status)
 
             if branch_id is not None:
                 filters.append(Session.branch_id == uuid.UUID(branch_id))
@@ -161,7 +161,7 @@ class SessionRepository(DatabaseConnection):
             stmt = select(func.count()).select_from(Assignment).where(
                 and_(
                     Assignment.session_id == uuid.UUID(session_id),
-                    Assignment.is_active == True,
+                    Assignment.status == 1,
                 )
             )
             count = self.session.execute(stmt).scalar() or 0

@@ -158,7 +158,7 @@ class BranchRepository(DatabaseConnection):
             stmt = select(func.count()).select_from(Session).where(
                 and_(
                     Session.branch_id == uuid.UUID(branch_id),
-                    Session.is_active == True,
+                    Session.status == 1,
                 )
             )
             count = self.session.execute(stmt).scalar() or 0

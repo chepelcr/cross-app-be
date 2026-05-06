@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Numeric, String
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -34,7 +34,7 @@ class Session(Base, TimestampMixin):
     end_time: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    status: Mapped[int] = mapped_column(Integer, default=1, nullable=False)  # 1=Active, 2=Inactive, 3=Deleted
     expected_revenue: Mapped[Optional[float]] = mapped_column(
         Numeric(12, 2), nullable=True
     )
@@ -45,7 +45,7 @@ class Session(Base, TimestampMixin):
 
     __table_args__ = (
         Index("idx_sessions_org", "organization_id"),
-        Index("idx_sessions_active", "organization_id", "is_active"),
+        Index("idx_sessions_status", "organization_id", "status"),
         Index("idx_sessions_branch", "branch_id"),
         Index("idx_sessions_time", "start_time"),
     )

@@ -96,7 +96,7 @@ def create_session(
             type=dto.type,
             context=dto.context,
             start_time=dto.start_time,
-            is_active=True,
+            status=1,
             expected_revenue=dto.expected_revenue,
             created_by=user_id,
         )
@@ -171,13 +171,6 @@ def update_session(
             session.expected_revenue = dto.expected_revenue
         if dto.actual_revenue is not None:
             session.actual_revenue = dto.actual_revenue
-
-        # Handle session deactivation via is_active flag (legacy update path)
-        if dto.is_active is not None:
-            session.is_active = dto.is_active
-            # When deactivating, set end_time if not already set
-            if not dto.is_active and session.end_time is None:
-                session.end_time = datetime.now(timezone.utc)
 
         session = repo.save(session)
 
@@ -276,12 +269,6 @@ def delete_session(organization_id: str, user_id: str, session_id: str) -> bool:
 
 def _map_session(session: Session, product_ids: Optional[List[str]] = None) -> SessionResponse:
     """Map Session model to SessionResponse DTO."""
-    # Derive status from is_active for models that still use Boolean flag
-    if hasattr(session, 'status'):
-        status = session.status
-    else:
-        status = 1 if session.is_active else 2
-
     return SessionResponse(
         session_id=str(session.session_id),
         organization_id=session.organization_id,
@@ -291,7 +278,7 @@ def _map_session(session: Session, product_ids: Optional[List[str]] = None) -> S
         context=session.context,
         start_time=session.start_time.isoformat() if session.start_time else "",
         end_time=session.end_time.isoformat() if session.end_time else None,
-        status=status,
+        status=session.status,
         expected_revenue=float(session.expected_revenue) if session.expected_revenue else None,
         actual_revenue=float(session.actual_revenue) if session.actual_revenue else None,
         created_at=session.created_on.isoformat() if session.created_on else None,

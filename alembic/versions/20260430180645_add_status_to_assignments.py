@@ -34,23 +34,26 @@ def upgrade():
     # Create new index for status
     op.create_index('idx_assignments_status', 'assignments', ['session_id', 'status'])
     
-    # Drop old unique index for is_active
-    op.drop_index('idx_user_active_assignment', table_name='assignments', postgresql_where=sa.text('is_active = true'))
+    # Drop old unique index for is_active (if it exists)
+    # Use raw SQL to handle case where index might not exist
+    op.execute("""
+        DROP INDEX IF EXISTS idx_user_active_assignment;
+    """)
     
     # Create new unique index for status
-    op.create_index(
-        'idx_user_active_assignment', 
-        'assignments', 
-        ['user_id', 'status'], 
-        unique=True,
-        postgresql_where=sa.text('status = 1')
-    )
+    op.execute("""
+        CREATE UNIQUE INDEX idx_user_active_assignment 
+        ON assignments (user_id, status) 
+        WHERE status = 1;
+    """)
     
     # Drop is_active column
     op.drop_column('assignments', 'is_active')
     
-    # Drop old index
-    op.drop_index('idx_assignments_active', table_name='assignments')
+    # Drop old index (if it exists)
+    op.execute("""
+        DROP INDEX IF EXISTS idx_assignments_active;
+    """)
 
 
 def downgrade():

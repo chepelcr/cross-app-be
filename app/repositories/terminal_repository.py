@@ -201,7 +201,7 @@ class TerminalRepository(DatabaseConnection):
             stmt = select(func.count()).select_from(Assignment).where(
                 and_(
                     Assignment.terminal_id == uuid.UUID(terminal_id),
-                    Assignment.is_active == True,
+                    Assignment.status == 1,
                 )
             )
             count = self.session.execute(stmt).scalar() or 0
