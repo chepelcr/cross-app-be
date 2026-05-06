@@ -73,23 +73,28 @@ class AssignmentsController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.get(
-            "/api/organizations/{organization_id}/assignments/{assignment_id}",
-            response_model=AssignmentResponse,
+            "/api/users/{user_id}/organizations/{organization_id}/assignments",
+            response_model=AssignmentListResponse,
             tags=["assignments"],
-            summary="Get a specific assignment by ID",
+            summary="Get assignments for a specific user within an organization",
+            description="Returns active (or filtered) assignments scoped to the given user ID.",
         )
-        async def get_assignment(
+        async def list_user_assignments(
+            user_id: Annotated[str, Path(description="User identifier")],
             organization_id: Annotated[str, Path(description="Organization identifier")],
-            assignment_id: Annotated[str, Path(description="Assignment ID")],
             x_user_id: Annotated[str, Header(description="User identifier from header")],
-        ):
+            search: Optional[str] = Query(None, description="Additional search filters (e.g. status:1)"),
+            page: int = Query(1, ge=1),
+            pageSize: int = Query(12, ge=1, le=100),
+        ) -> AssignmentListResponse:
             try:
-                result = assignment_service.get_assignment(organization_id, x_user_id, assignment_id)
-                if not result:
-                    raise HTTPException(status_code=404, detail="Assignment not found")
-                return result
-            except HTTPException:
-                raise
+                user_search = f"user_id:{user_id}"
+                combined = f"{user_search},{search}" if search else user_search
+                return assignment_service.get_assignments(
+                    organization_id, x_user_id, page=page, page_size=pageSize, search=combined
+                )
+            except ValueError as e:
+                raise HTTPException(status_code=422, detail=str(e))
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
@@ -168,58 +173,3 @@ class AssignmentsController:
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @app.patch(
-            "/api/organizations/{organization_id}/assignments/{assignment_id}/status",
-            response_model=AssignmentResponse,
-            tags=["assignments"],
-            summary="Update assignment status",
-            description="Update the status of an assignment (1=Active, 2=Inactive, 3=Deleted)",
-        )
-        async def update_assignment_status(
-            organization_id: Annotated[str, Path(description="Organization identifier")],
-            assignment_id: Annotated[str, Path(description="Assignment ID")],
-            body: ProductStatusRequestDTO,
-            x_user_id: Annotated[str, Header(description="User identifier from header")],
-        ) -> AssignmentResponse:
-            try:
-                result = assignment_service.update_assignment_status(
-                    organization_id, x_user_id, assignment_id, body.status
-                )
-                if not result:
-                    raise HTTPException(status_code=404, detail="Assignment not found")
-                return result
-            except HTTPException:
-                raise
-            except ValueError as e:
-                raise HTTPException(status_code=422, detail=str(e))
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
-
-        @app.delete(
-            "/api/organizations/{organization_id}/assignments/{assignment_id}",
-            status_code=204,
-            tags=["assignments"],
-            summary="Delete an assignment",
-            description="""Delete an assignment.
-
-Returns 204 No Content on success.
-""",
-        )
-        async def delete_assignment(
-            organization_id: Annotated[str, Path(description="Organization identifier")],
-            assignment_id: Annotated[str, Path(description="Assignment ID")],
-            x_user_id: Annotated[str, Header(description="User identifier from header")],
-        ):
-            try:
-                success = assignment_service.delete_assignment(
-                    organization_id, x_user_id, assignment_id
-                )
-                if not success:
-                    raise HTTPException(status_code=404, detail="Assignment not found")
-                return None
-            except HTTPException:
-                raise
-            except ValueError as e:
-                raise HTTPException(status_code=400, detail=str(e))
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
