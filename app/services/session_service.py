@@ -101,9 +101,11 @@ def create_session(
             created_by=user_id,
         )
         session = repo.save(session)
+        # Map while still inside the context (session attributes are live here)
+        product_ids = dto.product_ids or []
+        result = _map_session(session, product_ids)
 
     # Save session products if provided
-    product_ids = []
     if dto.product_ids:
         with SessionProductRepository() as sp_repo:
             sp_repo.bulk_create(
@@ -111,13 +113,12 @@ def create_session(
                 organization_id=organization_id,
                 product_ids=dto.product_ids,
             )
-            product_ids = dto.product_ids
 
     # Create assignments if provided
     if dto.assignments:
         from app.repositories.assignment_repository import AssignmentRepository
         from app.models.assignment import Assignment
-        
+
         with AssignmentRepository() as assign_repo:
             for assign_dto in dto.assignments:
                 assignment = Assignment(
@@ -134,7 +135,7 @@ def create_session(
                 )
                 assign_repo.save(assignment)
 
-    return _map_session(session, product_ids)
+    return result
 
 
 def update_session(
@@ -173,8 +174,7 @@ def update_session(
             session.actual_revenue = dto.actual_revenue
 
         session = repo.save(session)
-
-    return _map_session(session)
+        return _map_session(session)
 
 
 def update_session_status(
@@ -224,8 +224,7 @@ def update_session_status(
             session.deleted_on = datetime.now(timezone.utc)
 
         session = repo.save(session)
-
-    return _map_session(session)
+        return _map_session(session)
 
 
 def delete_session(organization_id: str, user_id: str, session_id: str) -> bool:
