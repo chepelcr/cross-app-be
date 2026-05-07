@@ -18,7 +18,7 @@ class Branch(Base, TimestampMixin, StatusMixin):
     )
     organization_id: Mapped[str] = mapped_column(String(255), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    code: Mapped[str] = mapped_column(String(50), nullable=False)
+    code: Mapped[int] = mapped_column(Integer, nullable=False)
     type: Mapped[str] = mapped_column(String(50), nullable=False)
     
     # Location structure (matching clients)

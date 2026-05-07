@@ -38,7 +38,7 @@ class TerminalRepository(DatabaseConnection):
             raise
 
     def find_by_code_and_organization(
-        self, code: str, organization_id: str
+        self, code: int, organization_id: str
     ) -> Optional[Terminal]:
         """Find a terminal by code and organization."""
         try:
@@ -52,6 +52,26 @@ class TerminalRepository(DatabaseConnection):
         except SQLAlchemyError as e:
             logger.error(
                 f"Error finding terminal by code {code} for organization {organization_id}: {e}",
+                exc_info=True,
+            )
+            raise
+
+    def find_by_code_and_branch(
+        self, code: int, branch_id: str, organization_id: str
+    ) -> Optional[Terminal]:
+        """Find a terminal by its integer code within a specific branch."""
+        try:
+            stmt = select(Terminal).where(
+                and_(
+                    Terminal.code == code,
+                    Terminal.branch_id == uuid.UUID(branch_id),
+                    Terminal.organization_id == organization_id,
+                )
+            )
+            return self.session.execute(stmt).scalar_one_or_none()
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error finding terminal by code {code} in branch {branch_id}: {e}",
                 exc_info=True,
             )
             raise

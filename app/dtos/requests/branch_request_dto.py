@@ -13,12 +13,12 @@ class BranchCreateRequestDTO(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     name: str = Field(..., min_length=1, max_length=255)
-    code: str = Field(..., min_length=1, max_length=50)
+    code: int = Field(..., ge=1, description="Numeric branch code, unique per organization (Hacienda requirement)")
     type: Literal['stand', 'restaurant'] = Field(...)
     location: Optional[LocationRequestDTO] = Field(None)
     phone: Optional[str] = Field(None, max_length=50)
 
-    @field_validator("name", "code")
+    @field_validator("name")
     @classmethod
     def validate_not_empty(cls, v):
         if v is not None and not v.strip():
@@ -32,13 +32,13 @@ class BranchUpdateRequestDTO(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     name: Optional[str] = Field(None, min_length=1, max_length=255)
-    code: Optional[str] = Field(None, min_length=1, max_length=50)
+    code: Optional[int] = Field(None, ge=1)
     type: Optional[Literal['stand', 'restaurant']] = Field(None)
     is_active: Optional[bool] = Field(None)
     location: Optional[LocationRequestDTO] = Field(None)
     phone: Optional[str] = Field(None, max_length=50)
 
-    @field_validator("name", "code")
+    @field_validator("name")
     @classmethod
     def validate_not_empty(cls, v):
         if v is not None and not v.strip():

@@ -38,7 +38,7 @@ class BranchRepository(DatabaseConnection):
             raise
 
     def find_by_code_and_organization(
-        self, code: str, organization_id: str
+        self, code: int, organization_id: str
     ) -> Optional[Branch]:
         """Find a branch by code and organization."""
         try:

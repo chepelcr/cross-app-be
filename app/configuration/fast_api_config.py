@@ -14,6 +14,7 @@ from app.controllers.departments_controller import DepartmentsController
 from app.controllers.orders_controller import OrdersController
 from app.controllers.products_controller import ProductsController
 from app.controllers.sessions_controller import SessionsController
+from app.controllers.sales_controller import SalesController
 from app.controllers.stores_controller import StoresController
 from app.controllers.terminals_controller import TerminalsController
 
@@ -34,6 +35,7 @@ class FastApiConfig:
         DepartmentsController(self.app)
         OrdersController(self.app)
         ProductsController(self.app)
+        SalesController(self.app)
         SessionsController(self.app)
         StoresController(self.app)
         TerminalsController(self.app)

@@ -14,7 +14,7 @@ class BranchResponse(BaseModel):
     branch_id: str
     organization_id: str
     name: str
-    code: str
+    code: int
     type: str  # 'stand' | 'restaurant'
     status: int  # 1=Active 2=Inactive 3=Deleted
     location: Optional[LocationResponse] = None

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Optional
 
-from fastapi import Body, FastAPI, Header, HTTPException, Path, Query
+from fastapi import FastAPI, Header, HTTPException, Path, Query
 
 from app.dtos.requests.branch_request_dto import (
     BranchCreateRequestDTO,
@@ -35,26 +35,15 @@ class BranchesController:
 **Examples:**
 - Get all branches: `/api/organizations/{orgId}/branches`
 - Get stands only: `/api/organizations/{orgId}/branches?type=stand`
-- Search by name: `/api/organizations/{orgId}/branches?search=name:*centro*`
 """,
         )
         async def list_branches(
             organization_id: Annotated[str, Path(description="Organization identifier")],
-
             x_user_id: Annotated[str, Header(description="User identifier from header")],
-            search: Optional[str] = Query(
-                None,
-                description=(
-                    "Search filter string. Syntax: field:value,field2:value2. "
-                    "Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). "
-                    "Example: name:*centro*,orderBy>name"
-                ),
-            ),
-            page: int = Query(1, ge=1, description="Page number (1-indexed)"),
-            pageSize: int = Query(12, ge=1, le=100, description="Items per page"),
-            type: Optional[str] = Query(
-                None, description="Filter by branch type (stand/restaurant)"
-            ),
+            search: Optional[str] = Query(None),
+            page: int = Query(1, ge=1),
+            pageSize: int = Query(12, ge=1, le=100),
+            type: Optional[str] = Query(None, description="Filter by branch type (stand/restaurant)"),
         ) -> BranchListResponse:
             try:
                 return branch_service.get_branches(
@@ -66,19 +55,18 @@ class BranchesController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.get(
-            "/api/organizations/{organization_id}/branches/{branch_id}",
+            "/api/organizations/{organization_id}/branches/{branch_code}",
             response_model=BranchResponse,
             tags=["branches"],
-            summary="Get a specific branch by ID",
+            summary="Get a specific branch by its integer code",
         )
         async def get_branch(
             organization_id: Annotated[str, Path(description="Organization identifier")],
-
+            branch_code: Annotated[int, Path(description="Branch integer code (unique per org)", ge=1)],
             x_user_id: Annotated[str, Header(description="User identifier from header")],
-            branch_id: Annotated[str, Path(description="Branch ID")],
         ):
             try:
-                result = branch_service.get_branch(organization_id, x_user_id, branch_id)
+                result = branch_service.get_branch(organization_id, x_user_id, branch_code)
                 if not result:
                     raise HTTPException(status_code=404, detail="Branch not found")
                 return result
@@ -96,18 +84,13 @@ class BranchesController:
             description="""Create a new branch for an organization.
 
 **Required fields:**
-- `name`: Branch name (e.g., "Puesto 1", "Restaurante Centro")
-- `code`: Short code (e.g., "P1", "RC") - must be unique within organization
+- `name`: Branch name
+- `code`: Integer code (e.g. 1, 2) — must be unique within organization (Hacienda requirement)
 - `type`: Branch type ('stand' or 'restaurant')
-
-**Optional fields:**
-- `address`: Physical address
-- `phone`: Contact phone number
 """,
         )
         async def create_branch(
             organization_id: Annotated[str, Path(description="Organization identifier")],
-
             x_user_id: Annotated[str, Header(description="User identifier from header")],
             body: BranchCreateRequestDTO,
         ):
@@ -119,30 +102,20 @@ class BranchesController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.patch(
-            "/api/organizations/{organization_id}/branches/{branch_id}",
+            "/api/organizations/{organization_id}/branches/{branch_code}",
             response_model=BranchResponse,
             tags=["branches"],
-            summary="Update an existing branch",
-            description="""Update a branch. Only provided fields are updated.
-
-**Updatable fields:**
-- `name`: Branch name
-- `code`: Branch code (must be unique within organization)
-- `type`: Branch type ('stand' or 'restaurant')
-- `address`: Physical address
-- `phone`: Contact phone number
-""",
+            summary="Update an existing branch by its integer code",
         )
         async def update_branch(
             organization_id: Annotated[str, Path(description="Organization identifier")],
-
+            branch_code: Annotated[int, Path(description="Branch integer code", ge=1)],
             x_user_id: Annotated[str, Header(description="User identifier from header")],
-            branch_id: Annotated[str, Path(description="Branch ID")],
             body: BranchUpdateRequestDTO,
         ):
             try:
                 result = branch_service.update_branch(
-                    organization_id, x_user_id, branch_id, body
+                    organization_id, x_user_id, branch_code, body
                 )
                 if not result:
                     raise HTTPException(status_code=404, detail="Branch not found")
@@ -155,7 +128,7 @@ class BranchesController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.patch(
-            "/api/organizations/{organization_id}/branches/{branch_id}/status",
+            "/api/organizations/{organization_id}/branches/{branch_code}/status",
             response_model=BranchResponse,
             tags=["branches"],
             summary="Update branch status",
@@ -163,14 +136,13 @@ class BranchesController:
         )
         async def update_branch_status(
             organization_id: Annotated[str, Path(description="Organization identifier")],
-
+            branch_code: Annotated[int, Path(description="Branch integer code", ge=1)],
             x_user_id: Annotated[str, Header(description="User identifier from header")],
-            branch_id: Annotated[str, Path(description="Branch ID")],
             body: ProductStatusRequestDTO,
         ) -> BranchResponse:
             try:
                 result = branch_service.update_branch_status(
-                    organization_id, x_user_id, branch_id, body.status
+                    organization_id, x_user_id, branch_code, body.status
                 )
                 if not result:
                     raise HTTPException(status_code=404, detail="Branch not found")
@@ -183,28 +155,19 @@ class BranchesController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.delete(
-            "/api/organizations/{organization_id}/branches/{branch_id}",
+            "/api/organizations/{organization_id}/branches/{branch_code}",
             status_code=204,
             tags=["branches"],
-            summary="Delete a branch",
-            description="""Delete a branch.
-
-**Validation:**
-- Cannot delete if branch has active terminals
-- Cannot delete if branch has active sessions
-
-Returns 204 No Content on success.
-""",
+            summary="Delete a branch by its integer code",
         )
         async def delete_branch(
             organization_id: Annotated[str, Path(description="Organization identifier")],
-
+            branch_code: Annotated[int, Path(description="Branch integer code", ge=1)],
             x_user_id: Annotated[str, Header(description="User identifier from header")],
-            branch_id: Annotated[str, Path(description="Branch ID")],
         ):
             try:
                 success = branch_service.delete_branch(
-                    organization_id, x_user_id, branch_id
+                    organization_id, x_user_id, branch_code
                 )
                 if not success:
                     raise HTTPException(status_code=404, detail="Branch not found")

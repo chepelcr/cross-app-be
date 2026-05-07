@@ -22,7 +22,7 @@ class Terminal(Base, TimestampMixin, StatusMixin):
         UUID(as_uuid=True), ForeignKey("branches.branch_id", ondelete="CASCADE"), nullable=False
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    code: Mapped[str] = mapped_column(String(50), nullable=False)
+    code: Mapped[int] = mapped_column(Integer, nullable=False)
     device_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     registered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False

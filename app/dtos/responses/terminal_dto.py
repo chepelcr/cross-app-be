@@ -14,7 +14,7 @@ class TerminalResponse(BaseModel):
     organization_id: str
     branch_id: str
     name: str
-    code: str
+    code: int
     device_id: Optional[str] = None
     status: int  # 1=Active 2=Inactive 3=Deleted
     registered_at: Optional[str] = None  # ISO timestamp

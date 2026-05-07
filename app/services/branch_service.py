@@ -72,11 +72,11 @@ def get_branches(
 
 
 def get_branch(
-    organization_id: str, user_id: str, branch_id: str
+    organization_id: str, user_id: str, branch_code: int
 ) -> Optional[BranchResponse]:
-    """Get a single branch by ID, embedding its terminals."""
+    """Get a single branch by integer code, embedding its terminals."""
     with BranchRepository() as repo:
-        branch = repo.find_by_id_and_organization(branch_id, organization_id)
+        branch = repo.find_by_code_and_organization(branch_code, organization_id)
     if not branch:
         return None
     return _map_branch(branch)
@@ -121,12 +121,12 @@ def create_branch(
 def update_branch(
     organization_id: str,
     user_id: str,
-    branch_id: str,
+    branch_code: int,
     dto: BranchUpdateRequestDTO,
 ) -> Optional[BranchResponse]:
-    """Update an existing branch."""
+    """Update an existing branch by integer code."""
     with BranchRepository() as repo:
-        branch = repo.find_by_id_and_organization(branch_id, organization_id)
+        branch = repo.find_by_code_and_organization(branch_code, organization_id)
         if not branch:
             return None
 
@@ -168,12 +168,12 @@ def update_branch(
 def update_branch_status(
     organization_id: str,
     user_id: str,
-    branch_id: str,
+    branch_code: int,
     status: int,
 ) -> Optional[BranchResponse]:
-    """Update the status of a branch. Status 3 (Deleted) sets deleted_on."""
+    """Update the status of a branch by integer code. Status 3 (Deleted) sets deleted_on."""
     with BranchRepository() as repo:
-        branch = repo.find_by_id_and_organization(branch_id, organization_id)
+        branch = repo.find_by_code_and_organization(branch_code, organization_id)
         if not branch:
             return None
 
@@ -186,28 +186,30 @@ def update_branch_status(
     return _map_branch(branch)
 
 
-def delete_branch(organization_id: str, user_id: str, branch_id: str) -> bool:
-    """Delete a branch if it has no active terminals or sessions."""
+def delete_branch(organization_id: str, user_id: str, branch_code: int) -> bool:
+    """Delete a branch by integer code if it has no active terminals or sessions."""
     with BranchRepository() as repo:
-        branch = repo.find_by_id_and_organization(branch_id, organization_id)
+        branch = repo.find_by_code_and_organization(branch_code, organization_id)
         if not branch:
             return False
 
+        branch_id_str = str(branch.branch_id)
+
         # Check for active terminals
-        if repo.has_active_terminals(branch_id):
+        if repo.has_active_terminals(branch_id_str):
             raise ValueError(
                 "Cannot delete branch with active terminals. "
                 "Please deactivate or delete terminals first."
             )
 
         # Check for active sessions
-        if repo.has_active_sessions(branch_id):
+        if repo.has_active_sessions(branch_id_str):
             raise ValueError(
                 "Cannot delete branch with active sessions. "
                 "Please end all active sessions first."
             )
 
-        return repo.delete(branch_id)
+        return repo.delete(branch_id_str)
 
 
 def _map_branch(
