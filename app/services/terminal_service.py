@@ -43,7 +43,6 @@ def get_terminals(
             filters.append(Terminal.branch_id == branch.branch_id)
         else:
             # No matching branch → return empty
-            from app.dtos.responses.pagination_dto import PaginationResponse
             return TerminalListResponse(
                 data=[],
                 pagination=PaginationResponse(page=page, page_size=page_size, total_elements=0, total_pages=0),
