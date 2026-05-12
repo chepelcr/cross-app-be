@@ -23,6 +23,7 @@ from app.dtos.responses.product_dto import (
 )
 from app.dtos.responses.pagination_dto import PaginationResponse
 from app.enums.product_search_filters import ProductSearchFilters
+from app.enums.product_status import ProductStatus
 from app.models.product import Product
 from app.repositories.product_repository import ProductRepository
 from app.services import cabys_service
@@ -234,8 +235,6 @@ def update_product_status(
         LookupError: If product not found
         ValueError: If status is invalid
     """
-    from app.enums.product_status import ProductStatus
-    
     # Validate status
     if not ProductStatus.is_valid(status):
         valid_statuses = ProductStatus.get_valid_statuses()
