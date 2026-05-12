@@ -48,11 +48,11 @@ class DepartmentsController:
                 ),
             ),
             page: int = Query(1, ge=1, description="Page number (1-indexed)"),
-            pageSize: int = Query(12, ge=1, le=100, description="Items per page"),
+            page_size: int = Query(12, ge=1, le=100, description="Items per page"),
         ):
             try:
                 return department_service.get_departments(
-                    organization_id, client_id, page, pageSize, search
+                    organization_id, client_id, page, page_size, search
                 )
             except ValueError as e:
                 raise HTTPException(status_code=422, detail=str(e))

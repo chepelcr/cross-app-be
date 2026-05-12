@@ -29,7 +29,7 @@ class BranchesController:
 **Query Parameters:**
 - `search`: Search filter string (field:value syntax)
 - `page`: Page number (1-indexed)
-- `pageSize`: Items per page
+- `page_size`: Items per page
 - `type`: Filter by branch type ('stand' or 'restaurant')
 
 **Examples:**
@@ -42,12 +42,12 @@ class BranchesController:
             x_user_id: Annotated[str, Header(description="User identifier from header")],
             search: Optional[str] = Query(None),
             page: int = Query(1, ge=1),
-            pageSize: int = Query(12, ge=1, le=100),
+            page_size: int = Query(12, ge=1, le=100),
             type: Optional[str] = Query(None, description="Filter by branch type (stand/restaurant)"),
         ) -> BranchListResponse:
             try:
                 return branch_service.get_branches(
-                    organization_id, x_user_id, page=page, page_size=pageSize, search=search, branch_type=type
+                    organization_id, x_user_id, page=page, page_size=page_size, search=search, branch_type=type
                 )
             except ValueError as e:
                 raise HTTPException(status_code=422, detail=str(e))

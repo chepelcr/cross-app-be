@@ -86,10 +86,10 @@ class ConfirmationsController:
         async def list_confirmations(
             organization_id: Annotated[str, Path(description="Organization identifier")],
             page: int = Query(1, ge=1, description="Page number"),
-            pageSize: int = Query(12, ge=1, le=100, description="Items per page"),
+            page_size: int = Query(12, ge=1, le=100, description="Items per page"),
         ):
             return confirmation_service.list_confirmations(
-                organization_id, page=page, page_size=pageSize
+                organization_id, page=page, page_size=page_size
             )
 
         @app.patch(

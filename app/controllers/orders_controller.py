@@ -139,13 +139,13 @@ Logical AND and OR conditions can be applied:
                 examples=["orderStatus:pending,orderBy>deliveryDate"],
             ),
             page: int = Query(1, ge=1, description="Page number (1-indexed)"),
-            pageSize: int = Query(12, ge=1, le=100, description="Items per page"),
+            page_size: int = Query(12, ge=1, le=100, description="Items per page"),
         ):
             return order_service.get_orders(
                 organization_id,
                 search=search,
                 page=page,
-                page_size=pageSize,
+                page_size=page_size,
             )
 
         @app.get(

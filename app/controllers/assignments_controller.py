@@ -29,7 +29,7 @@ class AssignmentsController:
 **Query Parameters:**
 - `search`: Search filter string (field:value syntax)
 - `page`: Page number (1-indexed)
-- `pageSize`: Items per page
+- `page_size`: Items per page
 - `session_id`: Filter by session UUID
 - `assigned_user_id`: Filter by assigned user ID
 - `branch_id`: Filter by branch UUID
@@ -52,7 +52,7 @@ class AssignmentsController:
                 ),
             ),
             page: int = Query(1, ge=1, description="Page number (1-indexed)"),
-            pageSize: int = Query(12, ge=1, le=100, description="Items per page"),
+            page_size: int = Query(12, ge=1, le=100, description="Items per page"),
             session_id: Optional[str] = Query(
                 None, description="Filter by session UUID"
             ),
@@ -65,7 +65,7 @@ class AssignmentsController:
         ) -> AssignmentListResponse:
             try:
                 return assignment_service.get_assignments(
-                    organization_id, x_user_id, page=page, page_size=pageSize, search=search
+                    organization_id, x_user_id, page=page, page_size=page_size, search=search
                 )
             except ValueError as e:
                 raise HTTPException(status_code=422, detail=str(e))

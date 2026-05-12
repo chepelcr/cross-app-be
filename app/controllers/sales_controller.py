@@ -64,10 +64,10 @@ All fields use **snake_case**. Branch and terminal are identified by their **int
             organization_id: Annotated[str, Path(description="Organization identifier")],
             x_user_id: Annotated[str, Header(description="User identifier from header")],
             page: int = Query(1, ge=1),
-            pageSize: int = Query(20, ge=1, le=100),
+            page_size: int = Query(20, ge=1, le=100),
         ) -> SaleListResponse:
             try:
-                return sale_service.get_sales(organization_id, x_user_id, page=page, page_size=pageSize)
+                return sale_service.get_sales(organization_id, x_user_id, page=page, page_size=page_size)
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 

@@ -32,11 +32,11 @@ class TerminalsController:
             x_user_id: Annotated[str, Header(description="User identifier from header")],
             search: Optional[str] = Query(None),
             page: int = Query(1, ge=1),
-            pageSize: int = Query(12, ge=1, le=100),
+            page_size: int = Query(12, ge=1, le=100),
         ) -> TerminalListResponse:
             try:
                 return terminal_service.get_terminals(
-                    organization_id, x_user_id, page=page, page_size=pageSize,
+                    organization_id, x_user_id, page=page, page_size=page_size,
                     search=search, branch_code=branch_code
                 )
             except ValueError as e:

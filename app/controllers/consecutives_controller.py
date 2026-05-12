@@ -30,11 +30,11 @@ class ConsecutivesController:
             x_user_id: Annotated[str, Header(description="User identifier from header")],
             search: Optional[str] = Query(None, description="Search filter (field:value syntax)"),
             page: int = Query(1, ge=1),
-            pageSize: int = Query(12, ge=1, le=100),
+            page_size: int = Query(12, ge=1, le=100),
         ):
             try:
                 return consecutive_service.get_consecutives(
-                    organization_id, x_user_id, page=page, page_size=pageSize, search=search
+                    organization_id, x_user_id, page=page, page_size=page_size, search=search
                 )
             except ValueError as e:
                 raise HTTPException(status_code=422, detail=str(e))
