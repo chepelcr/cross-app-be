@@ -34,6 +34,7 @@ class ResidenceRequestDTO(BaseModel):
 class ClientRequestDTO(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
+    customer_type: Optional[int] = Field(None, ge=1, le=10)
     client_name: Optional[str] = Field(None)
     client_gln: Optional[str] = Field(None)
     identification: Optional[IdentificationRequestDTO] = Field(None)

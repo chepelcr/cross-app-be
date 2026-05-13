@@ -84,6 +84,7 @@ def create_client(
         if existing:
             # Reactivate and update deleted client
             existing.client_name = dto.client_name
+            existing.customer_type = dto.customer_type
             existing.client_gln = dto.client_gln
             existing.status = 1
             existing.identification_code = dto.identification.code if dto.identification else None
@@ -105,6 +106,7 @@ def create_client(
             # Create new client
             client = Client(
                 company_id=company_id,
+                customer_type=dto.customer_type,
                 client_name=dto.client_name,
                 client_gln=dto.client_gln,
                 status=1,
@@ -146,6 +148,8 @@ def update_client(
 
         if dto.client_name is not None:
             client.client_name = dto.client_name
+        if dto.customer_type is not None:
+            client.customer_type = dto.customer_type
         if dto.client_gln is not None:
             client.client_gln = dto.client_gln
         if dto.identification:
@@ -240,12 +244,14 @@ def _map_client(client: Client) -> ClientResponse:
     return ClientResponse(
         client_id=str(client.client_id),
         company_id=client.company_id,
+        customer_type=client.customer_type,
         client_name=client.client_name,
         client_gln=client.client_gln,
         status=client.status,
         identification=identification,
         business_name=client.business_name,
         nationality=client.nationality,
+        email=client.email,
         phone=phone,
         residence=residence,
     )

@@ -17,6 +17,7 @@ class Client(Base, AuditMixin):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     company_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    customer_type: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     client_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     client_gln: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     status: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

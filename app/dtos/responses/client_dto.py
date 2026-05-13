@@ -36,6 +36,7 @@ class ResidenceResponse(BaseModel):
 class ClientResponse(BaseModel):
     client_id: str = Field(...)
     company_id: str = Field(...)
+    customer_type: Optional[int] = Field(None)
     client_name: Optional[str] = Field(None)
     client_gln: Optional[str] = Field(None)
     status: int = Field(...)
