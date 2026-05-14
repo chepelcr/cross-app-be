@@ -10,7 +10,6 @@ class TerminalCreateRequestDTO(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    branch_id: Optional[str] = Field(None, description="Set by the controller from URL path")
     name: str = Field(..., min_length=1, max_length=255)
     code: int = Field(..., ge=1, description="Numeric terminal code, unique per organization (Hacienda requirement)")
     device_id: Optional[str] = Field(None, max_length=255)

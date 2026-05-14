@@ -91,43 +91,47 @@ def get_terminal_by_code(
 def create_terminal(
     organization_id: str,
     user_id: str,
+    branch_code: number,
     dto: TerminalCreateRequestDTO,
 ) -> TerminalResponse:
-    """Create a new terminal. dto.branch_id must be set (UUID string from controller)."""
-    with TerminalRepository() as repo:
-        if not repo.validate_branch_exists(dto.branch_id, organization_id):
+    with BranchRepository() as b_repo:
+        branch = b_repo.find_by_code_and_organization(branch_code, organization_id)
+        
+        if not branch:
             raise ValueError(
                 f"Branch does not exist or does not belong to this organization"
             )
-
-        existing = repo.find_by_code_and_organization(dto.code, organization_id)
-        if existing:
-            raise ValueError(
-                f"Terminal code '{dto.code}' already exists in this organization"
-            )
-
-        if dto.device_id:
-            existing_device = repo.find_by_device_id(dto.device_id)
-            if existing_device:
+                
+        """Create a new terminal."""
+        with TerminalRepository() as repo:
+            existing = repo.find_by_code_and_organization(dto.code, organization_id)
+            if existing:
                 raise ValueError(
-                    f"Device ID '{dto.device_id}' is already registered to another terminal"
+                    f"Terminal code '{dto.code}' already exists in this organization"
                 )
 
-        terminal_id = uuid.uuid4()
-        now = datetime.now(timezone.utc)
+            if dto.device_id:
+                existing_device = repo.find_by_device_id(dto.device_id)
+                if existing_device:
+                    raise ValueError(
+                        f"Device ID '{dto.device_id}' is already registered to another terminal"
+                    )
 
-        terminal = Terminal(
-            terminal_id=terminal_id,
-            organization_id=organization_id,
-            branch_id=uuid.UUID(dto.branch_id),
-            name=dto.name,
-            code=dto.code,
-            device_id=dto.device_id,
-            registered_at=now,
-        )
-        terminal = repo.save(terminal)
+            terminal_id = uuid.uuid4()
+            now = datetime.now(timezone.utc)
 
-    return _map_terminal(terminal)
+            terminal = Terminal(
+                terminal_id=terminal_id,
+                organization_id=organization_id,
+                branch_id=branch.branch_id,
+                name=dto.name,
+                code=dto.code,
+                device_id=dto.device_id,
+                registered_at=now,
+            )
+            terminal = repo.save(terminal)
+
+        return _map_terminal(terminal)
 
 
 def update_terminal(

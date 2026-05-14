@@ -10,7 +10,6 @@ from app.dtos.requests.terminal_request_dto import (
     TerminalUpdateRequestDTO,
 )
 from app.dtos.responses.terminal_dto import TerminalListResponse, TerminalResponse
-from app.repositories.branch_repository import BranchRepository
 from app.services import terminal_service
 
 
@@ -91,12 +90,6 @@ class TerminalsController:
             body: TerminalCreateRequestDTO,
         ):
             try:
-                # Resolve branch UUID from code and inject into DTO
-                with BranchRepository() as b_repo:
-                    branch = b_repo.find_by_code_and_organization(branch_code, organization_id)
-                if not branch:
-                    raise HTTPException(status_code=404, detail="Branch not found")
-                body.branch_id = str(branch.branch_id)
                 return terminal_service.create_terminal(organization_id, x_user_id, body)
             except HTTPException:
                 raise
