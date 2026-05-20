@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid as _uuid
+from typing import Optional
 
 from sqlalchemy import Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
@@ -19,6 +20,11 @@ class Cabys(Base):
 
     All non-PK fields are nullable from cross-app-be's perspective because
     the upstream service may insert rows before some fields are known.
+
+    NOTE: annotations use `Optional[X]` rather than `X | None` because the
+    deployed Lambda runtime is Python 3.9, where SQLAlchemy's
+    Mapped[...] resolver can't evaluate PEP 604 union syntax. Keep all
+    SQLAlchemy model annotations in the `typing` form.
     """
 
     __tablename__ = "cabys"
@@ -29,9 +35,9 @@ class Cabys(Base):
         default=_uuid.uuid4,
     )
     code: Mapped[str] = mapped_column(String(13), nullable=False)
-    description: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    categories: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array as text
-    status: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    country_code: Mapped[str | None] = mapped_column(String(3), nullable=True)
-    product_type_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    tax_rate_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    categories: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON array as text
+    status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    country_code: Mapped[Optional[str]] = mapped_column(String(3), nullable=True)
+    product_type_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    tax_rate_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
