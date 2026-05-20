@@ -229,31 +229,24 @@ class ProductExcelService:
             Created Product instance
         """
         from app.dtos.requests.category_request_dto import CategoryRequestDTO
+        from app.dtos.requests.product_request_dto import ProductCodeDTO
         from app.repositories.category_repository import CategoryRepository
         from app.services.category_service import create_category
         import uuid
 
-        # Build codes array from Excel columns
-        codes_array = []
+        # Build codes via the canonical DTO. Each (type, number) pair only
+        # produces an entry when both halves are present.
         cod_artic = row_data.get("cod_artic", "").strip()
         cod_barra = row_data.get("cod_barra", "").strip()
         cod_interno = row_data.get("cod_interno", "").strip()
 
+        code_dtos: list[ProductCodeDTO] = []
         if cod_artic:
-            codes_array.append({
-                "code_type_id": ProductCodeType.VENDOR,
-                "number": cod_artic
-            })
+            code_dtos.append(ProductCodeDTO(code_type_id=ProductCodeType.VENDOR, number=cod_artic))
         if cod_barra:
-            codes_array.append({
-                "code_type_id": ProductCodeType.MANUFACTURER,
-                "number": cod_barra
-            })
+            code_dtos.append(ProductCodeDTO(code_type_id=ProductCodeType.MANUFACTURER, number=cod_barra))
         if cod_interno:
-            codes_array.append({
-                "code_type_id": ProductCodeType.INTERNAL,
-                "number": cod_interno
-            })
+            code_dtos.append(ProductCodeDTO(code_type_id=ProductCodeType.INTERNAL, number=cod_interno))
 
         # Handle category lookup/creation
         category_name = row_data.get("categoria", "").strip()
@@ -310,7 +303,8 @@ class ProductExcelService:
             is_active=True,
             units_per_box=units_per_box if units_per_box is not None else 0,
             commercial_unit_measure=unit_of_measure if unit_of_measure else None,
-            codes=codes_array,
+            # JSONB column wants plain dicts; serialize the DTOs only at this seam.
+            codes=[c.model_dump(exclude_none=True) for c in code_dtos],
         )
 
         # Save product

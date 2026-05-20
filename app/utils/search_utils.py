@@ -272,37 +272,37 @@ class SearchUtils:
 
     @classmethod
     def _build_codes_filter(cls, entity_class: Type, operation: SearchOperations, value: Any):
-        """Build filter for JSONB codes array with format: code:01-123415 or code:123415"""
-        from sqlalchemy import cast, String, func
+        """Build filter for JSONB codes array with format: code:01-123415 or code:123415.
+
+        The containment probe is built via ProductCodeDTO so the JSONB key
+        shape can't drift from the rest of the codebase. The number-only
+        path still uses a bare {"number": ...} since DTO would require a
+        code_type_id we don't have.
+        """
+        from sqlalchemy import cast
         from sqlalchemy.dialects.postgresql import JSONB
-        
+        from app.dtos.requests.product_request_dto import ProductCodeDTO
+
         if not hasattr(entity_class, "codes"):
             return None
-        
+
         codes_column = getattr(entity_class, "codes")
         value_str = str(value)
-        
-        # Check if value contains code type (format: 01-123415)
+
         if "-" in value_str:
-            parts = value_str.split("-", 1)
-            code_type = parts[0].strip()
-            code_number = parts[1].strip()
-            
-            # Search for exact match with both code_type_id and number
-            # JSONB query: codes @> '[{"code_type_id": "01", "number": "123415"}]'
-            search_obj = [{"code_type_id": code_type, "number": code_number}]
-            if operation == SearchOperations.EQUALITY:
-                return codes_column.op("@>")(cast(search_obj, JSONB))
-            elif operation == SearchOperations.NEGATION:
-                return ~codes_column.op("@>")(cast(search_obj, JSONB))
+            code_type, code_number = (p.strip() for p in value_str.split("-", 1))
+            probe = ProductCodeDTO(
+                code_type_id=code_type, number=code_number
+            ).model_dump(exclude_none=True)
         else:
-            # No code type specified, search all code types for the number
-            # Use jsonb_array_elements to expand array and check number field
-            if operation == SearchOperations.EQUALITY:
-                return codes_column.op("@>")(cast([{"number": value_str}], JSONB))
-            elif operation == SearchOperations.NEGATION:
-                return ~codes_column.op("@>")(cast([{"number": value_str}], JSONB))
-        
+            # No code type specified — partial probe matches any code type
+            # whose number equals value_str (JSONB containment).
+            probe = {"number": value_str}
+
+        if operation == SearchOperations.EQUALITY:
+            return codes_column.op("@>")(cast([probe], JSONB))
+        if operation == SearchOperations.NEGATION:
+            return ~codes_column.op("@>")(cast([probe], JSONB))
         return None
 
     @classmethod

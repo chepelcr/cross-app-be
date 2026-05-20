@@ -21,14 +21,7 @@ def _format_currency(value) -> str:
         return "0.00"
 
 
-def _get_code_from_array(codes: list, code_type: str) -> str:
-    """Extract code number from codes array by type."""
-    if not codes:
-        return ""
-    for code in codes:
-        if isinstance(code, dict) and code.get("code_type_id") == code_type:
-            return code.get("number", "")
-    return ""
+from app.utils.product_codes import find_code_number as _get_code_from_array  # noqa: E402
 
 
 # Jinja2 setup

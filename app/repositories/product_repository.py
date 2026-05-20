@@ -8,6 +8,7 @@ from sqlalchemy import asc, func, select, and_
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.configuration.database_connection import DatabaseConnection
+from app.dtos.requests.product_request_dto import ProductCodeDTO
 from app.enums.hacienda_codes import ProductCodeType
 from app.enums.product_status import ProductStatus
 from app.models.category import Category
@@ -54,15 +55,15 @@ class ProductRepository(DatabaseConnection):
         try:
             from sqlalchemy import cast
             from sqlalchemy.dialects.postgresql import JSONB
-            
-            # Search for product with matching code in JSONB array
-            # codes @> '[{"code_type_id": "01", "number": "123415"}]'
-            search_obj = [{"code_type_id": hacienda_code, "number": code}]
-            
+
+            # Build the containment object from the canonical DTO so the
+            # JSONB keys can never drift from the rest of the codebase.
+            probe = ProductCodeDTO(code_type_id=hacienda_code, number=code).model_dump(exclude_none=True)
+
             conditions = [
                 Product.organization_id == company_id,
                 Product.status != ProductStatus.DELETED,
-                Product.codes.op("@>")(cast(search_obj, JSONB)),
+                Product.codes.op("@>")(cast([probe], JSONB)),
             ]
             
             # Exclude current product when validating updates
@@ -83,17 +84,18 @@ class ProductRepository(DatabaseConnection):
         try:
             from sqlalchemy import cast
             from sqlalchemy.dialects.postgresql import JSONB
-            
-            # Search for product with internal code (type 04) in JSONB array
-            search_obj = [{"code_type_id": ProductCodeType.INTERNAL, "number": internal_code}]
-            
+
+            probe = ProductCodeDTO(
+                code_type_id=ProductCodeType.INTERNAL, number=internal_code
+            ).model_dump(exclude_none=True)
+
             stmt = (
                 select(Product)
                 .where(
                     and_(
                         Product.organization_id == company_id,
                         Product.status != ProductStatus.DELETED,
-                        Product.codes.op("@>")(cast(search_obj, JSONB)),
+                        Product.codes.op("@>")(cast([probe], JSONB)),
                     )
                 )
             )
@@ -220,16 +222,17 @@ class ProductRepository(DatabaseConnection):
         try:
             existing = self.find_by_company_and_internal_code(company_id, internal_code)
 
-            # Build codes array from parameters
-            codes_array = []
+            # Build codes via the canonical DTO; serialize once at the JSONB seam.
+            code_dtos: list[ProductCodeDTO] = []
             if internal_code:
-                codes_array.append({"code_type_id": ProductCodeType.INTERNAL, "number": internal_code})
+                code_dtos.append(ProductCodeDTO(code_type_id=ProductCodeType.INTERNAL, number=internal_code))
             if original_code:
-                codes_array.append({"code_type_id": ProductCodeType.VENDOR, "number": original_code})
+                code_dtos.append(ProductCodeDTO(code_type_id=ProductCodeType.VENDOR, number=original_code))
             if client_article_code:
-                codes_array.append({"code_type_id": ProductCodeType.BUYER, "number": client_article_code})
+                code_dtos.append(ProductCodeDTO(code_type_id=ProductCodeType.BUYER, number=client_article_code))
             if code:
-                codes_array.append({"code_type_id": ProductCodeType.MANUFACTURER, "number": code})
+                code_dtos.append(ProductCodeDTO(code_type_id=ProductCodeType.MANUFACTURER, number=code))
+            codes_array = [c.model_dump(exclude_none=True) for c in code_dtos]
 
             if existing:
                 if description is not None:
