@@ -15,7 +15,8 @@ class ClientSearchFilters(Enum):
     Format: (entity_field, json_field, is_join, join_field, is_controller, entities, allows_like, allows_between, sortable)
     """
 
-    CLIENT_NAME = ("client_name", "client_name", False, None, True, ENTITY_ALL, True, False, True, False)
+    CLIENT_NAME = ("client_name", "client_name", False, None, True, ENTITY_ALL, True, False, True, True)
+    BUSINESS_NAME = ("business_name", "business_name", False, None, True, ENTITY_ALL, True, False, True, True)
     CLIENT_GLN = ("client_gln", "client_gln", False, None, True, ENTITY_ALL, False, False, True, False)
     STATUS = ("status", "status", False, None, True, ENTITY_ALL, False, False, True, False)
     NATIONALITY = ("nationality", "nationality", False, None, True, ENTITY_ALL, False, False, True, False)
