@@ -51,7 +51,10 @@ class Product(Base, TimestampMixin):
     cabys_id: Mapped[Optional[_uuid.UUID]] = mapped_column(
         UUID(as_uuid=True), ForeignKey("cabys.id"), nullable=True
     )
-    unit_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=85)
+    # Canonical Hacienda unit-of-measure code (e.g. "Unid", "Sp", "kg").
+    # Replaces the old `unit_id INT` which referenced data-services across
+    # service boundaries and was always wrong in practice.
+    unit_measure: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     commercial_unit_measure: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     is_packaged: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=False)
     quantity: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 3), nullable=True, default=1)

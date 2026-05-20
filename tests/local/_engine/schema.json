@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "lambda-local-test tests.json",
+  "type": "object",
+  "properties": {
+    "defaults": {
+      "type": "object",
+      "properties": {
+        "headers": { "type": "object", "additionalProperties": { "type": "string" } },
+        "event_shape": { "enum": ["apigw_v2", "apigw_v1", "alb"] },
+        "stage": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "method", "path"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "method": { "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] },
+          "path": { "type": "string" },
+          "path_params": { "type": "object", "additionalProperties": { "type": ["string", "number"] } },
+          "query": { "type": "object" },
+          "headers": { "type": "object", "additionalProperties": { "type": "string" } },
+          "body": {},
+          "event_shape": { "enum": ["apigw_v2", "apigw_v1", "alb"] },
+          "stage": { "type": "string" },
+          "skip": { "type": "boolean" },
+          "expect": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "oneOf": [
+                  { "type": "integer" },
+                  { "type": "array", "items": { "type": "integer" } }
+                ]
+              },
+              "body": { "type": "object" },
+              "body_contains": { "type": "array", "items": { "type": "string" } },
+              "error_message_includes": { "type": ["string", "null"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["tests"]
+}

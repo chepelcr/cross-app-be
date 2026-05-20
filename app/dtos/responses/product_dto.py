@@ -20,12 +20,23 @@ class CategoryResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 class CabysResponse(BaseModel):
+    """Aligned with the data-services CABYS catalog. cross-app-be reads only.
+
+    `description` is the canonical Hacienda-supplied name; `product_type_id`
+    and `tax_rate_id` are the data-services catalog references (Hacienda
+    product type 4/5/6, plus a suggested IVA rate). All non-id/code fields
+    are optional because data-services may insert rows before every field
+    is populated (e.g. via the Hacienda search path).
+    """
+
     model_config = {"from_attributes": True}
-    
+
     id: str = Field(...)
     code: str = Field(...)
-    name: str = Field(...)
-    type: int = Field(...)
+    description: Optional[str] = Field(None)
+    product_type_id: Optional[int] = Field(None)
+    tax_rate_id: Optional[int] = Field(None)
+    country_code: Optional[str] = Field(None)
 
 
 class ProductCodeResponse(BaseModel):
@@ -118,7 +129,7 @@ class ProductResponse(BaseModel):
 
     # Fiscal / Hacienda e-invoicing fields
     cabys: Optional[CabysResponse] = Field(None)
-    unit_id: Optional[int] = Field(None)
+    unit_measure: Optional[str] = Field(None)
     commercial_unit_measure: Optional[str] = Field(None)
     is_packaged: Optional[bool] = Field(None)
     quantity: Optional[float] = Field(None)

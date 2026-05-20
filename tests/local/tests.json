@@ -1,0 +1,126 @@
+{
+  "$schema": "./_engine/schema.json",
+  "defaults": {
+    "event_shape": "apigw_v2",
+    "stage": "$default",
+    "headers": {
+      "content-type": "application/json",
+      "x-user-id": "test-user-local"
+    }
+  },
+  "tests": [
+    {
+      "name": "get_product_by_id",
+      "description": "Read-only smoke test — confirms the handler boots and the route resolves.",
+      "method": "GET",
+      "path": "/api/organizations/{org_id}/products/{product_id}",
+      "path_params": {
+        "org_id": "d09b299b-f42e-4dc6-94ee-7db39479f996",
+        "product_id": "7d886ce3-923a-464d-906e-f792d1415fd0"
+      },
+      "expect": {
+        "status": [200, 404]
+      }
+    },
+    {
+      "name": "update_product_reported_payload",
+      "description": "Reproduces the FE product-drawer PUT payload reported on 2026-05-19 (Hacienda codes for tax/discount/code types, with CABYS upsert).",
+      "method": "PUT",
+      "path": "/api/organizations/{org_id}/products/{product_id}",
+      "path_params": {
+        "org_id": "d09b299b-f42e-4dc6-94ee-7db39479f996",
+        "product_id": "7d886ce3-923a-464d-906e-f792d1415fd0"
+      },
+      "body": {
+        "name": "ALMOHADA Y FUNDA BEBE COLORES SURTIDOS DOCOMA",
+        "description": "ALMOHADA Y FUNDA BEBE COLORES SURTIDOS DOCOMA",
+        "price": 4333,
+        "category_id": "01b633ff-f421-49a0-b5ca-8feb0bd48625",
+        "track_inventory": false,
+        "units_per_box": 3,
+        "cabys_id": "051d8576-d537-43b5-ab63-127b85ece665",
+        "codes": [
+          { "code_type_id": "04", "number": "2645516" },
+          { "code_type_id": "01", "number": "7441119600652" }
+        ],
+        "taxes": [
+          {
+            "tax_type_id": "01",
+            "tax_rate": { "id": "8", "percentage": 13 }
+          }
+        ],
+        "discounts": [
+          { "discount_type_id": "01", "percentage": 3 }
+        ]
+      },
+      "expect": {
+        "status": 200,
+        "body_contains": ["product_id", "sale_price", "base_amount"],
+        "body": {
+          "$.name": "ALMOHADA Y FUNDA BEBE COLORES SURTIDOS DOCOMA",
+          "$.cabys.code": "2718000000100",
+          "$.units_per_box": 3
+        }
+      }
+    },
+    {
+      "name": "update_product_with_invalid_discount_code",
+      "description": "Regression for the original bug: FE used to send the DB primary key '17' as discount_type_id. Verifies the BE no longer chokes on unknown codes — and surfaces what it does instead.",
+      "method": "PUT",
+      "path": "/api/organizations/{org_id}/products/{product_id}",
+      "path_params": {
+        "org_id": "d09b299b-f42e-4dc6-94ee-7db39479f996",
+        "product_id": "7d886ce3-923a-464d-906e-f792d1415fd0"
+      },
+      "body": {
+        "name": "ALMOHADA Y FUNDA BEBE COLORES SURTIDOS DOCOMA",
+        "price": 4333,
+        "discounts": [
+          { "discount_type_id": "17", "percentage": 3 }
+        ]
+      },
+      "expect": {
+        "status": [200, 400, 422]
+      }
+    },
+    {
+      "name": "update_product_otros_discount_without_reason",
+      "description": "Negative test — discount type 99 (Otros) requires a reason ≥5 chars. BE should reject with 400.",
+      "method": "PUT",
+      "path": "/api/organizations/{org_id}/products/{product_id}",
+      "path_params": {
+        "org_id": "d09b299b-f42e-4dc6-94ee-7db39479f996",
+        "product_id": "7d886ce3-923a-464d-906e-f792d1415fd0"
+      },
+      "body": {
+        "name": "ALMOHADA Y FUNDA BEBE COLORES SURTIDOS DOCOMA",
+        "price": 4333,
+        "discounts": [
+          { "discount_type_id": "99", "percentage": 3 }
+        ]
+      },
+      "expect": {
+        "status": 400,
+        "error_message_includes": "reason"
+      }
+    },
+    {
+      "name": "update_product_unknown_id_returns_404",
+      "description": "Hitting a non-existent product_id should produce a clean 404 from update_product().",
+      "method": "PUT",
+      "path": "/api/organizations/{org_id}/products/{product_id}",
+      "path_params": {
+        "org_id": "d09b299b-f42e-4dc6-94ee-7db39479f996",
+        "product_id": "00000000-0000-0000-0000-000000000000"
+      },
+      "body": {
+        "name": "ghost product",
+        "price": 1
+      },
+      "expect": {
+        "status": 404,
+        "error_message_includes": "not found"
+      }
+    }
+  ]
+}

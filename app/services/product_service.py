@@ -6,7 +6,7 @@ import uuid
 from decimal import Decimal
 from typing import Optional
 
-from app.dtos.requests.product_request_dto import ProductRequestDTO
+from app.dtos.requests.product_request_dto import ProductCodeDTO, ProductRequestDTO
 from app.dtos.files import ImageDTO
 from app.dtos.responses.product_dto import (
     CabysResponse,
@@ -16,10 +16,6 @@ from app.dtos.responses.product_dto import (
     ProductListResponse,
     ProductResponse,
     ProductTaxResponse,
-    TaxAmountResponse,
-    TaxFactorResponse,
-    TaxRateResponse,
-    TaxSpecialFieldsResponse,
 )
 from app.dtos.responses.pagination_dto import PaginationResponse
 from app.enums.product_search_filters import ProductSearchFilters
@@ -47,50 +43,35 @@ ALLOWED_IMAGE_TYPES = {
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
 
 
-def _validate_cabys_code(code: str) -> None:
-    """Raises ValueError if code is not exactly 13 digits."""
-    if not code.isdigit() or len(code) != 13:
-        raise ValueError(
-            f"CABYS code must be exactly 13 digits. Received: '{code}'"
-        )
-
-
 def _validate_unique_codes(
-    organization_id: str, codes: list, product_id: Optional[str], repo: ProductRepository
+    organization_id: str,
+    codes: list[ProductCodeDTO],
+    product_id: Optional[str],
+    repo: ProductRepository,
 ) -> None:
-    """Validate that no code type+number combination is duplicated across products.
-    
-    Args:
-        organization_id: Organization ID
-        codes: List of code dicts with codeTypeId and number
-        product_id: Current product ID (None for create, ID for update)
-        repo: Repository instance to use for lookups
-        
+    """Validate that no Hacienda (code_type_id, number) pair is duplicated across products.
+
     Raises:
-        ValueError: If a duplicate code is found
+        ValueError: If a duplicate code is found.
     """
     if not codes:
         return
-    
-    for code_entry in codes:
-        code_type = code_entry.get("codeTypeId")
-        code_number = code_entry.get("number")
-        
-        if not code_type or not code_number:
+
+    for code in codes:
+        if not code.code_type_id or not code.number:
             continue
-        
-        # Check if another product has this code type + number combination
+
         existing = repo.find_by_company_and_code(
-            organization_id, 
-            code_type, 
-            code_number,
-            exclude_product_id=product_id  # Exclude current product for updates
+            organization_id,
+            code.code_type_id,
+            code.number,
+            exclude_product_id=product_id,
         )
-        
+
         if existing:
             raise ValueError(
-                f"Product code conflict: Another product (ID: {existing.id}) already has "
-                f"code type '{code_type}' with number '{code_number}'"
+                f"Product code conflict: another product (ID: {existing.id}) already has "
+                f"code type '{code.code_type_id}' with number '{code.number}'"
             )
 
 
@@ -256,20 +237,19 @@ def update_product_status(
 def _apply_fiscal_fields(product: Product, dto: ProductRequestDTO, repo) -> None:
     """Apply all fiscal/Hacienda fields from dto onto product (mutates in place)."""
 
-    # 1. CABYS lookup / upsert (shares the caller's session for a single transaction)
-    if dto.cabys is not None:
-        _validate_cabys_code(dto.cabys.code)
-        cabys_dto = cabys_service.get_or_create_cabys(
-            dto.cabys.code,
-            dto.cabys.name,
-            dto.cabys.type,
-            session=repo.session,
-        )
-        product.cabys_id = uuid.UUID(cabys_dto.id)
+    # 1. CABYS link — data-services owns the row; we only set the FK.
+    # The FK constraint validates existence at flush time.
+    if dto.cabys_id is not None:
+        try:
+            product.cabys_id = uuid.UUID(dto.cabys_id)
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"cabys_id must be a valid UUID. Received: {dto.cabys_id!r}"
+            )
 
     # 2. Scalar fiscal fields (only set if provided)
-    if dto.unit_id is not None:
-        product.unit_id = dto.unit_id
+    if dto.unit_measure is not None:
+        product.unit_measure = dto.unit_measure
     if dto.commercial_unit_measure is not None:
         product.commercial_unit_measure = dto.commercial_unit_measure
     if dto.is_packaged is not None:
@@ -288,36 +268,45 @@ def _apply_fiscal_fields(product: Product, dto: ProductRequestDTO, repo) -> None
                 "When is_packaged is True both quantity and unit_price are required."
             )
 
-    # 4. Build raw dicts from DTOs (no 'amount' key — computed below)
-    discounts_raw = [d.model_dump(by_alias=True) for d in (dto.discounts or [])]
-    taxes_raw = [t.model_dump(by_alias=True) for t in (dto.taxes or [])]
+    # 4. Validate + compute amounts directly on the request DTOs. Pydantic
+    # models are mutable, so the calc populates each entry's `.amount`; we dump
+    # to JSONB at the end. Avoids dict.get() key-format pitfalls entirely.
+    discount_dtos = list(dto.discounts or [])
+    tax_dtos = list(dto.taxes or [])
 
-    validate_discounts(discounts_raw)
-    validate_taxes(taxes_raw)
+    validate_discounts(discount_dtos)
+    validate_taxes(tax_dtos)
 
-    # calculate_product_totals mutates discounts_raw and taxes_raw in-place,
-    # embedding a computed "amount" key in each entry.
+    # CABYS code drives ISEBEC ("2202"/"3401" prefix) branching — pull from the
+    # linked row since the request only carries the FK.
+    cabys_code_for_calc: Optional[str] = None
+    if product.cabys_id is not None:
+        cabys_row = cabys_service.get_by_id(str(product.cabys_id), session=repo.session)
+        if cabys_row:
+            cabys_code_for_calc = cabys_row.code
+
     base_amount, sale_price = calculate_product_totals(
         price=Decimal(str(product.price)),
         quantity=Decimal(str(product.quantity or 1)),
         is_packaged=bool(product.is_packaged),
-        discounts=discounts_raw,
-        taxes=taxes_raw,
-        cabys_code=dto.cabys.code if dto.cabys else None,
+        discounts=discount_dtos,
+        taxes=tax_dtos,
+        cabys_code=cabys_code_for_calc,
         manual_base_amount=(
             Decimal(str(dto.base_amount)) if dto.base_amount is not None else None
         ),
     )
 
-    # 5. Set codes array (validate uniqueness if codes are provided)
+    # 5. Codes — uniqueness check + JSONB storage
     if dto.codes is not None:
-        codes_array = [c.model_dump(by_alias=True) for c in dto.codes]
-        # Validate uniqueness (exclude current product if it has an ID)
-        _validate_unique_codes(product.organization_id, codes_array, product.id, repo)
-        product.codes = codes_array
-    
-    product.discounts = discounts_raw   # contain computed "amount" per entry
-    product.taxes = taxes_raw           # contain computed "amount" per entry
+        _validate_unique_codes(product.organization_id, dto.codes, product.id, repo)
+        product.codes = [c.model_dump() for c in dto.codes]
+
+    # 6. Dump DTOs (now carrying computed .amount) to JSONB. No alias config on
+    # these DTOs, so model_dump() emits snake_case keys — same shape downstream
+    # readers expect.
+    product.discounts = [d.model_dump() for d in discount_dtos]
+    product.taxes = [t.model_dump() for t in tax_dtos]
     product.base_amount = base_amount
     product.sale_price = sale_price
 
@@ -370,71 +359,20 @@ def _map_product(product: Product) -> ProductResponse:
         cabys_response = CabysResponse(
             id=str(product.cabys.id),
             code=product.cabys.code,
-            name=product.cabys.name,
-            type=product.cabys.type,
+            description=product.cabys.description,
+            product_type_id=product.cabys.product_type_id,
+            tax_rate_id=product.cabys.tax_rate_id,
+            country_code=product.cabys.country_code,
         )
 
-    codes = [
-        ProductCodeResponse(
-            code_type_id=c.get("codeTypeId", ""),
-            number=c.get("number", ""),
-            description=c.get("description"),
-        )
-        for c in _coerce_list(product.codes)
-    ]
-
+    # JSONB rows are stored with the same snake_case shape as the response
+    # DTOs, so we can validate straight from dict to model with no manual
+    # field plumbing.
+    codes = [ProductCodeResponse.model_validate(c) for c in _coerce_list(product.codes)]
     discounts = [
-        ProductDiscountResponse(
-            discount_type_id=d.get("discountTypeId", ""),
-            percentage=d.get("percentage"),
-            amount=d.get("amount"),
-            reason=d.get("reason"),
-            is_amount=d.get("isAmount"),
-        )
-        for d in _coerce_list(product.discounts)
+        ProductDiscountResponse.model_validate(d) for d in _coerce_list(product.discounts)
     ]
-
-    taxes = []
-    for t in _coerce_list(product.taxes):
-        tax_rate = None
-        if t.get("taxRate"):
-            tax_rate = TaxRateResponse(
-                id=t["taxRate"].get("id"),
-                percentage=t["taxRate"].get("percentage", 0),
-            )
-        tax_factor = None
-        if t.get("taxFactor"):
-            tax_factor = TaxFactorResponse(
-                id=t["taxFactor"].get("id", ""),
-                factor=t["taxFactor"].get("factor", 0),
-            )
-        special_fields = None
-        if t.get("specialFields"):
-            sf = t["specialFields"]
-            tax_amount_resp = None
-            if sf.get("taxAmount"):
-                tax_amount_resp = TaxAmountResponse(
-                    id=sf["taxAmount"].get("id", ""),
-                    amount=sf["taxAmount"].get("amount", 0),
-                )
-            special_fields = TaxSpecialFieldsResponse(
-                quantity=sf.get("quantity"),
-                percentage=sf.get("percentage"),
-                proportion=sf.get("proportion"),
-                volume_consumption=sf.get("volumeConsumption"),
-                tax_amount=tax_amount_resp,
-            )
-        taxes.append(
-            ProductTaxResponse(
-                tax_type_id=t.get("taxTypeId", ""),
-                amount=t.get("amount"),
-                tax_rate=tax_rate,
-                tax_factor=tax_factor,
-                other_tax_type=t.get("otherTaxType"),
-                special_fields=special_fields,
-                is_amount=t.get("isAmount"),
-            )
-        )
+    taxes = [ProductTaxResponse.model_validate(t) for t in _coerce_list(product.taxes)]
 
     return ProductResponse(
         product_id=product.id,
@@ -446,7 +384,7 @@ def _map_product(product: Product) -> ProductResponse:
         image_url=product.image_url,
         category=category,
         cabys=cabys_response,
-        unit_id=product.unit_id,
+        unit_measure=product.unit_measure,
         commercial_unit_measure=product.commercial_unit_measure,
         is_packaged=product.is_packaged,
         quantity=float(product.quantity) if product.quantity is not None else None,

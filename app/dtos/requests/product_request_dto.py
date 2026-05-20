@@ -51,7 +51,9 @@ class ProductCodeDTO(BaseModel):
 
 
 class ProductDiscountDTO(BaseModel):
-    """Discount input — no 'amount' field; discount amounts are backend-calculated."""
+    """Discount input. `amount` is None on inbound requests — the BE calc sets
+    it before persistence so the JSONB row carries the computed value.
+    """
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -59,10 +61,13 @@ class ProductDiscountDTO(BaseModel):
     percentage: Optional[float] = Field(None)
     reason: Optional[str] = Field(None)
     is_amount: Optional[bool] = Field(None)
+    amount: Optional[float] = Field(None)
 
 
 class ProductTaxDTO(BaseModel):
-    """Tax input — no 'amount' field; tax amounts are backend-calculated."""
+    """Tax input. `amount` is None on inbound requests — the BE calc sets it
+    before persistence so the JSONB row carries the computed value.
+    """
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -72,16 +77,7 @@ class ProductTaxDTO(BaseModel):
     other_tax_type: Optional[str] = Field(None)
     special_fields: Optional[TaxSpecialFieldsDTO] = Field(None)
     is_amount: Optional[bool] = Field(None)
-
-
-class CabysInputDTO(BaseModel):
-    """Frontend sends full CABYS record so the backend can upsert the catalog."""
-
-    model_config = ConfigDict(populate_by_name=True)
-
-    code: str = Field(...)
-    name: str = Field(...)
-    type: int = Field(...)
+    amount: Optional[float] = Field(None)
 
 
 # ---------------------------------------------------------------------------
@@ -109,9 +105,12 @@ class ProductRequestDTO(BaseModel):
     original_price: Optional[int] = Field(None)
     discount: Optional[int] = Field(None)
 
-    # Fiscal / Hacienda e-invoicing fields
-    cabys: Optional[CabysInputDTO] = Field(None)
-    unit_id: Optional[int] = Field(None)
+    # CABYS reference — UUID of an existing data-services cabys row.
+    # The row is guaranteed to exist because the FE's CABYS picker calls
+    # data-services first, which upserts the row before returning it.
+    cabys_id: Optional[str] = Field(None)
+    # Hacienda unit-of-measure code (e.g. "Unid", "Sp", "kg").
+    unit_measure: Optional[str] = Field(None)
     commercial_unit_measure: Optional[str] = Field(None)
     is_packaged: Optional[bool] = Field(None)
     quantity: Optional[float] = Field(None)
