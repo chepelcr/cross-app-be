@@ -56,8 +56,8 @@ class ProductRepository(DatabaseConnection):
             from sqlalchemy.dialects.postgresql import JSONB
             
             # Search for product with matching code in JSONB array
-            # codes @> '[{"codeTypeId": "01", "number": "123415"}]'
-            search_obj = [{"codeTypeId": hacienda_code, "number": code}]
+            # codes @> '[{"code_type_id": "01", "number": "123415"}]'
+            search_obj = [{"code_type_id": hacienda_code, "number": code}]
             
             conditions = [
                 Product.organization_id == company_id,
@@ -85,7 +85,7 @@ class ProductRepository(DatabaseConnection):
             from sqlalchemy.dialects.postgresql import JSONB
             
             # Search for product with internal code (type 04) in JSONB array
-            search_obj = [{"codeTypeId": ProductCodeType.INTERNAL, "number": internal_code}]
+            search_obj = [{"code_type_id": ProductCodeType.INTERNAL, "number": internal_code}]
             
             stmt = (
                 select(Product)
@@ -223,13 +223,13 @@ class ProductRepository(DatabaseConnection):
             # Build codes array from parameters
             codes_array = []
             if internal_code:
-                codes_array.append({"codeTypeId": ProductCodeType.INTERNAL, "number": internal_code})
+                codes_array.append({"code_type_id": ProductCodeType.INTERNAL, "number": internal_code})
             if original_code:
-                codes_array.append({"codeTypeId": ProductCodeType.VENDOR, "number": original_code})
+                codes_array.append({"code_type_id": ProductCodeType.VENDOR, "number": original_code})
             if client_article_code:
-                codes_array.append({"codeTypeId": ProductCodeType.BUYER, "number": client_article_code})
+                codes_array.append({"code_type_id": ProductCodeType.BUYER, "number": client_article_code})
             if code:
-                codes_array.append({"codeTypeId": ProductCodeType.MANUFACTURER, "number": code})
+                codes_array.append({"code_type_id": ProductCodeType.MANUFACTURER, "number": code})
 
             if existing:
                 if description is not None:

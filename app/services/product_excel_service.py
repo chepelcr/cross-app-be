@@ -241,17 +241,17 @@ class ProductExcelService:
 
         if cod_artic:
             codes_array.append({
-                "codeTypeId": ProductCodeType.VENDOR,
+                "code_type_id": ProductCodeType.VENDOR,
                 "number": cod_artic
             })
         if cod_barra:
             codes_array.append({
-                "codeTypeId": ProductCodeType.MANUFACTURER,
+                "code_type_id": ProductCodeType.MANUFACTURER,
                 "number": cod_barra
             })
         if cod_interno:
             codes_array.append({
-                "codeTypeId": ProductCodeType.INTERNAL,
+                "code_type_id": ProductCodeType.INTERNAL,
                 "number": cod_interno
             })
 

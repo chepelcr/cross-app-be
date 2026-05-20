@@ -26,7 +26,7 @@ def _get_code_from_array(codes: list, code_type: str) -> str:
     if not codes:
         return ""
     for code in codes:
-        if isinstance(code, dict) and code.get("codeTypeId") == code_type:
+        if isinstance(code, dict) and code.get("code_type_id") == code_type:
             return code.get("number", "")
     return ""
 

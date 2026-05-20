@@ -29,7 +29,7 @@ class ProductsController:
 **Search filters**
 - `description`: Product description (supports wildcards)
 - `code`: Product code lookup in codes JSONB array
-  - Format with code type: `code:01-123415` (searches for codeTypeId "01" and number "123415")
+  - Format with code type: `code:01-123415` (searches for code_type_id "01" and number "123415")
   - Format without code type: `code:123415` (searches all code types for number "123415")
 - `name`: Product name (supports wildcards)
 - `categoryId`: Filter by category ID (exact match)

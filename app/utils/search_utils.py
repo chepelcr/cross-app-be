@@ -288,9 +288,9 @@ class SearchUtils:
             code_type = parts[0].strip()
             code_number = parts[1].strip()
             
-            # Search for exact match with both codeTypeId and number
-            # JSONB query: codes @> '[{"codeTypeId": "01", "number": "123415"}]'
-            search_obj = [{"codeTypeId": code_type, "number": code_number}]
+            # Search for exact match with both code_type_id and number
+            # JSONB query: codes @> '[{"code_type_id": "01", "number": "123415"}]'
+            search_obj = [{"code_type_id": code_type, "number": code_number}]
             if operation == SearchOperations.EQUALITY:
                 return codes_column.op("@>")(cast(search_obj, JSONB))
             elif operation == SearchOperations.NEGATION:
