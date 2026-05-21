@@ -7,6 +7,7 @@ from fastapi import Body, FastAPI, HTTPException, Path, Query
 from app.dtos.files import ExcelDTO
 from app.dtos.requests.product_request_dto import ProductRequestDTO
 from app.dtos.requests.product_status_request_dto import ProductStatusRequestDTO
+from app.dtos.responses.product_bounds_dto import ProductPriceBoundsResponse
 from app.dtos.responses.product_dto import ProductListResponse, ProductResponse
 from app.exceptions.excel_parsing_exception import ExcelParsingException
 from app.services import product_service
@@ -82,6 +83,24 @@ class ProductsController:
                 )
             except ValueError as e:
                 raise HTTPException(status_code=422, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.get(
+            "/api/organizations/{organization_id}/products/price-bounds",
+            response_model=ProductPriceBoundsResponse,
+            tags=["products"],
+            summary="Min/max bounds of net & sale price across the org's products",
+            description=(
+                "Used by the FE filter slider to size its thumbs to the org's actual price range. "
+                "Any side may be null if no products exist."
+            ),
+        )
+        async def get_product_price_bounds(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+        ):
+            try:
+                return product_service.get_price_bounds(organization_id)
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 

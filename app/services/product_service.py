@@ -18,6 +18,7 @@ from app.dtos.responses.product_dto import (
     ProductTaxResponse,
 )
 from app.dtos.responses.pagination_dto import PaginationResponse
+from app.dtos.responses.product_bounds_dto import ProductPriceBoundsResponse
 from app.enums.product_search_filters import ProductSearchFilters
 from app.enums.product_status import ProductStatus
 from app.models.product import Product
@@ -117,6 +118,18 @@ def get_products(
             total_elements=total,
             total_pages=total_pages,
         ),
+    )
+
+
+def get_price_bounds(organization_id: str) -> ProductPriceBoundsResponse:
+    """Return net & sale price bounds for the org so the FE slider can size itself."""
+    with ProductRepository() as repo:
+        net_min, net_max, sale_min, sale_max = repo.get_price_bounds(organization_id)
+    return ProductPriceBoundsResponse(
+        net_min=net_min,
+        net_max=net_max,
+        sale_min=sale_min,
+        sale_max=sale_max,
     )
 
 

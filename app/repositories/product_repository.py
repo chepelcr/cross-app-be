@@ -171,6 +171,41 @@ class ProductRepository(DatabaseConnection):
             )
             raise
     
+    def get_price_bounds(self, company_id: str) -> tuple[Optional[float], Optional[float], Optional[float], Optional[float]]:
+        """Return (net_min, net_max, sale_min, sale_max) across the organization's non-deleted products.
+
+        Any side may be `None` when no products exist or no `sale_price` is set; callers should
+        fall back to a sensible default in that case.
+        """
+        try:
+            stmt = (
+                select(
+                    func.min(Product.price),
+                    func.max(Product.price),
+                    func.min(Product.sale_price),
+                    func.max(Product.sale_price),
+                )
+                .where(
+                    and_(
+                        Product.organization_id == company_id,
+                        Product.status != ProductStatus.DELETED,
+                    )
+                )
+            )
+            row = self.session.execute(stmt).one_or_none()
+            if not row:
+                return (None, None, None, None)
+            net_min, net_max, sale_min, sale_max = row
+            return (
+                float(net_min) if net_min is not None else None,
+                float(net_max) if net_max is not None else None,
+                float(sale_min) if sale_min is not None else None,
+                float(sale_max) if sale_max is not None else None,
+            )
+        except SQLAlchemyError as e:
+            logger.error(f"Error computing price bounds for company {company_id}: {e}", exc_info=True)
+            raise
+
     def _needs_category_join(self, search_filters: list | None) -> bool:
         """Check if any search filter references the Category table."""
         if not search_filters:
