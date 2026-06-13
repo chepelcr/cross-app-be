@@ -1,0 +1,71 @@
+name: Deploy backend service
+
+# Faithful GitHub Actions replacement of the old CodePipeline
+# (cloudformation/codepipeline.yml). Single-lambda service (cd-backend), so one
+# sequential job runs the three CodeBuild scripts in order:
+#
+#   Source (push → develop, like CodeStar DetectChanges)
+#     → build  (scripts/pipeline-build.sh  — build+push the cd-backend image)
+#     → update (scripts/pipeline-update.sh — update cd-backend-<env>-lambda)
+#     → api    (scripts/pipeline-api.sh    — regenerate + SAM deploy API Gateway)
+#
+# The API-Gateway step ALWAYS runs so new endpoints (e.g. branch types) reach the
+# gateway on every deploy. Auth is keyless via the shared GitHub OIDC provider +
+# the repo-scoped role in cloudformation/deploy-role.yml (bootstrap once with an
+# admin profile, then store its output as the AWS_DEPLOY_ROLE_ARN repo secret).
+
+on:
+  push:
+    branches: [develop]      # CodePipeline tracked this repo's default branch
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [dev, stag, prod]
+        default: dev
+
+permissions:
+  id-token: write      # OIDC — assume the AWS deploy role
+  contents: read
+
+concurrency:
+  group: store-be-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
+  REGION: us-east-1
+  AWS_REGION: us-east-1
+  API_DOMAIN: orders-api.jcampos.dev
+  ROOT_DOMAIN: jcampos.dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.REGION }}
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build + push image
+        run: bash scripts/pipeline-build.sh
+
+      - name: Update Lambda function code
+        run: bash scripts/pipeline-update.sh
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install SAM CLI + service requirements
+        run: |
+          pip3 install --quiet aws-sam-cli
+          pip3 install --quiet -r requirements.txt 2>/dev/null || true
+
+      - name: Regenerate + deploy API Gateway
+        run: bash scripts/pipeline-api.sh

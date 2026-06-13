@@ -1,0 +1,147 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  GitHub Actions OIDC deploy role for chepelcr/tsuru-store-be (the cross-docking
+  / orders backend — ECR repo cd-backend-ecr, function cd-backend-<env>-lambda).
+  Trusts the shared account-global GitHub OIDC provider; scoped to this repo only.
+  Deploy once per environment with an admin profile (creates IAM):
+    aws cloudformation deploy --template-file cloudformation/deploy-role.yml \
+      --stack-name tsuru-store-be-dev-deploy-role \
+      --capabilities CAPABILITY_NAMED_IAM --parameter-overrides Environment=dev \
+      --profile J-CAMPOS
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, stag, prod]
+  GitHubRepo:
+    Type: String
+    Default: chepelcr/tsuru-store-be
+    Description: org/repo allowed to assume this role via OIDC
+
+Resources:
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "tsuru-store-be-${Environment}-github-deploy"
+      Description: !Sub "GitHub Actions deploy role for ${GitHubRepo} (${Environment})"
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com"
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubRepo}:*"
+      Policies:
+        - PolicyName: ecr-push
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: ecr:GetAuthorizationToken
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:InitiateLayerUpload
+                  - ecr:UploadLayerPart
+                  - ecr:CompleteLayerUpload
+                  - ecr:PutImage
+                  - ecr:CreateRepository
+                  - ecr:DescribeRepositories
+                Resource: !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/cd-backend-ecr"
+        - PolicyName: lambda-code-update
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:GetFunction
+                  - lambda:UpdateFunctionCode
+                Resource: !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda"
+        - PolicyName: api-gateway-sam-deploy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: cloudformation:*
+                Resource:
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/jcampos-${Environment}-cd-backend-api-gateway/*"
+              - Effect: Allow
+                Action: cloudformation:CreateChangeSet
+                Resource: !Sub "arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31"
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::jcampos-${Environment}-sam-deployments"
+                  - !Sub "arn:aws:s3:::jcampos-${Environment}-sam-deployments/*"
+              - Effect: Allow
+                Action: apigateway:*
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - acm:RequestCertificate
+                  - acm:DescribeCertificate
+                  - acm:ListCertificates
+                  - acm:DeleteCertificate
+                  - acm:AddTagsToCertificate
+                  - acm:ListTagsForCertificate
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - route53:ListHostedZones
+                  - route53:GetHostedZone
+                  - route53:ChangeResourceRecordSets
+                  - route53:GetChange
+                  - route53:ListResourceRecordSets
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:DeleteLogGroup
+                  - logs:DescribeLogGroups
+                  - logs:PutRetentionPolicy
+                  - logs:TagResource
+                  - logs:ListTagsForResource
+                Resource: "*"
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource: "*"
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: apigateway.amazonaws.com
+        - PolicyName: ssm-read
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/jcampos/${Environment}/*"
+        - PolicyName: sts-caller-identity
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: sts:GetCallerIdentity
+                Resource: "*"
+
+Outputs:
+  DeployRoleArn:
+    Description: Store as the AWS_DEPLOY_ROLE_ARN repo secret in tsuru-store-be
+    Value: !GetAtt DeployRole.Arn
+    Export:
+      Name: !Sub "tsuru-store-be-${Environment}-deploy-role-arn"
