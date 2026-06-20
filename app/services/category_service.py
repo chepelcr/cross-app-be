@@ -73,13 +73,18 @@ def create_category(
 
         category_id = str(uuid.uuid4())
 
-        # Handle image uploads
+        # Handle images: a pre-uploaded URL (org media library) is stored
+        # directly; a base64 blob is uploaded here (legacy path).
         image_1_url = None
         image_2_url = None
         if dto.image_1:
             image_1_url = _save_category_image(company_id, category_id, dto.image_1, "image1")
+        elif dto.image1_url is not None:
+            image_1_url = dto.image1_url or None
         if dto.image_2:
             image_2_url = _save_category_image(company_id, category_id, dto.image_2, "image2")
+        elif dto.image2_url is not None:
+            image_2_url = dto.image2_url or None
 
         category = Category(
             id=category_id,
@@ -128,8 +133,12 @@ def update_category(
             category.button_color = dto.button_color
         if dto.image_1 is not None:
             category.image_1_url = _save_category_image(company_id, category_id, dto.image_1, "image1")
+        elif dto.image1_url is not None:
+            category.image_1_url = dto.image1_url or None
         if dto.image_2 is not None:
             category.image_2_url = _save_category_image(company_id, category_id, dto.image_2, "image2")
+        elif dto.image2_url is not None:
+            category.image_2_url = dto.image2_url or None
         if dto.sort_order is not None:
             category.sort_order = dto.sort_order
 

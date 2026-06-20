@@ -3,7 +3,7 @@ set -euo pipefail
 
 ENVIRONMENT="${ENVIRONMENT:-dev}"
 REGION="${REGION:-us-east-1}"
-API_DOMAIN="${API_DOMAIN:-orders-api.jcampos.dev}"
+API_DOMAIN="${API_DOMAIN:-orders-api.tsuru.jcampos.dev}"
 ROOT_DOMAIN="${ROOT_DOMAIN:-jcampos.dev}"
 
 echo "=== API Gateway Update ==="

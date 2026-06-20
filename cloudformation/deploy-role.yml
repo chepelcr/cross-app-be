@@ -74,7 +74,7 @@ Resources:
               - Effect: Allow
                 Action: cloudformation:*
                 Resource:
-                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/jcampos-${Environment}-cd-backend-api-gateway/*"
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/tsuru-${Environment}-cd-backend-api-gateway/*"
               - Effect: Allow
                 Action: cloudformation:CreateChangeSet
                 Resource: !Sub "arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31"
@@ -84,8 +84,8 @@ Resources:
                   - s3:GetObject
                   - s3:ListBucket
                 Resource:
-                  - !Sub "arn:aws:s3:::jcampos-${Environment}-sam-deployments"
-                  - !Sub "arn:aws:s3:::jcampos-${Environment}-sam-deployments/*"
+                  - !Sub "arn:aws:s3:::tsuru-${Environment}-sam-deployments"
+                  - !Sub "arn:aws:s3:::tsuru-${Environment}-sam-deployments/*"
               - Effect: Allow
                 Action: apigateway:*
                 Resource: "*"
@@ -130,7 +130,7 @@ Resources:
                   - ssm:GetParameter
                   - ssm:GetParameters
                   - ssm:GetParametersByPath
-                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/jcampos/${Environment}/*"
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/tsuru/${Environment}/*"
         - PolicyName: sts-caller-identity
           PolicyDocument:
             Version: "2012-10-17"

@@ -1,4 +1,10 @@
-"""Hacienda catalog code enums for Costa Rica e-invoicing."""
+"""Hacienda catalog code enums for Costa Rica e-invoicing (v4.4).
+
+Scope: codes referenced by the product surface only. Sale-side enums
+(DocumentType, SaleConditionCode, PaymentMethodCode, ReferenceDocType,
+ReferenceCode, IdentificationTypeCode, OtherChargeCode) belong to the
+sales service and are not duplicated here.
+"""
 
 from enum import Enum
 
@@ -12,10 +18,16 @@ class ProductCodeType(str, Enum):
 
 
 class DiscountType(str, Enum):
-    TRADE = "01"          # Descuento comercial
-    VOLUME = "02"         # Descuento por volumen
-    PROMOTIONAL = "03"    # Descuento promocional
-    OTHER = "99"          # Otros (requires reason)
+    """Discount nature codes per Hacienda Nota 20.
+
+    Labels mirror the spec names so business logic reads naturally; the
+    string values stay stable to preserve persisted JSONB payloads.
+    """
+
+    ROYALTY = "01"                     # Descuento por regalía
+    ROYALTY_BONUS_VAT_CUSTOMER = "02"  # Regalía / bonificación, IVA al cliente
+    BONUS = "03"                       # Descuento por bonificación
+    OTHER = "99"                       # Otros (requires reason)
 
 
 class TaxType(str, Enum):
@@ -29,3 +41,46 @@ class TaxType(str, Enum):
     IVARBU = "08" # IVA Régimen de Bienes Usados
     ISEC = "12"   # Impuesto Específico al Cemento
     OTHERS = "99" # Otros
+
+
+class TaxRateCode(str, Enum):
+    """IVA rate codes per Hacienda Nota 8.1."""
+
+    EXEMPT_FULL_CREDIT = "01"          # 0% — derecho a crédito pleno (Art. 32 RLIVA)
+    REDUCED_1 = "02"                   # 1%
+    REDUCED_2 = "03"                   # 2%
+    REDUCED_4 = "04"                   # 4%
+    TRANSITIONAL_0 = "05"              # 0% transitorio (NC/ND only)
+    TRANSITIONAL_4 = "06"              # 4% transitorio (NC/ND only)
+    TRANSITIONAL_8 = "07"              # 8% transitorio (NC/ND only, disabled)
+    GENERAL_13 = "08"                  # 13% — tarifa general
+    REDUCED_HALF = "09"                # 0.5%
+    EXEMPT = "10"                      # 0% — exento (Ley 9635 Art. 8)
+    NOT_SUBJECT = "11"                 # 0% — no sujeto, sin derecho de crédito
+
+
+class IvaCollectedFactory(str, Enum):
+    """`IVACobradoFabrica` indicator per Hacienda v4.4."""
+
+    PRE_DETERMINED = "01"  # IVA pre-determinado a nivel de fábrica
+    EXEMPT_BY_FACTORY = "02"  # Exento por régimen especial de fábrica
+
+
+class CabysSpecialPrefix(str, Enum):
+    """CABYS code prefixes that trigger special-tax branching.
+
+    Used by `tax_calculation_service.apply_isebec` to pick between the
+    non-alcoholic (water/soft-drinks) and alcoholic formulas.
+    """
+
+    ISEBEC_NON_ALCOHOLIC = "2202"  # Bebidas envasadas no alcohólicas
+    ISEBEC_ALCOHOLIC = "3401"      # Bebidas alcohólicas
+
+
+# Discount natures that re-route the line's IVA into
+# `ImpuestoAsumidoEmisorFabrica` (Hacienda Nota 20). Mirrors the FE
+# `FACTORY_ASSUMED_DISCOUNT_NATURES` constant.
+FACTORY_ASSUMED_DISCOUNT_NATURES: tuple[str, ...] = (
+    DiscountType.ROYALTY.value,
+    DiscountType.BONUS.value,
+)

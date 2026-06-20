@@ -41,15 +41,14 @@ class CabysResponse(BaseModel):
 
 class ProductCodeResponse(BaseModel):
     model_config = {"from_attributes": True}
-    
+
     code_type_id: str = Field(...)
     number: str = Field(...)
-    description: Optional[str] = Field(None)
 
 
 class ProductDiscountResponse(BaseModel):
     model_config = {"from_attributes": True}
-    
+
     discount_type_id: str = Field(...)
     percentage: Optional[float] = Field(None)
     amount: Optional[float] = Field(None)  # backend-computed
@@ -59,9 +58,10 @@ class ProductDiscountResponse(BaseModel):
 
 class TaxRateResponse(BaseModel):
     model_config = {"from_attributes": True}
-    
+
     id: Optional[str] = Field(None)
     percentage: float = Field(...)
+    code: Optional[str] = Field(None)
 
 
 class TaxFactorResponse(BaseModel):
@@ -141,6 +141,13 @@ class ProductResponse(BaseModel):
     # backend-computed totals — never set by FE
     base_amount: Optional[float] = Field(None)
     sale_price: Optional[float] = Field(None)
+
+    # Exemption block (Hacienda v4.4 Exoneracion) + factory VAT indicator.
+    exemption_authorization_code: Optional[str] = Field(None)
+    exempted_rate: Optional[float] = Field(None)
+    exemption_amount: Optional[float] = Field(None)
+    iva_collected_factory: Optional[str] = Field(None)
+    factory_tax_charge_id: Optional[int] = Field(None)
 
     model_config = {"from_attributes": True}
 

@@ -12,12 +12,12 @@ import argparse, json, os, subprocess, sys
 SERVICES = ["backend"]
 
 SKIP_PREFIXES = ("/health", "/docs", "/openapi.json", "/redoc")
-COGNITO_ARN_EXPORT = "jmarkets-cognito-UserPoolArn"
+COGNITO_ARN_EXPORT = "tsuru-cognito-UserPoolArn"
 REQUIRE_AUTH = True
 HTTP_METHODS = ("get", "post", "put", "patch", "delete")
 I = [""] + ["  " * n for n in range(1, 12)]   # indentation levels
 
-CUSTOM_DOMAIN = "orders-api.jcampos.dev"
+CUSTOM_DOMAIN = "orders-api.tsuru.jcampos.dev"
 
 
 # ── swagger refresh ────────────────────────────────────────────────────────────
@@ -223,7 +223,7 @@ L()
 L(I[1] + "ApiGatewayLogGroup:")
 L(I[2] + "Type: AWS::Logs::LogGroup")
 L(I[2] + "Properties:")
-L(I[3] + 'LogGroupName: !Sub "/aws/apigateway/jcampos-${Environment}-cd-backend-api"')
+L(I[3] + 'LogGroupName: !Sub "/aws/apigateway/tsuru-${Environment}-cd-backend-api"')
 L(I[3] + "RetentionInDays: 14")
 L()
 
@@ -232,14 +232,14 @@ L(I[1] + "ApiGatewayAccount:")
 L(I[2] + "Type: AWS::ApiGateway::Account")
 L(I[2] + "Properties:")
 L(I[3] + "CloudWatchRoleArn:")
-L(I[4] + 'Fn::ImportValue: !Sub "jcampos-${Environment}-apigateway-cloudwatch-role-arn"')
+L(I[4] + 'Fn::ImportValue: !Sub "tsuru-${Environment}-apigateway-cloudwatch-role-arn"')
 L()
 
 # ── API ───────────────────────────────────────────────────────────────────────
 L(I[1] + "ApiGatewayRestApi:")
 L(I[2] + "Type: AWS::Serverless::Api")
 L(I[2] + "Properties:")
-L(I[3] + 'Name: !Sub "jcampos-${Environment}-cd-backend-api"')
+L(I[3] + 'Name: !Sub "tsuru-${Environment}-cd-backend-api"')
 L(I[3] + "StageName: !Ref Environment")
 L(I[3] + "AccessLogSetting:")
 L(I[4] + "DestinationArn: !GetAtt ApiGatewayLogGroup.Arn")
@@ -256,7 +256,7 @@ L(I[5] + "MetricsEnabled: true")
 L(I[3] + "DefinitionBody:")
 L(I[4] + "openapi: '3.0.1'")
 L(I[4] + "info:")
-L(I[5] + 'title: !Sub "jcampos-${Environment}-cd-backend-api"')
+L(I[5] + 'title: !Sub "tsuru-${Environment}-cd-backend-api"')
 L(I[5] + "description: Cross-Docking Backend API")
 L(I[5] + "version: '1.0.0'")
 L(I[4] + "servers:")

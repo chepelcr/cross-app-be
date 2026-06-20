@@ -10,6 +10,7 @@ from app.dtos.responses.consecutive_dto import ConsecutiveListResponse, Consecut
 from app.dtos.responses.pagination_dto import PaginationResponse
 from app.enums.consecutive_search_filters import ConsecutiveSearchFilters
 from app.models.consecutive import Consecutive
+from app.repositories.branch_repository import BranchRepository
 from app.repositories.consecutive_repository import ConsecutiveRepository
 from app.repositories.document_type_repository import DocumentTypeRepository
 from app.repositories.terminal_repository import TerminalRepository
@@ -140,6 +141,60 @@ def update_consecutive_status(
         repo.save(consecutive)
 
     return _map_consecutive(consecutive)
+
+
+def format_consecutive_by_code(
+    organization_id: str,
+    user_id: str,
+    terminal_id: str,
+    document_type_code: str,
+) -> Optional[ConsecutiveResponse]:
+    """Resolve doc-type code → id, locate/create the consecutive row, and return it
+    with `document_consecutive` formatted as branch(3) + terminal(5) + doc_type_code(2) + current_number(10).
+
+    Does NOT increment current_number — the caller (e.g. sales-api) owns the atomic increment.
+    """
+    with TerminalRepository() as t_repo:
+        terminal = t_repo.find_by_id_and_organization(terminal_id, organization_id)
+    if not terminal:
+        raise ValueError(f"Terminal {terminal_id} not found in organization")
+
+    with BranchRepository() as b_repo:
+        branch = b_repo.find_by_id_and_organization(str(terminal.branch_id), organization_id)
+    if not branch:
+        raise ValueError(
+            f"Branch {terminal.branch_id} for terminal {terminal_id} not found in organization"
+        )
+
+    with DocumentTypeRepository() as dt_repo:
+        doc_type = dt_repo.find_by_code(document_type_code)
+    if not doc_type:
+        raise ValueError(f"Document type code {document_type_code} not found")
+
+    with ConsecutiveRepository() as repo:
+        consecutive = repo.find_by_terminal_and_doc_type(
+            terminal_id, doc_type.id, organization_id
+        )
+        if not consecutive:
+            consecutive = Consecutive(
+                organization_id=organization_id,
+                terminal_id=uuid.UUID(terminal_id) if isinstance(terminal_id, str) else terminal_id,
+                document_type_id=doc_type.id,
+                current_number=0,
+                created_by=user_id,
+            )
+            consecutive = repo.save(consecutive)
+
+    formatted = (
+        f"{branch.code:03d}"
+        f"{terminal.code:05d}"
+        f"{document_type_code.zfill(2)}"
+        f"{consecutive.current_number:010d}"
+    )
+
+    response = _map_consecutive(consecutive)
+    response.document_consecutive = formatted
+    return response
 
 
 def _map_consecutive(c: Consecutive) -> ConsecutiveResponse:

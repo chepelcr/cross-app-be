@@ -4,12 +4,12 @@ Description: 'CloudFront distribution and S3 bucket for jmarkets file uploads'
 Parameters:
   BucketName:
     Type: String
-    Default: 'jmarkets-uploads-jcampos-dev'
+    Default: 'tsuru-uploads-tsuru-dev'
     Description: 'Name for the S3 bucket'
   
   DomainName:
     Type: String
-    Default: 'jmarkets-uploads.jcampos.dev'
+    Default: 'tsuru-uploads.jcampos.dev'
     Description: 'Custom domain name'
 
   FrontEndDomainName:

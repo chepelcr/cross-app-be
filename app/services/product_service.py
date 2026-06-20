@@ -24,12 +24,8 @@ from app.enums.product_status import ProductStatus
 from app.models.product import Product
 from app.repositories.product_repository import ProductRepository
 from app.services import cabys_service
+from app.services.line_calculation_service import LineCalculator, LineInput
 from app.services.pdf_service import upload_file_to_s3
-from app.utils.product_calculations import (
-    calculate_product_totals,
-    validate_discounts,
-    validate_taxes,
-)
 from app.utils.search_utils import SearchUtils
 
 logger = logging.getLogger(__name__)
@@ -171,9 +167,14 @@ def create_product(organization_id: str, dto: ProductRequestDTO) -> ProductRespo
         repo.session.add(product)
         repo.session.flush()
 
+        # Image: a pre-uploaded URL (org media library) is stored directly; a
+        # base64 blob is uploaded here (legacy path).
         if dto.image and dto.image.data:
             url = _save_product_image(organization_id, product.id, dto.image)
             product.image_url = url
+            repo.session.flush()
+        elif dto.image_url is not None:
+            product.image_url = dto.image_url or None
             repo.session.flush()
 
         _apply_fiscal_fields(product, dto, repo)
@@ -205,6 +206,8 @@ def update_product(
         if dto.image and dto.image.data:
             url = _save_product_image(organization_id, product.id, dto.image)
             product.image_url = url
+        elif dto.image_url is not None:
+            product.image_url = dto.image_url or None
 
         _apply_fiscal_fields(product, dto, repo)
         repo.save(product)
@@ -274,6 +277,18 @@ def _apply_fiscal_fields(product: Product, dto: ProductRequestDTO, repo) -> None
     if dto.customs_part is not None:
         product.customs_part = dto.customs_part
 
+    # Exemption block + factory VAT indicator
+    if dto.exemption_authorization_code is not None:
+        product.exemption_authorization_code = dto.exemption_authorization_code
+    if dto.exempted_rate is not None:
+        product.exempted_rate = Decimal(str(dto.exempted_rate))
+    if dto.exemption_amount is not None:
+        product.exemption_amount = Decimal(str(dto.exemption_amount))
+    if dto.iva_collected_factory is not None:
+        product.iva_collected_factory = dto.iva_collected_factory
+    if dto.factory_tax_charge_id is not None:
+        product.factory_tax_charge_id = dto.factory_tax_charge_id
+
     # 3. Packaged validation
     if product.is_packaged:
         if product.quantity is None or product.unit_price is None:
@@ -281,16 +296,14 @@ def _apply_fiscal_fields(product: Product, dto: ProductRequestDTO, repo) -> None
                 "When is_packaged is True both quantity and unit_price are required."
             )
 
-    # 4. Validate + compute amounts directly on the request DTOs. Pydantic
-    # models are mutable, so the calc populates each entry's `.amount`; we dump
-    # to JSONB at the end. Avoids dict.get() key-format pitfalls entirely.
+    # 4. Compute line amounts via the dedicated calc services. The DTO-level
+    # validators (Pydantic) already handle per-discount / per-tax shape
+    # validation; the calc raises DiscountValidationError for missing reason
+    # gaps which bubbles up as a 422.
     discount_dtos = list(dto.discounts or [])
     tax_dtos = list(dto.taxes or [])
 
-    validate_discounts(discount_dtos)
-    validate_taxes(tax_dtos)
-
-    # CABYS code drives ISEBEC ("2202"/"3401" prefix) branching — pull from the
+    # CABYS code drives ISEBEC (2202/3401 prefix) branching — pull from the
     # linked row since the request only carries the FK.
     cabys_code_for_calc: Optional[str] = None
     if product.cabys_id is not None:
@@ -298,30 +311,59 @@ def _apply_fiscal_fields(product: Product, dto: ProductRequestDTO, repo) -> None
         if cabys_row:
             cabys_code_for_calc = cabys_row.code
 
-    base_amount, sale_price = calculate_product_totals(
-        price=Decimal(str(product.price)),
-        quantity=Decimal(str(product.quantity or 1)),
+    # Pre-discount line subtotal = price × quantity for packaged products,
+    # else just price (qty 1). The tax service uses this as the IVA base when
+    # royalty/bonus codes 01/03 OR code 02 (VAT-to-customer) are present.
+    line_quantity = Decimal(str(product.quantity or 1))
+    line_price = Decimal(str(product.price))
+    monto_total_original = (
+        line_price * line_quantity if bool(product.is_packaged) else line_price
+    )
+
+    line_input = LineInput(
+        price=line_price,
+        quantity=line_quantity,
         is_packaged=bool(product.is_packaged),
+        detail_quantity=line_quantity,
         discounts=discount_dtos,
         taxes=tax_dtos,
-        cabys_code=cabys_code_for_calc,
         manual_base_amount=(
             Decimal(str(dto.base_amount)) if dto.base_amount is not None else None
         ),
+        monto_total_original=monto_total_original,
     )
+    result = LineCalculator().compute(line_input, cabys_code=cabys_code_for_calc)
 
     # 5. Codes — uniqueness check + JSONB storage
     if dto.codes is not None:
         _validate_unique_codes(product.organization_id, dto.codes, product.id, repo)
         product.codes = [c.model_dump() for c in dto.codes]
 
-    # 6. Dump DTOs (now carrying computed .amount) to JSONB. No alias config on
-    # these DTOs, so model_dump() emits snake_case keys — same shape downstream
-    # readers expect.
-    product.discounts = [d.model_dump() for d in discount_dtos]
-    product.taxes = [t.model_dump() for t in tax_dtos]
-    product.base_amount = base_amount
-    product.sale_price = sale_price
+    # 6. Persist discount/tax JSONB enriched with the per-row computed amounts.
+    product.discounts = _hydrate_discount_jsonb(discount_dtos, result.discount.per_discount)
+    product.taxes = _hydrate_tax_jsonb(tax_dtos, result.tax.per_tax)
+    product.base_amount = result.tax.base_amount
+    product.sale_price = result.sale_price
+
+
+def _hydrate_discount_jsonb(dtos, rows):
+    """Merge per-row computed `amount` into the discount JSONB payload."""
+    out = []
+    for dto, row in zip(dtos, rows):
+        payload = dto.model_dump()
+        payload["amount"] = float(row.amount)
+        out.append(payload)
+    return out
+
+
+def _hydrate_tax_jsonb(dtos, rows):
+    """Merge per-row computed `amount` into the tax JSONB payload."""
+    out = []
+    for dto, row in zip(dtos, rows):
+        payload = dto.model_dump()
+        payload["amount"] = float(row.amount)
+        out.append(payload)
+    return out
 
 
 def _save_product_image(organization_id: str, product_id: str, image: ImageDTO) -> str:
@@ -408,4 +450,15 @@ def _map_product(product: Product) -> ProductResponse:
         taxes=taxes,
         base_amount=float(product.base_amount) if product.base_amount is not None else None,
         sale_price=float(product.sale_price) if product.sale_price is not None else None,
+        exemption_authorization_code=product.exemption_authorization_code,
+        exempted_rate=(
+            float(product.exempted_rate) if product.exempted_rate is not None else None
+        ),
+        exemption_amount=(
+            float(product.exemption_amount)
+            if product.exemption_amount is not None
+            else None
+        ),
+        iva_collected_factory=product.iva_collected_factory,
+        factory_tax_charge_id=product.factory_tax_charge_id,
     )

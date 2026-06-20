@@ -30,7 +30,7 @@ Parameters:
 
   ApiDomainParam:
     Type: String
-    Default: "orders-api.jcampos.dev"
+    Default: "orders-api.tsuru.jcampos.dev"
 
   RootDomainParam:
     Type: String
@@ -40,28 +40,28 @@ Resources:
   BuildLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/codebuild/jcampos-${Environment}-cd-backend-build"
+      LogGroupName: !Sub "/aws/codebuild/tsuru-${Environment}-cd-backend-build"
       RetentionInDays: 14
 
   UpdateLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/codebuild/jcampos-${Environment}-cd-backend-update"
+      LogGroupName: !Sub "/aws/codebuild/tsuru-${Environment}-cd-backend-update"
       RetentionInDays: 14
 
   ApiGatewayLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/codebuild/jcampos-${Environment}-cd-backend-api-gateway"
+      LogGroupName: !Sub "/aws/codebuild/tsuru-${Environment}-cd-backend-api-gateway"
       RetentionInDays: 14
 
   LambdaImageBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub "jcampos-${Environment}-cd-backend-build"
+      Name: !Sub "tsuru-${Environment}-cd-backend-build"
       Description: Build Docker image for cd-backend and push to ECR
       ServiceRole: !ImportValue
-        'Fn::Sub': "jcampos-${Environment}-codebuild-web-service-role-arn"
+        'Fn::Sub': "tsuru-${Environment}-codebuild-web-service-role-arn"
       Artifacts:
         Type: CODEPIPELINE
       Environment:
@@ -86,10 +86,10 @@ Resources:
   UpdateFunctionsProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub "jcampos-${Environment}-cd-backend-update"
+      Name: !Sub "tsuru-${Environment}-cd-backend-update"
       Description: Update cd-backend Lambda function code to latest ECR image
       ServiceRole: !ImportValue
-        'Fn::Sub': "jcampos-${Environment}-codebuild-web-service-role-arn"
+        'Fn::Sub': "tsuru-${Environment}-codebuild-web-service-role-arn"
       Artifacts:
         Type: CODEPIPELINE
       Environment:
@@ -114,10 +114,10 @@ Resources:
   ApiGatewayUpdateProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub "jcampos-${Environment}-cd-backend-api-gateway"
+      Name: !Sub "tsuru-${Environment}-cd-backend-api-gateway"
       Description: Regenerate api-gateway/template.yml from app and deploy API Gateway SAM stack
       ServiceRole: !ImportValue
-        'Fn::Sub': "jcampos-${Environment}-codebuild-web-service-role-arn"
+        'Fn::Sub': "tsuru-${Environment}-codebuild-web-service-role-arn"
       Artifacts:
         Type: CODEPIPELINE
       Environment:
@@ -146,13 +146,13 @@ Resources:
   CdBackendPipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      Name: !Sub "jcampos-${Environment}-cd-backend-pipeline"
+      Name: !Sub "tsuru-${Environment}-cd-backend-pipeline"
       RoleArn: !ImportValue
-        'Fn::Sub': "jcampos-${Environment}-codepipeline-role-arn"
+        'Fn::Sub': "tsuru-${Environment}-codepipeline-role-arn"
       ArtifactStore:
         Type: S3
         Location: !ImportValue
-          'Fn::Sub': "jcampos-${Environment}-codepipeline-artifacts-bucket-name"
+          'Fn::Sub': "tsuru-${Environment}-codepipeline-artifacts-bucket-name"
       Stages:
         - Name: Source
           Actions:
@@ -164,7 +164,7 @@ Resources:
                 Version: "1"
               Configuration:
                 ConnectionArn: !ImportValue
-                  'Fn::Sub': "jcampos-${Environment}-github-connection-arn"
+                  'Fn::Sub': "tsuru-${Environment}-github-connection-arn"
                 FullRepositoryId: !Sub "${SourceOwnerParam}/${SourceRepoParam}"
                 BranchName: !Ref SourceBranchParam
                 DetectChanges: "true"
@@ -232,4 +232,4 @@ Outputs:
     Description: CodePipeline name
     Value: !Ref CdBackendPipeline
     Export:
-      Name: !Sub "jcampos-${Environment}-cd-backend-pipeline-name"
+      Name: !Sub "tsuru-${Environment}-cd-backend-pipeline-name"

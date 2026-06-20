@@ -7,14 +7,14 @@ Resolution order per key:
   3. default argument
 
 SSM base path is read from app/settings.cfg per stage:
-  DEVELOPMENT -> /jcampos/dev/cd-backend
-  STAGING     -> /jcampos/stag/cd-backend
-  PRODUCTION  -> /jcampos/prod/cd-backend
+  DEVELOPMENT -> /tsuru/dev/cd-backend
+  STAGING     -> /tsuru/stag/cd-backend
+  PRODUCTION  -> /tsuru/prod/cd-backend
 
 Dot-notation key mapping:
-  "s3.bucket"           -> /jcampos/{env}/cd-backend/s3/bucket
-  "api.services.url"    -> /jcampos/{env}/cd-backend/api/services/url
-  "cloudfront.distribution.id" -> /jcampos/{env}/cd-backend/cloudfront/distribution/id
+  "s3.bucket"           -> /tsuru/{env}/cd-backend/s3/bucket
+  "api.services.url"    -> /tsuru/{env}/cd-backend/api/services/url
+  "cloudfront.distribution.id" -> /tsuru/{env}/cd-backend/cloudfront/distribution/id
 """
 import os
 import time
@@ -58,7 +58,7 @@ class AppConfig:
             parser.get(section, "ssmpath", fallback=None)
             if section in parser
             else None
-        ) or f"/jcampos/{stage_lower}/cd-backend"
+        ) or f"/tsuru/{stage_lower}/cd-backend"
 
         logger.debug(f"AppConfig initialized: base_path={self._base_path}")
 

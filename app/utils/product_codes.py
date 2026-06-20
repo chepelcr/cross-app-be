@@ -1,7 +1,7 @@
 """Typed access helpers for the products.codes JSONB array.
 
 The codes column stores a list of dicts shaped like ProductCodeResponse
-(`code_type_id`, `number`, optional `description`). Anywhere we read from
+(`code_type_id`, `number`). Anywhere we read from
 that column we go through these helpers so the JSONB key shape lives in
 one place — same `model_validate` discipline product_service uses for
 taxes/discounts.

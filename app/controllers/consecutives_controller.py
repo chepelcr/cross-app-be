@@ -67,7 +67,7 @@ class ConsecutivesController:
             "/api/organizations/{organization_id}/terminals/{terminal_id}/consecutives/{document_type_id}",
             response_model=ConsecutiveResponse,
             tags=["consecutives"],
-            summary="Get (and optionally increment) a consecutive for a terminal and document type",
+            summary="Read the current consecutive for a terminal + document type (read-only, never increments)",
         )
         async def get_terminal_consecutive(
             organization_id: Annotated[str, Path(description="Organization identifier")],
@@ -75,17 +75,100 @@ class ConsecutivesController:
             x_user_id: Annotated[str, Header(description="User identifier from header")],
             terminal_id: Annotated[str, Path(description="Terminal ID")],
             document_type_id: Annotated[int, Path(description="Document type ID")],
-            increment: bool = Query(False, description="Atomically increment the counter before returning"),
+            increment: bool = Query(
+                False,
+                description="(DEPRECATED, ignored — increment now happens in the caller service via its own repo)",
+                deprecated=True,
+            ),
         ):
             try:
-                if increment:
-                    result = consecutive_service.get_next_number(organization_id, terminal_id, document_type_id)
-                else:
-                    with ConsecutiveRepository() as repo:
-                        c = repo.find_by_terminal_and_doc_type(terminal_id, document_type_id, organization_id)
-                    result = _map_consecutive(c) if c else None
+                with ConsecutiveRepository() as repo:
+                    c = repo.find_by_terminal_and_doc_type(terminal_id, document_type_id, organization_id)
+                result = _map_consecutive(c) if c else None
                 if not result:
                     raise HTTPException(status_code=404, detail="Consecutive not found for this terminal and document type")
+                return result
+            except HTTPException:
+                raise
+            except ValueError as e:
+                raise HTTPException(status_code=422, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.get(
+            "/api/organizations/{organization_id}/terminals/{terminal_id}/consecutives/by-code/{document_type_code}",
+            response_model=ConsecutiveResponse,
+            tags=["consecutives"],
+            summary="Get the formatted consecutive for (terminal, doc-type code) — does NOT increment",
+            responses={
+                200: {
+                    "description": "Formatted 20-digit consecutive for the (terminal, doc-type) pair",
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "consecutive_id": "9f5b1e22-d8e0-4d9a-8e9b-1234567890ab",
+                                "organization_id": "org-abc-123",
+                                "terminal_id": "terminal-uuid-1234-5678-90ab-cdef12345678",
+                                "document_type_id": 1,
+                                "current_number": 42,
+                                "document_consecutive": "00100001010000000042",
+                                "created_at": "2026-05-21T12:00:00Z",
+                                "updated_at": "2026-05-21T12:00:00Z",
+                                "created_by": "user-abc-123",
+                            }
+                        }
+                    },
+                },
+                404: {
+                    "description": "Terminal or consecutive row not found for the given organization",
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "status": 404,
+                                "error": "Not Found",
+                                "message": "Consecutive not available",
+                                "code": "CONSECUTIVE_NOT_FOUND",
+                                "path": "/api/organizations/{organization_id}/terminals/{terminal_id}/consecutives/by-code/{document_type_code}",
+                            }
+                        }
+                    },
+                },
+                422: {
+                    "description": "Document type code does not map to a known document_type_id",
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "status": 422,
+                                "error": "Unprocessable Entity",
+                                "message": "Unknown document_type_code: '99'",
+                                "code": "INVALID_DOCUMENT_TYPE_CODE",
+                                "path": "/api/organizations/{organization_id}/terminals/{terminal_id}/consecutives/by-code/{document_type_code}",
+                            }
+                        }
+                    },
+                },
+            },
+        )
+        async def format_terminal_consecutive(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+
+            x_user_id: Annotated[str, Header(description="User identifier from header")],
+            terminal_id: Annotated[str, Path(description="Terminal ID")],
+            document_type_code: Annotated[
+                str,
+                Path(
+                    description="Hacienda document-type code, e.g. '01', '04'",
+                    min_length=1,
+                    max_length=4,
+                ),
+            ],
+        ):
+            try:
+                result = consecutive_service.format_consecutive_by_code(
+                    organization_id, x_user_id, terminal_id, document_type_code
+                )
+                if not result:
+                    raise HTTPException(status_code=404, detail="Consecutive not available")
                 return result
             except HTTPException:
                 raise

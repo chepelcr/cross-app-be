@@ -15,6 +15,7 @@ class ConsecutiveResponse(BaseModel):
     terminal_id: str
     document_type_id: int
     current_number: int
+    document_consecutive: Optional[str] = None  # 20-digit branch+terminal+code+seq, when requested by the format endpoint
     created_at: Optional[str] = None  # ISO timestamp
     updated_at: Optional[str] = None  # ISO timestamp
     created_by: str

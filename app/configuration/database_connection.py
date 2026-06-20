@@ -58,7 +58,7 @@ class DatabaseConnection:
         if all([host, username, password, dbname]):
             return host, port, username, password, dbname
 
-        # Fall back to shared Secrets Manager secret: jcampos/{env}/database
+        # Fall back to shared Secrets Manager secret: tsuru/{env}/database
         secret_name = AppConfig.get_key("aws.database")
         if not secret_name:
             raise RuntimeError("Database credentials not found: set DATABASE_* env vars or deploy SSM params stack")

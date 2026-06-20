@@ -17,4 +17,9 @@ class CategoryRequestDTO(BaseModel):
     button_color: Optional[str] = Field(None)
     image_1: Optional[ImageDTO] = Field(None)
     image_2: Optional[ImageDTO] = Field(None)
+    # Preferred path: an already-uploaded asset URL (org media library / S3).
+    # When provided, it is stored directly and no blob upload happens. An empty
+    # string clears the field.
+    image1_url: Optional[str] = Field(None)
+    image2_url: Optional[str] = Field(None)
     sort_order: Optional[int] = Field(None)

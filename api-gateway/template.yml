@@ -20,19 +20,19 @@ Resources:
   ApiGatewayLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/apigateway/jcampos-${Environment}-cd-backend-api"
+      LogGroupName: !Sub "/aws/apigateway/tsuru-${Environment}-cd-backend-api"
       RetentionInDays: 14
 
   ApiGatewayAccount:
     Type: AWS::ApiGateway::Account
     Properties:
       CloudWatchRoleArn:
-        Fn::ImportValue: !Sub "jcampos-${Environment}-apigateway-cloudwatch-role-arn"
+        Fn::ImportValue: !Sub "tsuru-${Environment}-apigateway-cloudwatch-role-arn"
 
   ApiGatewayRestApi:
     Type: AWS::Serverless::Api
     Properties:
-      Name: !Sub "jcampos-${Environment}-cd-backend-api"
+      Name: !Sub "tsuru-${Environment}-cd-backend-api"
       StageName: !Ref Environment
       AccessLogSetting:
         DestinationArn: !GetAtt ApiGatewayLogGroup.Arn
@@ -46,11 +46,11 @@ Resources:
       DefinitionBody:
         openapi: '3.0.1'
         info:
-          title: !Sub "jcampos-${Environment}-cd-backend-api"
+          title: !Sub "tsuru-${Environment}-cd-backend-api"
           description: Cross-Docking Backend API
           version: '1.0.0'
         servers:
-          - url: 'https://orders-api.jcampos.dev'
+          - url: 'https://orders-api.tsuru.jcampos.dev'
             x-amazon-apigateway-endpoint-configuration:
               disableExecuteApiEndpoint: true
         components:
@@ -63,7 +63,7 @@ Resources:
               x-amazon-apigateway-authorizer:
                 type: cognito_user_pools
                 providerARNs:
-                  - Fn::ImportValue: "jmarkets-cognito-UserPoolArn"
+                  - Fn::ImportValue: "tsuru-cognito-UserPoolArn"
         paths:
           "/api/organizations/{organization_id}/assignments":
             get:
@@ -4408,16 +4408,16 @@ Resources:
   ApiCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: orders-api.jcampos.dev
+      DomainName: orders-api.tsuru.jcampos.dev
       ValidationMethod: DNS
       DomainValidationOptions:
-        - DomainName: orders-api.jcampos.dev
+        - DomainName: orders-api.tsuru.jcampos.dev
           HostedZoneId: !Ref HostedZoneId
 
   ApiDomainName:
     Type: AWS::ApiGatewayV2::DomainName
     Properties:
-      DomainName: orders-api.jcampos.dev
+      DomainName: orders-api.tsuru.jcampos.dev
       DomainNameConfigurations:
         - EndpointType: REGIONAL
           CertificateArn: !Ref ApiCertificate
@@ -4433,7 +4433,7 @@ Resources:
     Type: AWS::Route53::RecordSet
     Properties:
       HostedZoneId: !Ref HostedZoneId
-      Name: orders-api.jcampos.dev
+      Name: orders-api.tsuru.jcampos.dev
       Type: A
       AliasTarget:
         DNSName: !GetAtt ApiDomainName.RegionalDomainName
@@ -4456,7 +4456,7 @@ Outputs:
 
   ApiEndpoint:
     Description: Custom domain endpoint
-    Value: https://orders-api.jcampos.dev
+    Value: https://orders-api.tsuru.jcampos.dev
     Export:
       Name: !Sub "${AWS::StackName}-ApiEndpoint"
 

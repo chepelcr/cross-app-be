@@ -6,6 +6,7 @@ from io import BytesIO
 from typing import Optional
 
 from app.dtos.files import ExcelDTO
+from app.dtos.requests.product_excel_row_dto import ProductExcelRowDTO
 from app.dtos.responses.pagination_dto import PaginationResponse
 from app.dtos.responses.product_dto import ProductListResponse
 from app.enums.hacienda_codes import ProductCodeType
@@ -49,55 +50,55 @@ class ProductExcelService:
 
         # Parse Excel file
         try:
-            rows = parse_product_file(excel_file)
+            raw_rows = parse_product_file(excel_file)
         except ExcelParsingException as e:
             logger.error(f"Excel parsing failed: {e}")
             raise
+
+        # Single boundary wrap: every downstream consumer uses attribute access.
+        rows = [ProductExcelRowDTO(**r) for r in raw_rows]
 
         # Process each row independently
         products = []
         created_count = 0
         updated_count = 0
         error_count = 0
-        
+
         with ProductRepository() as repo:
             for idx, row in enumerate(rows, start=2):  # Start at 2 (row 1 is headers)
                 try:
-                    # Validate required fields
-                    cod_artic = row.get("cod_artic", "").strip()
-                    descripcion = row.get("descripcion", "").strip()
-                    
+                    cod_artic = (row.cod_artic or "").strip()
+                    descripcion = (row.descripcion or "").strip()
+
                     if not cod_artic and not descripcion:
                         logger.warning(f"Row {idx}: Missing required fields COD_ARTIC and DESCRIPCION, skipping")
                         error_count += 1
                         continue
-                    
+
                     if not descripcion:
                         logger.warning(f"Row {idx}: Missing required field DESCRIPCION, skipping")
                         error_count += 1
                         continue
-                    
+
                     # Find existing product by codes
                     existing_product = ProductExcelService._find_existing_product(
                         organization_id=organization_id,
                         cod_artic=cod_artic,
-                        cod_barra=row.get("cod_barra", "").strip(),
-                        cod_interno=row.get("cod_interno", "").strip(),
+                        cod_barra=(row.cod_barra or "").strip(),
+                        cod_interno=(row.cod_interno or "").strip(),
                         repo=repo,
                     )
-                    
+
                     if existing_product:
-                        # Update existing product
                         updated = ProductExcelService._update_product_category(
                             product=existing_product,
-                            category_name=row.get("categoria", ""),
+                            category_name=row.categoria or "",
                             repo=repo,
                         )
                         products.append(updated)
                         updated_count += 1
                         logger.debug(f"Row {idx}: Updated product {updated.id}")
                     else:
-                        # Create new product
                         created = ProductExcelService._create_product_from_row(
                             organization_id=organization_id,
                             row_data=row,
@@ -214,7 +215,7 @@ class ProductExcelService:
     @staticmethod
     def _create_product_from_row(
         organization_id: str,
-        row_data: dict,
+        row_data: ProductExcelRowDTO,
         repo: ProductRepository,
     ) -> Product:
         """
@@ -222,7 +223,7 @@ class ProductExcelService:
 
         Args:
             organization_id: Organization identifier
-            row_data: Dictionary with Excel row data
+            row_data: Validated ProductExcelRowDTO with Excel row data
             repo: ProductRepository instance
 
         Returns:
@@ -236,9 +237,9 @@ class ProductExcelService:
 
         # Build codes via the canonical DTO. Each (type, number) pair only
         # produces an entry when both halves are present.
-        cod_artic = row_data.get("cod_artic", "").strip()
-        cod_barra = row_data.get("cod_barra", "").strip()
-        cod_interno = row_data.get("cod_interno", "").strip()
+        cod_artic = (row_data.cod_artic or "").strip()
+        cod_barra = (row_data.cod_barra or "").strip()
+        cod_interno = (row_data.cod_interno or "").strip()
 
         code_dtos: list[ProductCodeDTO] = []
         if cod_artic:
@@ -249,7 +250,7 @@ class ProductExcelService:
             code_dtos.append(ProductCodeDTO(code_type_id=ProductCodeType.INTERNAL, number=cod_interno))
 
         # Handle category lookup/creation
-        category_name = row_data.get("categoria", "").strip()
+        category_name = (row_data.categoria or "").strip()
         category_id = None
 
         if category_name:
@@ -288,9 +289,9 @@ class ProductExcelService:
             logger.debug("Using default uncategorized category")
 
         # Extract other fields from Excel
-        description = row_data.get("descripcion", "").strip()
-        units_per_box = row_data.get("cantidad_caja")
-        unit_of_measure = row_data.get("unidad_medida", "").strip()
+        description = (row_data.descripcion or "").strip()
+        units_per_box = row_data.cantidad_caja
+        unit_of_measure = (row_data.unidad_medida or "").strip()
 
         # Create product instance
         product = Product(

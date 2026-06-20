@@ -66,6 +66,18 @@ class Product(Base, TimestampMixin):
     base_amount: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 5), nullable=True)
     sale_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 5), nullable=True)
 
+    # Hacienda v4.4 Exoneracion block + IVACobradoFabrica indicator.
+    exemption_authorization_code: Mapped[Optional[str]] = mapped_column(
+        String(2), nullable=True
+    )
+    exempted_rate: Mapped[Optional[Decimal]] = mapped_column(Numeric(4, 2), nullable=True)
+    exemption_amount: Mapped[Optional[Decimal]] = mapped_column(
+        Numeric(18, 5), nullable=True
+    )
+    iva_collected_factory: Mapped[Optional[str]] = mapped_column(String(2), nullable=True)
+    # data-services FK for the factory-tax-charge catalog row.
+    factory_tax_charge_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
     # Relationships
     organization: Mapped[Optional["Organization"]] = relationship(foreign_keys=[organization_id])
     category: Mapped[Optional["Category"]] = relationship(foreign_keys=[category_id])
