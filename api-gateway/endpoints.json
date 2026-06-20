@@ -1,7 +1,7 @@
 {
-  "base_url": "https://orders-api.jcampos.dev",
+  "base_url": "https://orders-api.tsuru.jcampos.dev",
   "auth": "Authorization: Bearer <cognito-id-token>",
-  "cognito_pool_arn_export": "jmarkets-cognito-UserPoolArn",
+  "cognito_pool_arn_export": "tsuru-cognito-UserPoolArn",
   "services": [
     {
       "name": "backend",
@@ -11,7 +11,7 @@
           "method": "GET",
           "operation_id": "list_assignments_api_organizations__organization_id__assignments_get",
           "summary": "Get all assignments for an organization",
-          "description": "Get a paginated list of assignments with optional search filters.\n\n**Query Parameters:**\n- `search`: Search filter string (field:value syntax)\n- `page`: Page number (1-indexed)\n- `pageSize`: Items per page\n- `session_id`: Filter by session UUID\n- `assigned_user_id`: Filter by assigned user ID\n- `branch_id`: Filter by branch UUID\n\n**Examples:**\n- Get all assignments: `/api/organizations/{orgId}/assignments`\n- Get assignments for a session: `/api/organizations/{orgId}/assignments?session_id={sessionId}`\n- Get assignments for a user: `/api/organizations/{orgId}/assignments?assigned_user_id={userId}`",
+          "description": "Get a paginated list of assignments with optional search filters.\n\n**Query Parameters:**\n- `search`: Search filter string (field:value syntax)\n- `page`: Page number (1-indexed)\n- `page_size`: Items per page\n- `session_id`: Filter by session UUID\n- `assigned_user_id`: Filter by assigned user ID\n- `branch_id`: Filter by branch UUID\n\n**Examples:**\n- Get all assignments: `/api/organizations/{orgId}/assignments`\n- Get assignments for a session: `/api/organizations/{orgId}/assignments?session_id={sessionId}`\n- Get assignments for a user: `/api/organizations/{orgId}/assignments?assigned_user_id={userId}`",
           "path_params": [
             {
               "name": "organization_id",
@@ -34,7 +34,7 @@
               "description": "Page number (1-indexed)"
             },
             {
-              "name": "pageSize",
+              "name": "page_size",
               "type": "integer",
               "required": false,
               "description": "Items per page"
@@ -85,62 +85,10 @@
         },
         {
           "path": "/api/organizations/{organization_id}/assignments/{assignment_id}",
-          "method": "GET",
-          "operation_id": "get_assignment_api_organizations__organization_id__assignments__assignment_id__get",
-          "summary": "Get a specific assignment by ID",
-          "description": "",
-          "path_params": [
-            {
-              "name": "organization_id",
-              "type": "string",
-              "required": true,
-              "description": "Organization identifier"
-            },
-            {
-              "name": "assignment_id",
-              "type": "string",
-              "required": true,
-              "description": "Assignment ID"
-            }
-          ],
-          "query_params": [],
-          "response": {
-            "is_list": false,
-            "fields": []
-          }
-        },
-        {
-          "path": "/api/organizations/{organization_id}/assignments/{assignment_id}",
           "method": "PATCH",
           "operation_id": "update_assignment_api_organizations__organization_id__assignments__assignment_id__patch",
           "summary": "Update an existing assignment",
-          "description": "Update an assignment. Only provided fields are updated.\n\n**Updatable fields:**\n- `terminal_id`: UUID of the terminal\n- `end_time`: Assignment end time (ISO timestamp)\n- `is_active`: Active status (when set to false, end_time is automatically set if not provided)\n\n**Validation:**\n- Terminal must exist and belong to the branch (if terminal_id provided)\n- When deactivating (is_active=false), end_time is automatically set to current time if not already set",
-          "path_params": [
-            {
-              "name": "organization_id",
-              "type": "string",
-              "required": true,
-              "description": "Organization identifier"
-            },
-            {
-              "name": "assignment_id",
-              "type": "string",
-              "required": true,
-              "description": "Assignment ID"
-            }
-          ],
-          "query_params": [],
-          "response": {
-            "is_list": false,
-            "fields": []
-          }
-        },
-        {
-          "path": "/api/organizations/{organization_id}/assignments/{assignment_id}",
-          "method": "DELETE",
-          "operation_id": "delete_assignment_api_organizations__organization_id__assignments__assignment_id__delete",
-          "summary": "Delete an assignment",
-          "description": "Delete an assignment.\n\nReturns 204 No Content on success.",
+          "description": "Update an assignment. Only provided fields are updated (terminal_id, end_time).",
           "path_params": [
             {
               "name": "organization_id",
@@ -192,7 +140,7 @@
           "method": "GET",
           "operation_id": "list_branches_api_organizations__organization_id__branches_get",
           "summary": "Get all branches for an organization",
-          "description": "Get a paginated list of branches with optional search filters.\n\n**Query Parameters:**\n- `search`: Search filter string (field:value syntax)\n- `page`: Page number (1-indexed)\n- `pageSize`: Items per page\n- `type`: Filter by branch type ('stand' or 'restaurant')\n\n**Examples:**\n- Get all branches: `/api/organizations/{orgId}/branches`\n- Get stands only: `/api/organizations/{orgId}/branches?type=stand`\n- Search by name: `/api/organizations/{orgId}/branches?search=name:*centro*`",
+          "description": "Get a paginated list of branches with optional search filters.\n\n**Query Parameters:**\n- `search`: Search filter string (field:value syntax)\n- `page`: Page number (1-indexed)\n- `page_size`: Items per page\n- `type`: Filter by branch type ('stand' or 'restaurant')\n\n**Examples:**\n- Get all branches: `/api/organizations/{orgId}/branches`\n- Get stands only: `/api/organizations/{orgId}/branches?type=stand`",
           "path_params": [
             {
               "name": "organization_id",
@@ -206,19 +154,19 @@
               "name": "search",
               "type": "string",
               "required": false,
-              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: name:*centro*,orderBy>name"
+              "description": ""
             },
             {
               "name": "page",
               "type": "integer",
               "required": false,
-              "description": "Page number (1-indexed)"
+              "description": ""
             },
             {
-              "name": "pageSize",
+              "name": "page_size",
               "type": "integer",
               "required": false,
-              "description": "Items per page"
+              "description": ""
             },
             {
               "name": "type",
@@ -237,7 +185,7 @@
           "method": "POST",
           "operation_id": "create_branch_api_organizations__organization_id__branches_post",
           "summary": "Create a new branch",
-          "description": "Create a new branch for an organization.\n\n**Required fields:**\n- `name`: Branch name (e.g., \"Puesto 1\", \"Restaurante Centro\")\n- `code`: Short code (e.g., \"P1\", \"RC\") - must be unique within organization\n- `type`: Branch type ('stand' or 'restaurant')\n\n**Optional fields:**\n- `address`: Physical address\n- `phone`: Contact phone number",
+          "description": "Create a new branch for an organization.\n\n**Required fields:**\n- `name`: Branch name\n- `code`: Integer code (e.g. 1, 2) — must be unique within organization (Hacienda requirement)\n- `type`: Branch type ('stand' or 'restaurant')",
           "path_params": [
             {
               "name": "organization_id",
@@ -253,10 +201,10 @@
           }
         },
         {
-          "path": "/api/organizations/{organization_id}/branches/{branch_id}",
+          "path": "/api/organizations/{organization_id}/branches/{branch_code}",
           "method": "GET",
-          "operation_id": "get_branch_api_organizations__organization_id__branches__branch_id__get",
-          "summary": "Get a specific branch by ID",
+          "operation_id": "get_branch_api_organizations__organization_id__branches__branch_code__get",
+          "summary": "Get a specific branch by its integer code",
           "description": "",
           "path_params": [
             {
@@ -266,10 +214,10 @@
               "description": "Organization identifier"
             },
             {
-              "name": "branch_id",
-              "type": "string",
+              "name": "branch_code",
+              "type": "integer",
               "required": true,
-              "description": "Branch ID"
+              "description": "Branch integer code (unique per org)"
             }
           ],
           "query_params": [],
@@ -279,11 +227,11 @@
           }
         },
         {
-          "path": "/api/organizations/{organization_id}/branches/{branch_id}",
+          "path": "/api/organizations/{organization_id}/branches/{branch_code}",
           "method": "PATCH",
-          "operation_id": "update_branch_api_organizations__organization_id__branches__branch_id__patch",
-          "summary": "Update an existing branch",
-          "description": "Update a branch. Only provided fields are updated.\n\n**Updatable fields:**\n- `name`: Branch name\n- `code`: Branch code (must be unique within organization)\n- `type`: Branch type ('stand' or 'restaurant')\n- `address`: Physical address\n- `phone`: Contact phone number",
+          "operation_id": "update_branch_api_organizations__organization_id__branches__branch_code__patch",
+          "summary": "Update an existing branch by its integer code",
+          "description": "",
           "path_params": [
             {
               "name": "organization_id",
@@ -292,10 +240,10 @@
               "description": "Organization identifier"
             },
             {
-              "name": "branch_id",
-              "type": "string",
+              "name": "branch_code",
+              "type": "integer",
               "required": true,
-              "description": "Branch ID"
+              "description": "Branch integer code"
             }
           ],
           "query_params": [],
@@ -305,11 +253,11 @@
           }
         },
         {
-          "path": "/api/organizations/{organization_id}/branches/{branch_id}",
+          "path": "/api/organizations/{organization_id}/branches/{branch_code}",
           "method": "DELETE",
-          "operation_id": "delete_branch_api_organizations__organization_id__branches__branch_id__delete",
-          "summary": "Delete a branch",
-          "description": "Delete a branch.\n\n**Validation:**\n- Cannot delete if branch has active terminals\n- Cannot delete if branch has active sessions\n\nReturns 204 No Content on success.",
+          "operation_id": "delete_branch_api_organizations__organization_id__branches__branch_code__delete",
+          "summary": "Delete a branch by its integer code",
+          "description": "",
           "path_params": [
             {
               "name": "organization_id",
@@ -318,10 +266,10 @@
               "description": "Organization identifier"
             },
             {
-              "name": "branch_id",
-              "type": "string",
+              "name": "branch_code",
+              "type": "integer",
               "required": true,
-              "description": "Branch ID"
+              "description": "Branch integer code"
             }
           ],
           "query_params": [],
@@ -331,9 +279,9 @@
           }
         },
         {
-          "path": "/api/organizations/{organization_id}/branches/{branch_id}/status",
+          "path": "/api/organizations/{organization_id}/branches/{branch_code}/status",
           "method": "PATCH",
-          "operation_id": "update_branch_status_api_organizations__organization_id__branches__branch_id__status_patch",
+          "operation_id": "update_branch_status_api_organizations__organization_id__branches__branch_code__status_patch",
           "summary": "Update branch status",
           "description": "Update the status of a branch (1=Active, 2=Inactive, 3=Deleted)",
           "path_params": [
@@ -344,10 +292,10 @@
               "description": "Organization identifier"
             },
             {
-              "name": "branch_id",
-              "type": "string",
+              "name": "branch_code",
+              "type": "integer",
               "required": true,
-              "description": "Branch ID"
+              "description": "Branch integer code"
             }
           ],
           "query_params": [],
@@ -357,81 +305,10 @@
           }
         },
         {
-          "path": "/api/organizations/{organization_id}/branches/{branch_id}/terminals",
+          "path": "/api/organizations/{organization_id}/branches/{branch_code}/terminals",
           "method": "GET",
-          "operation_id": "list_terminals_api_organizations__organization_id__branches__branch_id__terminals_get",
-          "summary": "Get all terminals for a branch",
-          "description": "Get a paginated list of terminals for a specific branch.\n\n**Query Parameters:**\n- `search`: Search filter string (field:value syntax)\n- `page`: Page number (1-indexed)\n- `pageSize`: Items per page\n\n**Examples:**\n- Get all terminals for a branch: `/api/organizations/{orgId}/branches/{branchId}/terminals`\n- Search by name: `/api/organizations/{orgId}/branches/{branchId}/terminals?search=name:*caja*`",
-          "path_params": [
-            {
-              "name": "organization_id",
-              "type": "string",
-              "required": true,
-              "description": "Organization identifier"
-            },
-            {
-              "name": "branch_id",
-              "type": "string",
-              "required": true,
-              "description": "Branch identifier"
-            }
-          ],
-          "query_params": [
-            {
-              "name": "search",
-              "type": "string",
-              "required": false,
-              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Example: name:*caja*,orderBy>name"
-            },
-            {
-              "name": "page",
-              "type": "integer",
-              "required": false,
-              "description": "Page number (1-indexed)"
-            },
-            {
-              "name": "pageSize",
-              "type": "integer",
-              "required": false,
-              "description": "Items per page"
-            }
-          ],
-          "response": {
-            "is_list": false,
-            "fields": []
-          }
-        },
-        {
-          "path": "/api/organizations/{organization_id}/branches/{branch_id}/terminals",
-          "method": "POST",
-          "operation_id": "create_terminal_api_organizations__organization_id__branches__branch_id__terminals_post",
-          "summary": "Create a new terminal",
-          "description": "Create a new terminal for a branch.\n\n**Required fields:**\n- `name`: Terminal name (e.g., \"Terminal 1\", \"Caja Principal\")\n- `code`: Short code (e.g., \"T1\", \"CP\") - must be unique within organization\n\n**Optional fields:**\n- `device_id`: Physical device identifier (must be globally unique)\n\n**Note:** The branch_id is taken from the URL path.",
-          "path_params": [
-            {
-              "name": "organization_id",
-              "type": "string",
-              "required": true,
-              "description": "Organization identifier"
-            },
-            {
-              "name": "branch_id",
-              "type": "string",
-              "required": true,
-              "description": "Branch identifier"
-            }
-          ],
-          "query_params": [],
-          "response": {
-            "is_list": false,
-            "fields": []
-          }
-        },
-        {
-          "path": "/api/organizations/{organization_id}/branches/{branch_id}/terminals/{terminal_id}",
-          "method": "GET",
-          "operation_id": "get_terminal_api_organizations__organization_id__branches__branch_id__terminals__terminal_id__get",
-          "summary": "Get a specific terminal by ID",
+          "operation_id": "list_terminals_api_organizations__organization_id__branches__branch_code__terminals_get",
+          "summary": "Get all terminals for a branch (by branch integer code)",
           "description": "",
           "path_params": [
             {
@@ -441,30 +318,43 @@
               "description": "Organization identifier"
             },
             {
-              "name": "branch_id",
-              "type": "string",
+              "name": "branch_code",
+              "type": "integer",
               "required": true,
-              "description": "Branch identifier"
-            },
-            {
-              "name": "terminal_id",
-              "type": "string",
-              "required": true,
-              "description": "Terminal ID"
+              "description": "Branch integer code"
             }
           ],
-          "query_params": [],
+          "query_params": [
+            {
+              "name": "search",
+              "type": "string",
+              "required": false,
+              "description": ""
+            },
+            {
+              "name": "page",
+              "type": "integer",
+              "required": false,
+              "description": ""
+            },
+            {
+              "name": "page_size",
+              "type": "integer",
+              "required": false,
+              "description": ""
+            }
+          ],
           "response": {
             "is_list": false,
             "fields": []
           }
         },
         {
-          "path": "/api/organizations/{organization_id}/branches/{branch_id}/terminals/{terminal_id}",
-          "method": "PATCH",
-          "operation_id": "update_terminal_api_organizations__organization_id__branches__branch_id__terminals__terminal_id__patch",
-          "summary": "Update an existing terminal",
-          "description": "Update a terminal. Only provided fields are updated.\n\n**Updatable fields:**\n- `name`: Terminal name\n- `code`: Terminal code (must be unique within organization)\n- `device_id`: Physical device identifier (must be globally unique)\n\n**Note:** Cannot change branch_id through this endpoint.",
+          "path": "/api/organizations/{organization_id}/branches/{branch_code}/terminals",
+          "method": "POST",
+          "operation_id": "create_terminal_api_organizations__organization_id__branches__branch_code__terminals_post",
+          "summary": "Create a new terminal under a branch",
+          "description": "Create a new terminal for a branch identified by its integer code.\n\n**Required fields:**\n- `name`: Terminal name\n- `code`: Integer terminal code — must be unique within the organization (Hacienda requirement)\n\n**Optional fields:**\n- `device_id`: Physical device identifier (globally unique)",
           "path_params": [
             {
               "name": "organization_id",
@@ -473,16 +363,10 @@
               "description": "Organization identifier"
             },
             {
-              "name": "branch_id",
-              "type": "string",
+              "name": "branch_code",
+              "type": "integer",
               "required": true,
-              "description": "Branch identifier"
-            },
-            {
-              "name": "terminal_id",
-              "type": "string",
-              "required": true,
-              "description": "Terminal ID"
+              "description": "Branch integer code"
             }
           ],
           "query_params": [],
@@ -492,11 +376,75 @@
           }
         },
         {
-          "path": "/api/organizations/{organization_id}/branches/{branch_id}/terminals/{terminal_id}",
+          "path": "/api/organizations/{organization_id}/branches/{branch_code}/terminals/{terminal_code}",
+          "method": "GET",
+          "operation_id": "get_terminal_api_organizations__organization_id__branches__branch_code__terminals__terminal_code__get",
+          "summary": "Get a specific terminal by its integer code within a branch",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "branch_code",
+              "type": "integer",
+              "required": true,
+              "description": "Branch integer code"
+            },
+            {
+              "name": "terminal_code",
+              "type": "integer",
+              "required": true,
+              "description": "Terminal integer code"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/branches/{branch_code}/terminals/{terminal_code}",
+          "method": "PATCH",
+          "operation_id": "update_terminal_api_organizations__organization_id__branches__branch_code__terminals__terminal_code__patch",
+          "summary": "Update an existing terminal by its integer code",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "branch_code",
+              "type": "integer",
+              "required": true,
+              "description": "Branch integer code"
+            },
+            {
+              "name": "terminal_code",
+              "type": "integer",
+              "required": true,
+              "description": "Terminal integer code"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/branches/{branch_code}/terminals/{terminal_code}",
           "method": "DELETE",
-          "operation_id": "delete_terminal_api_organizations__organization_id__branches__branch_id__terminals__terminal_id__delete",
-          "summary": "Delete a terminal",
-          "description": "Delete a terminal.\n\n**Validation:**\n- Cannot delete if terminal has active assignments\n\nReturns 204 No Content on success.",
+          "operation_id": "delete_terminal_api_organizations__organization_id__branches__branch_code__terminals__terminal_code__delete",
+          "summary": "Delete a terminal by its integer code",
+          "description": "",
           "path_params": [
             {
               "name": "organization_id",
@@ -505,16 +453,16 @@
               "description": "Organization identifier"
             },
             {
-              "name": "branch_id",
-              "type": "string",
+              "name": "branch_code",
+              "type": "integer",
               "required": true,
-              "description": "Branch identifier"
+              "description": "Branch integer code"
             },
             {
-              "name": "terminal_id",
-              "type": "string",
+              "name": "terminal_code",
+              "type": "integer",
               "required": true,
-              "description": "Terminal ID"
+              "description": "Terminal integer code"
             }
           ],
           "query_params": [],
@@ -524,9 +472,9 @@
           }
         },
         {
-          "path": "/api/organizations/{organization_id}/branches/{branch_id}/terminals/{terminal_id}/status",
+          "path": "/api/organizations/{organization_id}/branches/{branch_code}/terminals/{terminal_code}/status",
           "method": "PATCH",
-          "operation_id": "update_terminal_status_api_organizations__organization_id__branches__branch_id__terminals__terminal_id__status_patch",
+          "operation_id": "update_terminal_status_api_organizations__organization_id__branches__branch_code__terminals__terminal_code__status_patch",
           "summary": "Update terminal status",
           "description": "Update the status of a terminal (1=Active, 2=Inactive, 3=Deleted)",
           "path_params": [
@@ -537,16 +485,16 @@
               "description": "Organization identifier"
             },
             {
-              "name": "branch_id",
-              "type": "string",
+              "name": "branch_code",
+              "type": "integer",
               "required": true,
-              "description": "Branch identifier"
+              "description": "Branch integer code"
             },
             {
-              "name": "terminal_id",
-              "type": "string",
+              "name": "terminal_code",
+              "type": "integer",
               "required": true,
-              "description": "Terminal ID"
+              "description": "Terminal integer code"
             }
           ],
           "query_params": [],
@@ -577,7 +525,7 @@
               "description": "Page number (1-indexed)"
             },
             {
-              "name": "pageSize",
+              "name": "page_size",
               "type": "integer",
               "required": false,
               "description": "Items per page"
@@ -740,7 +688,7 @@
               "description": "Page number (1-indexed)"
             },
             {
-              "name": "pageSize",
+              "name": "page_size",
               "type": "integer",
               "required": false,
               "description": "Items per page"
@@ -883,7 +831,7 @@
               "description": "Page number (1-indexed)"
             },
             {
-              "name": "pageSize",
+              "name": "page_size",
               "type": "integer",
               "required": false,
               "description": "Items per page"
@@ -1082,7 +1030,7 @@
               "description": "Page number (1-indexed)"
             },
             {
-              "name": "pageSize",
+              "name": "page_size",
               "type": "integer",
               "required": false,
               "description": "Items per page"
@@ -1246,7 +1194,7 @@
           "method": "GET",
           "operation_id": "list_closings_api_organizations__organization_id__closings_get",
           "summary": "Get all closings for an organization",
-          "description": "Get a paginated list of closings with optional search filters.\n\n**Query Parameters:**\n- `search`: Search filter string (field:value syntax)\n- `page`: Page number (1-indexed)\n- `pageSize`: Items per page\n- `session_id`: Filter by session UUID\n- `status`: Filter by status ('pending', 'approved', 'rejected')\n- `branch_id`: Filter by branch UUID\n\n**Examples:**\n- Get all closings: `/api/organizations/{orgId}/closings`\n- Get pending closings: `/api/organizations/{orgId}/closings?status=pending`\n- Get closings for a session: `/api/organizations/{orgId}/closings?session_id={sessionId}`\n- Get closings for a branch: `/api/organizations/{orgId}/closings?branch_id={branchId}`",
+          "description": "Get a paginated list of closings with optional search filters.\n\n**Query Parameters:**\n- `search`: Search filter string (field:value syntax)\n- `page`: Page number (1-indexed)\n- `page_size`: Items per page\n- `session_id`: Filter by session UUID\n- `status`: Filter by status ('pending', 'approved', 'rejected')\n- `branch_id`: Filter by branch UUID\n\n**Examples:**\n- Get all closings: `/api/organizations/{orgId}/closings`\n- Get pending closings: `/api/organizations/{orgId}/closings?status=pending`\n- Get closings for a session: `/api/organizations/{orgId}/closings?session_id={sessionId}`\n- Get closings for a branch: `/api/organizations/{orgId}/closings?branch_id={branchId}`",
           "path_params": [
             {
               "name": "organization_id",
@@ -1269,7 +1217,7 @@
               "description": "Page number (1-indexed)"
             },
             {
-              "name": "pageSize",
+              "name": "page_size",
               "type": "integer",
               "required": false,
               "description": "Items per page"
@@ -1476,7 +1424,7 @@
               "description": "Page number"
             },
             {
-              "name": "pageSize",
+              "name": "page_size",
               "type": "integer",
               "required": false,
               "description": "Items per page"
@@ -1645,7 +1593,7 @@
               "description": ""
             },
             {
-              "name": "pageSize",
+              "name": "page_size",
               "type": "integer",
               "required": false,
               "description": ""
@@ -1783,7 +1731,7 @@
               "description": "Page number (1-indexed)"
             },
             {
-              "name": "pageSize",
+              "name": "page_size",
               "type": "integer",
               "required": false,
               "description": "Items per page"
@@ -1923,7 +1871,7 @@
           "method": "GET",
           "operation_id": "list_products_api_organizations__organization_id__products_get",
           "summary": "Get all products for an organization",
-          "description": "Get a paginated list of products with optional search filters.\n\n**Search filters**\n- `description`: Product description (supports wildcards)\n- `code`: Product code lookup in codes JSONB array\n  - Format with code type: `code:01-123415` (searches for codeTypeId \"01\" and number \"123415\")\n  - Format without code type: `code:123415` (searches all code types for number \"123415\")\n- `name`: Product name (supports wildcards)\n- `categoryId`: Filter by category ID (exact match)\n- `categoryName`: Filter by category name (supports wildcards)\n- `status`: Filter by product status (1=Active, 2=Inactive, 3=Deleted)\n- `price`: Filter by net price (supports between with `~`)\n  - Single value: `price:100` (exact match)\n  - Range: `price:50~150` (between 50 and 150)\n  - Greater than: `price>100`\n  - Less than: `price<100`\n- `salePrice`: Filter by sale price (supports between with `~`)\n  - Single value: `salePrice:100` (exact match)\n  - Range: `salePrice:50~150` (between 50 and 150)\n  - Greater than: `salePrice>100`\n  - Less than: `salePrice<100`\n\n**Sorting**\n- `orderBy>field` (Ascending)\n- `orderBy<field` (Descending)\n- Sortable fields: `description`, `name`, `price`, `salePrice`, `createdOn`, `updatedOn`\n\n**Examples:**\n- `name:*shampoo*,orderBy>name` - Products with \"shampoo\" in name, sorted by name\n- `categoryId:cat-123` - Products in specific category\n- `categoryName:*electronics*,status:1` - Active products in electronics category\n- `status:2` - Inactive products\n- `status:1` - Active products only\n- `price:50~150` - Products with net price between 50 and 150\n- `salePrice:50~150` - Products with sale price between 50 and 150\n- `price>100,orderBy>price` - Products over 100, sorted by net price\n- `categoryName:*beauty*,salePrice<50,orderBy>salePrice` - Beauty products under 50, sorted by sale price",
+          "description": "Get a paginated list of products with optional search filters.\n\n**Search filters**\n- `description`: Product description (supports wildcards)\n- `code`: Product code lookup in codes JSONB array\n  - Format with code type: `code:01-123415` (searches for code_type_id \"01\" and number \"123415\")\n  - Format without code type: `code:123415` (searches all code types for number \"123415\")\n- `name`: Product name (supports wildcards)\n- `categoryId`: Filter by category ID (exact match)\n- `categoryName`: Filter by category name (supports wildcards)\n- `status`: Filter by product status (1=Active, 2=Inactive, 3=Deleted)\n- `price`: Filter by net price (supports between with `~`)\n  - Single value: `price:100` (exact match)\n  - Range: `price:50~150` (between 50 and 150)\n  - Greater than: `price>100`\n  - Less than: `price<100`\n- `salePrice`: Filter by sale price (supports between with `~`)\n  - Single value: `salePrice:100` (exact match)\n  - Range: `salePrice:50~150` (between 50 and 150)\n  - Greater than: `salePrice>100`\n  - Less than: `salePrice<100`\n\n**Sorting**\n- `orderBy>field` (Ascending)\n- `orderBy<field` (Descending)\n- Sortable fields: `description`, `name`, `price`, `salePrice`, `createdOn`, `updatedOn`\n\n**Examples:**\n- `name:*shampoo*,orderBy>name` - Products with \"shampoo\" in name, sorted by name\n- `categoryId:cat-123` - Products in specific category\n- `categoryName:*electronics*,status:1` - Active products in electronics category\n- `status:2` - Inactive products\n- `status:1` - Active products only\n- `price:50~150` - Products with net price between 50 and 150\n- `salePrice:50~150` - Products with sale price between 50 and 150\n- `price>100,orderBy>price` - Products over 100, sorted by net price\n- `categoryName:*beauty*,salePrice<50,orderBy>salePrice` - Beauty products under 50, sorted by sale price",
           "path_params": [
             {
               "name": "organization_id",
@@ -1946,7 +1894,7 @@
               "description": "Page number (1-indexed)"
             },
             {
-              "name": "pageSize",
+              "name": "page_size",
               "type": "integer",
               "required": false,
               "description": "Items per page"
@@ -1983,6 +1931,26 @@
           "operation_id": "parse_products_excel_api_organizations__organization_id__products_parse_post",
           "summary": "Parse and import products from Excel file",
           "description": "Upload Excel file to create or update products in bulk.\n\n**Excel Format:**\nRequired headers: COD_ARTIC, COD_BARRA, COD_INTERNO, DESCRIPCION, CANTIDAD_CAJA, UNIDAD_MEDIDA, PRECIO, CATEGORIA\n\n**Behavior:**\n- Creates new products if no matching code is found\n- Updates category for existing products (preserves prices and other data)\n- Processes each row independently (one failure doesn't affect others)\n- Returns list of all successfully created/updated products\n\n**Product Matching:**\nProducts are matched by codes in priority order:\n1. COD_INTERNO (Internal code - type 04)\n2. COD_BARRA (Barcode - type 03)\n3. COD_ARTIC (Vendor code - type 01)\n\n**Category Handling:**\n- If category exists (case-insensitive match), uses existing category\n- If category doesn't exist, creates new category\n- If category is empty, uses default \"uncategorized\" category",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/products/price-bounds",
+          "method": "GET",
+          "operation_id": "get_product_price_bounds_api_organizations__organization_id__products_price_bounds_get",
+          "summary": "Min/max bounds of net & sale price across the org's products",
+          "description": "Used by the FE filter slider to size its thumbs to the org's actual price range. Any side may be null if no products exist.",
           "path_params": [
             {
               "name": "organization_id",
@@ -2076,11 +2044,90 @@
           }
         },
         {
+          "path": "/api/organizations/{organization_id}/sales",
+          "method": "GET",
+          "operation_id": "list_sales_api_organizations__organization_id__sales_get",
+          "summary": "List sales for an organization",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            }
+          ],
+          "query_params": [
+            {
+              "name": "page",
+              "type": "integer",
+              "required": false,
+              "description": ""
+            },
+            {
+              "name": "page_size",
+              "type": "integer",
+              "required": false,
+              "description": ""
+            }
+          ],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/sales",
+          "method": "POST",
+          "operation_id": "create_sale_api_organizations__organization_id__sales_post",
+          "summary": "Register a new sale",
+          "description": "Register a completed sale for an organization.\n\nAll fields use **snake_case**. Branch and terminal are identified by their **integer codes**.\n\n**Required fields:**\n- `branch_code`: Integer branch code (unique per org)\n- `terminal_code`: Integer terminal code (unique per org)\n- `activity_code`: Hacienda economic activity code\n- `details`: List of line items (at least one)\n- `payments`: List of payment method amounts (at least one)\n- `subtotal`, `tax_amount`, `total_amount`: Sale totals\n\n**Optional fields:**\n- `assignment_id`: Links to the active cashier assignment\n- `client_id`: UUID of the client (populates receiver from client record)\n- `receiver`: Inline receiver data if no client selected\n- `document_type`: Defaults to 1 (Boleta de Venta)\n- `sale_condition_id`: Defaults to 1 (Contado)\n- `notes`, `copy_emails`: Additional info",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/organizations/{organization_id}/sales/{sale_id}",
+          "method": "GET",
+          "operation_id": "get_sale_api_organizations__organization_id__sales__sale_id__get",
+          "summary": "Get a specific sale with its line items",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "sale_id",
+              "type": "string",
+              "required": true,
+              "description": "Sale UUID"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
           "path": "/api/organizations/{organization_id}/sessions",
           "method": "GET",
           "operation_id": "list_sessions_api_organizations__organization_id__sessions_get",
           "summary": "Get all sessions for an organization",
-          "description": "Get a paginated list of sessions with optional search filters.\n\n**Query Parameters:**\n- `search`: Search filter string (field:value syntax)\n- `page`: Page number (1-indexed)\n- `pageSize`: Items per page\n- `branch_id`: Filter by branch UUID\n- `type`: Filter by session type ('match' or 'shift')\n- `context`: Filter by session context ('gradas', 'mesa', or 'caja')\n\n**Examples:**\n- Get all sessions: `/api/organizations/{orgId}/sessions`\n- Get match sessions: `/api/organizations/{orgId}/sessions?type=match`\n- Get sessions for a branch: `/api/organizations/{orgId}/sessions?branch_id={branchId}`",
+          "description": "Get a paginated list of sessions with optional search filters.\n\n**Query Parameters:**\n- `search`: Search filter string (field:value syntax)\n- `page`: Page number (1-indexed)\n- `page_size`: Items per page\n- `branch_id`: Filter by branch UUID\n- `type`: Filter by session type ('match' or 'shift')\n- `context`: Filter by session context ('gradas', 'mesa', or 'caja')\n\n**Examples:**\n- Get all sessions: `/api/organizations/{orgId}/sessions`\n- Get match sessions: `/api/organizations/{orgId}/sessions?type=match`\n- Get sessions for a branch: `/api/organizations/{orgId}/sessions?branch_id={branchId}`",
           "path_params": [
             {
               "name": "organization_id",
@@ -2103,7 +2150,7 @@
               "description": "Page number (1-indexed)"
             },
             {
-              "name": "pageSize",
+              "name": "page_size",
               "type": "integer",
               "required": false,
               "description": "Items per page"
@@ -2137,7 +2184,7 @@
           "method": "POST",
           "operation_id": "create_session_api_organizations__organization_id__sessions_post",
           "summary": "Create a new session",
-          "description": "Create a new session for an organization.\n\n**Required fields:**\n- `name`: Session name (e.g., \"Partido vs Herediano\", \"Turno Mañana\")\n- `type`: Session type ('match' or 'shift')\n- `context`: Session context ('gradas', 'mesa', or 'caja')\n- `start_time`: Session start time (ISO timestamp)\n\n**Optional fields:**\n- `branch_id`: UUID of the branch for this session\n- `expected_revenue`: Expected revenue for this session\n\n**Validation:**\n- If branch_id is provided, the branch must exist and belong to the organization",
+          "description": "Create a new session for an organization with optional assignments.\n\n**Required fields:**\n- `name`: Session name (e.g., \"Partido vs Herediano\", \"Turno Mañana\")\n- `type`: Session type ('match' or 'shift')\n- `context`: Session context ('gradas', 'mesa', or 'caja')\n- `start_time`: Session start time (ISO timestamp)\n\n**Optional fields:**\n- `branch_id`: UUID of the branch for this session\n- `expected_revenue`: Expected revenue for this session\n- `product_ids`: List of product IDs to include in this session (for inventory tracking)\n- `assignments`: List of assignments to create with this session (creates all assignments in a single transaction)\n\n**Assignment fields:**\n- `user_id`: UUID of the user to assign (required)\n- `branch_id`: UUID of the branch/station (required)\n- `terminal_id`: UUID of the terminal (optional)\n- `role`: Role ('cashier' or 'supervisor', defaults to 'cashier')\n\n**Validation:**\n- If branch_id is provided, the branch must exist and belong to the organization\n- All assignment user_ids and branch_ids must be valid UUIDs\n\n**Example Request (with assignments):**\n```json\n{\n  \"name\": \"Partido vs Herediano\",\n  \"type\": \"match\",\n  \"context\": \"gradas\",\n  \"start_time\": \"2024-01-15T19:00:00Z\",\n  \"expected_revenue\": 50000.00,\n  \"product_ids\": [\"prod-1\", \"prod-2\", \"prod-3\"],\n  \"assignments\": [\n    {\n      \"user_id\": \"user-123\",\n      \"branch_id\": \"branch-456\",\n      \"terminal_id\": \"terminal-789\",\n      \"role\": \"cashier\"\n    },\n    {\n      \"user_id\": \"user-456\",\n      \"branch_id\": \"branch-789\",\n      \"terminal_id\": \"terminal-012\",\n      \"role\": \"supervisor\"\n    }\n  ]\n}\n```\n\n**Example Response:**\n```json\n{\n  \"session_id\": \"660e8400-e29b-41d4-a716-446655440000\",\n  \"organization_id\": \"org-123\",\n  \"branch_id\": null,\n  \"name\": \"Partido vs Herediano\",\n  \"type\": \"match\",\n  \"context\": \"gradas\",\n  \"start_time\": \"2024-01-15T19:00:00Z\",\n  \"end_time\": null,\n  \"status\": 1,\n  \"expected_revenue\": 50000.00,\n  \"actual_revenue\": null,\n  \"created_at\": \"2024-01-15T18:00:00Z\",\n  \"updated_at\": \"2024-01-15T18:00:00Z\",\n  \"created_by\": \"user-123\",\n  \"product_ids\": [\"prod-1\", \"prod-2\", \"prod-3\"]\n}\n```\n\n**Benefits:**\n- Single API call instead of multiple requests\n- Atomic transaction (all assignments created or none)\n- Better performance and reduced network overhead",
           "path_params": [
             {
               "name": "organization_id",
@@ -2157,7 +2204,7 @@
           "method": "GET",
           "operation_id": "get_session_api_organizations__organization_id__sessions__session_id__get",
           "summary": "Get a specific session by ID",
-          "description": "",
+          "description": "Get detailed information about a specific session.\n\n**Response includes:**\n- Session details (name, type, context, times, status)\n- Branch information (if assigned)\n- Revenue information (expected and actual)\n- Product IDs (list of products available in this session)\n\n**Example Response:**\n```json\n{\n  \"session_id\": \"660e8400-e29b-41d4-a716-446655440000\",\n  \"organization_id\": \"org-123\",\n  \"branch_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"name\": \"Partido vs Herediano\",\n  \"type\": \"match\",\n  \"context\": \"caja\",\n  \"start_time\": \"2024-01-15T19:00:00Z\",\n  \"end_time\": null,\n  \"status\": 1,\n  \"expected_revenue\": 50000.00,\n  \"actual_revenue\": 35000.00,\n  \"created_at\": \"2024-01-15T18:00:00Z\",\n  \"updated_at\": \"2024-01-15T22:00:00Z\",\n  \"created_by\": \"user-123\",\n  \"product_ids\": [\"prod-1\", \"prod-2\", \"prod-3\"]\n}\n```",
           "path_params": [
             {
               "name": "organization_id",
@@ -2183,7 +2230,7 @@
           "method": "PATCH",
           "operation_id": "update_session_api_organizations__organization_id__sessions__session_id__patch",
           "summary": "Update an existing session",
-          "description": "Update a session. Only provided fields are updated.\n\n**Updatable fields:**\n- `name`: Session name\n- `type`: Session type ('match' or 'shift')\n- `context`: Session context ('gradas', 'mesa', or 'caja')\n- `branch_id`: UUID of the branch for this session\n- `end_time`: Session end time (ISO timestamp)\n- `is_active`: Active status (when set to false, end_time is automatically set if not provided)\n- `expected_revenue`: Expected revenue\n- `actual_revenue`: Actual revenue\n\n**Validation:**\n- If branch_id is provided, the branch must exist and belong to the organization\n- When deactivating (is_active=false), end_time is automatically set to current time if not already set",
+          "description": "Update a session. Only provided fields are updated.\n\n**Updatable fields:**\n- `name`: Session name\n- `type`: Session type ('match' or 'shift')\n- `context`: Session context ('gradas', 'mesa', or 'caja')\n- `branch_id`: UUID of the branch for this session\n- `end_time`: Session end time (ISO timestamp)\n- `expected_revenue`: Expected revenue\n- `actual_revenue`: Actual revenue\n\n**Validation:**\n- If branch_id is provided, the branch must exist and belong to the organization\n- To deactivate a session use PATCH `/sessions/{id}/status` with `{\"status\": 2}`",
           "path_params": [
             {
               "name": "organization_id",
@@ -2257,10 +2304,88 @@
           }
         },
         {
+          "path": "/api/organizations/{organization_id}/terminals/{terminal_id}/consecutives/by-code/{document_type_code}",
+          "method": "GET",
+          "operation_id": "format_terminal_consecutive_api_organizations__organization_id__terminals__terminal_id__consecutives_by_code__document_type_code__get",
+          "summary": "Get the formatted consecutive for (terminal, doc-type code) — does NOT increment",
+          "description": "",
+          "path_params": [
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            },
+            {
+              "name": "terminal_id",
+              "type": "string",
+              "required": true,
+              "description": "Terminal ID"
+            },
+            {
+              "name": "document_type_code",
+              "type": "string",
+              "required": true,
+              "description": "Hacienda document-type code, e.g. '01', '04'"
+            }
+          ],
+          "query_params": [],
+          "response": {
+            "is_list": false,
+            "fields": [
+              {
+                "name": "consecutive_id",
+                "type": "string",
+                "nullable": false
+              },
+              {
+                "name": "organization_id",
+                "type": "string",
+                "nullable": false
+              },
+              {
+                "name": "terminal_id",
+                "type": "string",
+                "nullable": false
+              },
+              {
+                "name": "document_type_id",
+                "type": "integer",
+                "nullable": false
+              },
+              {
+                "name": "current_number",
+                "type": "integer",
+                "nullable": false
+              },
+              {
+                "name": "document_consecutive",
+                "type": "string",
+                "nullable": false
+              },
+              {
+                "name": "created_at",
+                "type": "string",
+                "nullable": false
+              },
+              {
+                "name": "updated_at",
+                "type": "string",
+                "nullable": false
+              },
+              {
+                "name": "created_by",
+                "type": "string",
+                "nullable": false
+              }
+            ]
+          }
+        },
+        {
           "path": "/api/organizations/{organization_id}/terminals/{terminal_id}/consecutives/{document_type_id}",
           "method": "GET",
           "operation_id": "get_terminal_consecutive_api_organizations__organization_id__terminals__terminal_id__consecutives__document_type_id__get",
-          "summary": "Get (and optionally increment) a consecutive for a terminal and document type",
+          "summary": "Read the current consecutive for a terminal + document type (read-only, never increments)",
           "description": "",
           "path_params": [
             {
@@ -2287,7 +2412,52 @@
               "name": "increment",
               "type": "boolean",
               "required": false,
-              "description": "Atomically increment the counter before returning"
+              "description": "(DEPRECATED, ignored — increment now happens in the caller service via its own repo)"
+            }
+          ],
+          "response": {
+            "is_list": false,
+            "fields": []
+          }
+        },
+        {
+          "path": "/api/users/{user_id}/organizations/{organization_id}/assignments",
+          "method": "GET",
+          "operation_id": "list_user_assignments_api_users__user_id__organizations__organization_id__assignments_get",
+          "summary": "Get assignments for a specific user within an organization",
+          "description": "Returns active (or filtered) assignments scoped to the given user ID.",
+          "path_params": [
+            {
+              "name": "user_id",
+              "type": "string",
+              "required": true,
+              "description": "User identifier"
+            },
+            {
+              "name": "organization_id",
+              "type": "string",
+              "required": true,
+              "description": "Organization identifier"
+            }
+          ],
+          "query_params": [
+            {
+              "name": "search",
+              "type": "string",
+              "required": false,
+              "description": "Additional search filters (e.g. status:1)"
+            },
+            {
+              "name": "page",
+              "type": "integer",
+              "required": false,
+              "description": ""
+            },
+            {
+              "name": "pageSize",
+              "type": "integer",
+              "required": false,
+              "description": ""
             }
           ],
           "response": {

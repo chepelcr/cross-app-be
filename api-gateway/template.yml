@@ -85,7 +85,7 @@ Resources:
                   required: false
                   schema:
                     type: integer
-                - name: pageSize
+                - name: page_size
                   in: query
                   required: false
                   schema:
@@ -188,41 +188,6 @@ Resources:
                       method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
                       method.response.header.Access-Control-Allow-Origin: "'*'"
           "/api/organizations/{organization_id}/assignments/{assignment_id}":
-            get:
-              operationId: backend_get_assignment_api_organizations__organization_id__assignments__assignment_id__get
-              summary: Get a specific assignment by ID
-              parameters:
-                - name: organization_id
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: assignment_id
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-              responses:
-                '200':
-                  description: OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      schema:
-                        type: string
-                '400':
-                  description: Bad Request
-                '404':
-                  description: Not Found
-              security:
-                - CognitoAuthorizer: []
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
-                passthroughBehavior: when_no_match
-                contentHandling: CONVERT_TO_TEXT
-                type: aws_proxy
-                requestParameters:
-                  integration.request.header.x-user-id: context.authorizer.claims.sub
             patch:
               operationId: backend_update_assignment_api_organizations__organization_id__assignments__assignment_id__patch
               summary: Update an existing assignment
@@ -243,41 +208,6 @@ Resources:
                   application/json:
                     schema:
                       type: object
-              responses:
-                '200':
-                  description: OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      schema:
-                        type: string
-                '400':
-                  description: Bad Request
-                '404':
-                  description: Not Found
-              security:
-                - CognitoAuthorizer: []
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
-                passthroughBehavior: when_no_match
-                contentHandling: CONVERT_TO_TEXT
-                type: aws_proxy
-                requestParameters:
-                  integration.request.header.x-user-id: context.authorizer.claims.sub
-            delete:
-              operationId: backend_delete_assignment_api_organizations__organization_id__assignments__assignment_id__delete
-              summary: Delete an assignment
-              parameters:
-                - name: organization_id
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: assignment_id
-                  in: path
-                  required: true
-                  schema:
-                    type: string
               responses:
                 '200':
                   description: OK
@@ -322,7 +252,7 @@ Resources:
                     statusCode: '200'
                     responseParameters:
                       method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id'"
-                      method.response.header.Access-Control-Allow-Methods: "'GET,PATCH,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Methods: "'PATCH,OPTIONS'"
                       method.response.header.Access-Control-Allow-Origin: "'*'"
           "/api/organizations/{organization_id}/assignments/{assignment_id}/status":
             patch:
@@ -411,7 +341,7 @@ Resources:
                   required: false
                   schema:
                     type: integer
-                - name: pageSize
+                - name: page_size
                   in: query
                   required: false
                   schema:
@@ -503,21 +433,21 @@ Resources:
                       method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id'"
                       method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
                       method.response.header.Access-Control-Allow-Origin: "'*'"
-          "/api/organizations/{organization_id}/branches/{branch_id}":
+          "/api/organizations/{organization_id}/branches/{branch_code}":
             get:
-              operationId: backend_get_branch_api_organizations__organization_id__branches__branch_id__get
-              summary: Get a specific branch by ID
+              operationId: backend_get_branch_api_organizations__organization_id__branches__branch_code__get
+              summary: Get a specific branch by its integer code
               parameters:
                 - name: organization_id
                   in: path
                   required: true
                   schema:
                     type: string
-                - name: branch_id
+                - name: branch_code
                   in: path
                   required: true
                   schema:
-                    type: string
+                    type: integer
               responses:
                 '200':
                   description: OK
@@ -540,19 +470,19 @@ Resources:
                 requestParameters:
                   integration.request.header.x-user-id: context.authorizer.claims.sub
             patch:
-              operationId: backend_update_branch_api_organizations__organization_id__branches__branch_id__patch
-              summary: Update an existing branch
+              operationId: backend_update_branch_api_organizations__organization_id__branches__branch_code__patch
+              summary: Update an existing branch by its integer code
               parameters:
                 - name: organization_id
                   in: path
                   required: true
                   schema:
                     type: string
-                - name: branch_id
+                - name: branch_code
                   in: path
                   required: true
                   schema:
-                    type: string
+                    type: integer
               requestBody:
                 required: true
                 content:
@@ -581,19 +511,19 @@ Resources:
                 requestParameters:
                   integration.request.header.x-user-id: context.authorizer.claims.sub
             delete:
-              operationId: backend_delete_branch_api_organizations__organization_id__branches__branch_id__delete
-              summary: Delete a branch
+              operationId: backend_delete_branch_api_organizations__organization_id__branches__branch_code__delete
+              summary: Delete a branch by its integer code
               parameters:
                 - name: organization_id
                   in: path
                   required: true
                   schema:
                     type: string
-                - name: branch_id
+                - name: branch_code
                   in: path
                   required: true
                   schema:
-                    type: string
+                    type: integer
               responses:
                 '200':
                   description: OK
@@ -640,9 +570,9 @@ Resources:
                       method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id'"
                       method.response.header.Access-Control-Allow-Methods: "'GET,PATCH,DELETE,OPTIONS'"
                       method.response.header.Access-Control-Allow-Origin: "'*'"
-          "/api/organizations/{organization_id}/branches/{branch_id}/status":
+          "/api/organizations/{organization_id}/branches/{branch_code}/status":
             patch:
-              operationId: backend_update_branch_status_api_organizations__organization_id__branches__branch_id__status_patch
+              operationId: backend_update_branch_status_api_organizations__organization_id__branches__branch_code__status_patch
               summary: Update branch status
               parameters:
                 - name: organization_id
@@ -650,11 +580,11 @@ Resources:
                   required: true
                   schema:
                     type: string
-                - name: branch_id
+                - name: branch_code
                   in: path
                   required: true
                   schema:
-                    type: string
+                    type: integer
               requestBody:
                 required: true
                 content:
@@ -707,21 +637,21 @@ Resources:
                       method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id'"
                       method.response.header.Access-Control-Allow-Methods: "'PATCH,OPTIONS'"
                       method.response.header.Access-Control-Allow-Origin: "'*'"
-          "/api/organizations/{organization_id}/branches/{branch_id}/terminals":
+          "/api/organizations/{organization_id}/branches/{branch_code}/terminals":
             get:
-              operationId: backend_list_terminals_api_organizations__organization_id__branches__branch_id__terminals_get
-              summary: Get all terminals for a branch
+              operationId: backend_list_terminals_api_organizations__organization_id__branches__branch_code__terminals_get
+              summary: Get all terminals for a branch (by branch integer code)
               parameters:
                 - name: organization_id
                   in: path
                   required: true
                   schema:
                     type: string
-                - name: branch_id
+                - name: branch_code
                   in: path
                   required: true
                   schema:
-                    type: string
+                    type: integer
                 - name: search
                   in: query
                   required: false
@@ -732,7 +662,7 @@ Resources:
                   required: false
                   schema:
                     type: integer
-                - name: pageSize
+                - name: page_size
                   in: query
                   required: false
                   schema:
@@ -759,19 +689,19 @@ Resources:
                 requestParameters:
                   integration.request.header.x-user-id: context.authorizer.claims.sub
             post:
-              operationId: backend_create_terminal_api_organizations__organization_id__branches__branch_id__terminals_post
-              summary: Create a new terminal
+              operationId: backend_create_terminal_api_organizations__organization_id__branches__branch_code__terminals_post
+              summary: Create a new terminal under a branch
               parameters:
                 - name: organization_id
                   in: path
                   required: true
                   schema:
                     type: string
-                - name: branch_id
+                - name: branch_code
                   in: path
                   required: true
                   schema:
-                    type: string
+                    type: integer
               requestBody:
                 required: true
                 content:
@@ -824,26 +754,26 @@ Resources:
                       method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id'"
                       method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
                       method.response.header.Access-Control-Allow-Origin: "'*'"
-          "/api/organizations/{organization_id}/branches/{branch_id}/terminals/{terminal_id}":
+          "/api/organizations/{organization_id}/branches/{branch_code}/terminals/{terminal_code}":
             get:
-              operationId: backend_get_terminal_api_organizations__organization_id__branches__branch_id__terminals__terminal_id__get
-              summary: Get a specific terminal by ID
+              operationId: backend_get_terminal_api_organizations__organization_id__branches__branch_code__terminals__terminal_code__get
+              summary: Get a specific terminal by its integer code within a branch
               parameters:
                 - name: organization_id
                   in: path
                   required: true
                   schema:
                     type: string
-                - name: branch_id
+                - name: branch_code
                   in: path
                   required: true
                   schema:
-                    type: string
-                - name: terminal_id
+                    type: integer
+                - name: terminal_code
                   in: path
                   required: true
                   schema:
-                    type: string
+                    type: integer
               responses:
                 '200':
                   description: OK
@@ -866,24 +796,24 @@ Resources:
                 requestParameters:
                   integration.request.header.x-user-id: context.authorizer.claims.sub
             patch:
-              operationId: backend_update_terminal_api_organizations__organization_id__branches__branch_id__terminals__terminal_id__patch
-              summary: Update an existing terminal
+              operationId: backend_update_terminal_api_organizations__organization_id__branches__branch_code__terminals__terminal_code__patch
+              summary: Update an existing terminal by its integer code
               parameters:
                 - name: organization_id
                   in: path
                   required: true
                   schema:
                     type: string
-                - name: branch_id
+                - name: branch_code
                   in: path
                   required: true
                   schema:
-                    type: string
-                - name: terminal_id
+                    type: integer
+                - name: terminal_code
                   in: path
                   required: true
                   schema:
-                    type: string
+                    type: integer
               requestBody:
                 required: true
                 content:
@@ -912,24 +842,24 @@ Resources:
                 requestParameters:
                   integration.request.header.x-user-id: context.authorizer.claims.sub
             delete:
-              operationId: backend_delete_terminal_api_organizations__organization_id__branches__branch_id__terminals__terminal_id__delete
-              summary: Delete a terminal
+              operationId: backend_delete_terminal_api_organizations__organization_id__branches__branch_code__terminals__terminal_code__delete
+              summary: Delete a terminal by its integer code
               parameters:
                 - name: organization_id
                   in: path
                   required: true
                   schema:
                     type: string
-                - name: branch_id
+                - name: branch_code
                   in: path
                   required: true
                   schema:
-                    type: string
-                - name: terminal_id
+                    type: integer
+                - name: terminal_code
                   in: path
                   required: true
                   schema:
-                    type: string
+                    type: integer
               responses:
                 '200':
                   description: OK
@@ -976,9 +906,9 @@ Resources:
                       method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id'"
                       method.response.header.Access-Control-Allow-Methods: "'GET,PATCH,DELETE,OPTIONS'"
                       method.response.header.Access-Control-Allow-Origin: "'*'"
-          "/api/organizations/{organization_id}/branches/{branch_id}/terminals/{terminal_id}/status":
+          "/api/organizations/{organization_id}/branches/{branch_code}/terminals/{terminal_code}/status":
             patch:
-              operationId: backend_update_terminal_status_api_organizations__organization_id__branches__branch_id__terminals__terminal_id__status_patch
+              operationId: backend_update_terminal_status_api_organizations__organization_id__branches__branch_code__terminals__terminal_code__status_patch
               summary: Update terminal status
               parameters:
                 - name: organization_id
@@ -986,16 +916,16 @@ Resources:
                   required: true
                   schema:
                     type: string
-                - name: branch_id
+                - name: branch_code
                   in: path
                   required: true
                   schema:
-                    type: string
-                - name: terminal_id
+                    type: integer
+                - name: terminal_code
                   in: path
                   required: true
                   schema:
-                    type: string
+                    type: integer
               requestBody:
                 required: true
                 content:
@@ -1063,7 +993,7 @@ Resources:
                   required: false
                   schema:
                     type: integer
-                - name: pageSize
+                - name: page_size
                   in: query
                   required: false
                   schema:
@@ -1348,7 +1278,7 @@ Resources:
                   required: false
                   schema:
                     type: integer
-                - name: pageSize
+                - name: page_size
                   in: query
                   required: false
                   schema:
@@ -1603,7 +1533,7 @@ Resources:
                   required: false
                   schema:
                     type: integer
-                - name: pageSize
+                - name: page_size
                   in: query
                   required: false
                   schema:
@@ -1918,7 +1848,7 @@ Resources:
                   required: false
                   schema:
                     type: integer
-                - name: pageSize
+                - name: page_size
                   in: query
                   required: false
                   schema:
@@ -2255,7 +2185,7 @@ Resources:
                   required: false
                   schema:
                     type: integer
-                - name: pageSize
+                - name: page_size
                   in: query
                   required: false
                   schema:
@@ -2642,7 +2572,7 @@ Resources:
                   required: false
                   schema:
                     type: integer
-                - name: pageSize
+                - name: page_size
                   in: query
                   required: false
                   schema:
@@ -2984,7 +2914,7 @@ Resources:
                   required: false
                   schema:
                     type: integer
-                - name: pageSize
+                - name: page_size
                   in: query
                   required: false
                   schema:
@@ -3280,7 +3210,7 @@ Resources:
                   required: false
                   schema:
                     type: integer
-                - name: pageSize
+                - name: page_size
                   in: query
                   required: false
                   schema:
@@ -3649,7 +3579,7 @@ Resources:
                   required: false
                   schema:
                     type: integer
-                - name: pageSize
+                - name: page_size
                   in: query
                   required: false
                   schema:
@@ -3797,6 +3727,62 @@ Resources:
                     responseParameters:
                       method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id'"
                       method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+          "/api/organizations/{organization_id}/products/price-bounds":
+            get:
+              operationId: backend_get_product_price_bounds_api_organizations__organization_id__products_price_bounds_get
+              summary: "Min/max bounds of net & sale price across the org's products"
+              parameters:
+                - name: organization_id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+              responses:
+                '200':
+                  description: OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                '400':
+                  description: Bad Request
+                '404':
+                  description: Not Found
+              security:
+                - CognitoAuthorizer: []
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
+                passthroughBehavior: when_no_match
+                contentHandling: CONVERT_TO_TEXT
+                type: aws_proxy
+                requestParameters:
+                  integration.request.header.x-user-id: context.authorizer.claims.sub
+            options:
+              responses:
+                '200':
+                  description: CORS OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
                       method.response.header.Access-Control-Allow-Origin: "'*'"
           "/api/organizations/{organization_id}/products/{product_id}":
             get:
@@ -3967,6 +3953,169 @@ Resources:
                       method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id'"
                       method.response.header.Access-Control-Allow-Methods: "'PATCH,OPTIONS'"
                       method.response.header.Access-Control-Allow-Origin: "'*'"
+          "/api/organizations/{organization_id}/sales":
+            get:
+              operationId: backend_list_sales_api_organizations__organization_id__sales_get
+              summary: List sales for an organization
+              parameters:
+                - name: organization_id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  required: false
+                  schema:
+                    type: integer
+                - name: page_size
+                  in: query
+                  required: false
+                  schema:
+                    type: integer
+              responses:
+                '200':
+                  description: OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                '400':
+                  description: Bad Request
+                '404':
+                  description: Not Found
+              security:
+                - CognitoAuthorizer: []
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
+                passthroughBehavior: when_no_match
+                contentHandling: CONVERT_TO_TEXT
+                type: aws_proxy
+                requestParameters:
+                  integration.request.header.x-user-id: context.authorizer.claims.sub
+            post:
+              operationId: backend_create_sale_api_organizations__organization_id__sales_post
+              summary: Register a new sale
+              parameters:
+                - name: organization_id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+              responses:
+                '200':
+                  description: OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                '400':
+                  description: Bad Request
+                '404':
+                  description: Not Found
+              security:
+                - CognitoAuthorizer: []
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
+                passthroughBehavior: when_no_match
+                contentHandling: CONVERT_TO_TEXT
+                type: aws_proxy
+                requestParameters:
+                  integration.request.header.x-user-id: context.authorizer.claims.sub
+            options:
+              responses:
+                '200':
+                  description: CORS OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+          "/api/organizations/{organization_id}/sales/{sale_id}":
+            get:
+              operationId: backend_get_sale_api_organizations__organization_id__sales__sale_id__get
+              summary: Get a specific sale with its line items
+              parameters:
+                - name: organization_id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: sale_id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+              responses:
+                '200':
+                  description: OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                '400':
+                  description: Bad Request
+                '404':
+                  description: Not Found
+              security:
+                - CognitoAuthorizer: []
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
+                passthroughBehavior: when_no_match
+                contentHandling: CONVERT_TO_TEXT
+                type: aws_proxy
+                requestParameters:
+                  integration.request.header.x-user-id: context.authorizer.claims.sub
+            options:
+              responses:
+                '200':
+                  description: CORS OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
           "/api/organizations/{organization_id}/sessions":
             get:
               operationId: backend_list_sessions_api_organizations__organization_id__sessions_get
@@ -3987,7 +4136,7 @@ Resources:
                   required: false
                   schema:
                     type: integer
-                - name: pageSize
+                - name: page_size
                   in: query
                   required: false
                   schema:
@@ -4293,10 +4442,76 @@ Resources:
                       method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id'"
                       method.response.header.Access-Control-Allow-Methods: "'PATCH,OPTIONS'"
                       method.response.header.Access-Control-Allow-Origin: "'*'"
+          "/api/organizations/{organization_id}/terminals/{terminal_id}/consecutives/by-code/{document_type_code}":
+            get:
+              operationId: backend_format_terminal_consecutive_api_organizations__organization_id__terminals__terminal_id__consecutives_by_code__document_type_code__get
+              summary: Get the formatted consecutive for (terminal, doc-type code) — does NOT increment
+              parameters:
+                - name: organization_id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: terminal_id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: document_type_code
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+              responses:
+                '200':
+                  description: OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                '400':
+                  description: Bad Request
+                '404':
+                  description: Not Found
+              security:
+                - CognitoAuthorizer: []
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
+                passthroughBehavior: when_no_match
+                contentHandling: CONVERT_TO_TEXT
+                type: aws_proxy
+                requestParameters:
+                  integration.request.header.x-user-id: context.authorizer.claims.sub
+            options:
+              responses:
+                '200':
+                  description: CORS OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
           "/api/organizations/{organization_id}/terminals/{terminal_id}/consecutives/{document_type_id}":
             get:
               operationId: backend_get_terminal_consecutive_api_organizations__organization_id__terminals__terminal_id__consecutives__document_type_id__get
-              summary: Get (and optionally increment) a consecutive for a terminal and document type
+              summary: Read the current consecutive for a terminal + document type (read-only, never increments)
               parameters:
                 - name: organization_id
                   in: path
@@ -4318,6 +4533,82 @@ Resources:
                   required: false
                   schema:
                     type: boolean
+              responses:
+                '200':
+                  description: OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                '400':
+                  description: Bad Request
+                '404':
+                  description: Not Found
+              security:
+                - CognitoAuthorizer: []
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cd-backend-${Environment}-lambda/invocations"
+                passthroughBehavior: when_no_match
+                contentHandling: CONVERT_TO_TEXT
+                type: aws_proxy
+                requestParameters:
+                  integration.request.header.x-user-id: context.authorizer.claims.sub
+            options:
+              responses:
+                '200':
+                  description: CORS OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Methods:
+                      schema:
+                        type: string
+                    Access-Control-Allow-Headers:
+                      schema:
+                        type: string
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+          "/api/users/{user_id}/organizations/{organization_id}/assignments":
+            get:
+              operationId: backend_list_user_assignments_api_users__user_id__organizations__organization_id__assignments_get
+              summary: Get assignments for a specific user within an organization
+              parameters:
+                - name: user_id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: organization_id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: search
+                  in: query
+                  required: false
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  required: false
+                  schema:
+                    type: integer
+                - name: pageSize
+                  in: query
+                  required: false
+                  schema:
+                    type: integer
               responses:
                 '200':
                   description: OK
