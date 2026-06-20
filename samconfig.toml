@@ -12,7 +12,7 @@ use_container = true
 [default.deploy]
 [default.deploy.parameters]
 stack_name          = "cd-backend-dev-lambda"
-s3_bucket           = "jcampos-dev-sam-deployments"
+s3_bucket           = "tsuru-dev-sam-deployments"
 s3_prefix           = "cd-backend-dev-lambda"
 region              = "us-east-1"
 confirm_changeset   = false
@@ -31,7 +31,7 @@ use_container = true
 [dev.deploy]
 [dev.deploy.parameters]
 stack_name          = "cd-backend-dev-lambda"
-s3_bucket           = "jcampos-dev-sam-deployments"
+s3_bucket           = "tsuru-dev-sam-deployments"
 s3_prefix           = "cd-backend-dev-lambda"
 region              = "us-east-1"
 confirm_changeset   = false
@@ -50,7 +50,7 @@ use_container = true
 [stag.deploy]
 [stag.deploy.parameters]
 stack_name          = "cd-backend-stag-lambda"
-s3_bucket           = "jcampos-stag-sam-deployments"
+s3_bucket           = "tsuru-stag-sam-deployments"
 s3_prefix           = "cd-backend-stag-lambda"
 region              = "us-east-1"
 confirm_changeset   = false
@@ -69,7 +69,7 @@ use_container = true
 [prod.deploy]
 [prod.deploy.parameters]
 stack_name          = "cd-backend-prod-lambda"
-s3_bucket           = "jcampos-prod-sam-deployments"
+s3_bucket           = "tsuru-prod-sam-deployments"
 s3_prefix           = "cd-backend-prod-lambda"
 region              = "us-east-1"
 confirm_changeset   = false
