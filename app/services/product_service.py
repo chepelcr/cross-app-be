@@ -21,6 +21,7 @@ from app.dtos.responses.pagination_dto import PaginationResponse
 from app.dtos.responses.product_bounds_dto import ProductPriceBoundsResponse
 from app.enums.product_search_filters import ProductSearchFilters
 from app.enums.product_status import ProductStatus
+from app.enums.product_type import ProductType
 from app.models.product import Product
 from app.repositories.product_repository import ProductRepository
 from app.services import cabys_service
@@ -164,6 +165,7 @@ def create_product(organization_id: str, dto: ProductRequestDTO) -> ProductRespo
             status=ProductStatus.ACTIVE,
             units_per_box=dto.units_per_box,
         )
+        _apply_catalogue_fields(product, dto)
         repo.session.add(product)
         repo.session.flush()
 
@@ -202,6 +204,8 @@ def update_product(
             product.price = dto.price
         if dto.category_id is not None:
             product.category_id = dto.category_id
+
+        _apply_catalogue_fields(product, dto)
 
         if dto.image and dto.image.data:
             url = _save_product_image(organization_id, product.id, dto.image)
@@ -248,6 +252,40 @@ def update_product_status(
         product.status = status
         repo.save(product)
         return _map_product(product)
+
+
+def _apply_catalogue_fields(product: Product, dto: ProductRequestDTO) -> None:
+    """Apply storefront catalogue flags (type / is_service / on_sale / is_offer)
+    from the request DTO onto the product (mutates in place).
+
+    ``type`` is the canonical kind selector; ``is_service`` is kept in sync so
+    legacy readers that still check the boolean stay consistent.
+    """
+    if dto.type is not None:
+        product.type = dto.type
+        # Keep the legacy boolean consistent with the canonical kind.
+        product.is_service = dto.type == ProductType.SERVICE.value
+    if dto.is_service is not None:
+        product.is_service = dto.is_service
+        # Reconcile a bare is_service toggle into the canonical kind.
+        if dto.type is None:
+            product.type = (
+                ProductType.SERVICE.value if dto.is_service else ProductType.PRODUCT.value
+            )
+    if dto.on_sale is not None:
+        product.on_sale = dto.on_sale
+    if dto.original_price is not None:
+        product.original_price = dto.original_price
+    if dto.discount is not None:
+        product.discount = dto.discount
+    if dto.is_offer is not None:
+        product.is_offer = dto.is_offer
+    if dto.stock_quantity is not None:
+        product.stock_quantity = dto.stock_quantity
+    if dto.low_stock_threshold is not None:
+        product.low_stock_threshold = dto.low_stock_threshold
+    if dto.track_inventory is not None:
+        product.track_inventory = dto.track_inventory
 
 
 def _apply_fiscal_fields(product: Product, dto: ProductRequestDTO, repo) -> None:
@@ -438,6 +476,16 @@ def _map_product(product: Product) -> ProductResponse:
         price=product.price,
         image_url=product.image_url,
         category=category,
+        status=product.status,
+        stock_quantity=product.stock_quantity,
+        low_stock_threshold=product.low_stock_threshold,
+        track_inventory=product.track_inventory,
+        is_service=product.is_service,
+        type=product.type or ProductType.PRODUCT.value,
+        on_sale=product.on_sale,
+        is_offer=product.is_offer,
+        original_price=product.original_price,
+        discount=product.discount,
         cabys=cabys_response,
         unit_measure=product.unit_measure,
         commercial_unit_measure=product.commercial_unit_measure,

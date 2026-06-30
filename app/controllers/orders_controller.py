@@ -5,6 +5,8 @@ from fastapi import Body, FastAPI, HTTPException, Path, Query
 from app.dtos.files import ExcelDTO, ExcelAndColorDTO
 from app.dtos import OrderListResponse, OrderResponse, SelectColorDTO
 from app.dtos.requests.status_request_dto import StatusRequestDTO
+from app.dtos.requests.storefront_order_dto import CreateStorefrontOrderDTO
+from app.dtos.responses.storefront_order_dto import StorefrontOrderCreatedResponse
 from app.services import order_service
 
 
@@ -13,6 +15,44 @@ class OrdersController:
         self.register_routes(app)
 
     def register_routes(self, app: FastAPI):
+        @app.post(
+            "/api/organizations/{organization_id}/orders",
+            response_model=StorefrontOrderCreatedResponse,
+            status_code=201,
+            tags=["orders"],
+            summary="Create a storefront pedido (anonymous tracked order)",
+            description="""Create a tracked order/pedido from a public storefront.
+
+This endpoint is **anonymous** — it lives under `/api/organizations/` (no
+`x-user-id` required), so guest visitors of a deployed storefront can place an
+order without logging in.
+
+**Body**
+- `customer_name`, `customer_phone`: the guest customer
+- `delivery_method`: e.g. `delivery` / `pickup`
+- `address`: structured Costa Rica address — `state_id` (provincia),
+  `county_id` (cantón), `district_id` (distrito), `neighborhood_id` (barrio)
+  and `address` (dirección exacta)
+- `items`: `[{ product_id, quantity }]` referencing existing products
+
+The order is created with `order_status = "pending"`; totals are computed from
+each product's net price. Returns the order id plus a public **tracking
+number** to hand off to WhatsApp.
+""",
+        )
+        async def create_storefront_order(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            body: CreateStorefrontOrderDTO = Body(...),
+        ):
+            try:
+                return order_service.create_storefront_order(organization_id, body)
+            except LookupError as e:
+                raise HTTPException(status_code=404, detail=str(e))
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
         @app.post(
             "/api/organizations/{organization_id}/orders/parse",
             response_model=OrderResponse,

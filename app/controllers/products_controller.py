@@ -36,6 +36,8 @@ class ProductsController:
 - `categoryId`: Filter by category ID (exact match)
 - `categoryName`: Filter by category name (supports wildcards)
 - `status`: Filter by product status (1=Active, 2=Inactive, 3=Deleted)
+- `type`: Filter by product kind (`type:product`, `type:service`, `type:program`)
+- `isOffer`: Filter by storefront "Oferta" flag (`isOffer:true` / `isOffer:false`)
 - `price`: Filter by net price (supports between with `~`)
   - Single value: `price:100` (exact match)
   - Range: `price:50~150` (between 50 and 150)
@@ -58,6 +60,8 @@ class ProductsController:
 - `categoryName:*electronics*,status:1` - Active products in electronics category
 - `status:2` - Inactive products
 - `status:1` - Active products only
+- `type:product,isOffer:true` - Products flagged as offers (storefront "Ofertas")
+- `type:program` - Programs only
 - `price:50~150` - Products with net price between 50 and 150
 - `salePrice:50~150` - Products with sale price between 50 and 150
 - `price>100,orderBy>price` - Products over 100, sorted by net price

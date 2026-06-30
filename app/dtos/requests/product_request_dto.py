@@ -11,6 +11,7 @@ from app.enums.hacienda_codes import (
     TaxRateCode,
     TaxType,
 )
+from app.enums.product_type import ProductType
 
 
 # ---------------------------------------------------------------------------
@@ -186,8 +187,11 @@ class ProductRequestDTO(BaseModel):
     low_stock_threshold: Optional[int] = Field(None)
     track_inventory: Optional[bool] = Field(None)
     is_service: Optional[bool] = Field(None)
+    # First-class product kind: product | service | program.
     type: Optional[str] = Field(None)
     on_sale: Optional[bool] = Field(None)
+    # Storefront "Oferta" flag (independent of the on_sale discount mechanic).
+    is_offer: Optional[bool] = Field(None)
     original_price: Optional[int] = Field(None)
     discount: Optional[int] = Field(None)
 
@@ -222,6 +226,18 @@ class ProductRequestDTO(BaseModel):
     # FE so the canonical id-on-product survives a save/edit cycle. Distinct
     # from the line-level `factory_tax` code derived at cart-add time.
     factory_tax_charge_id: Optional[int] = Field(None)
+
+    @field_validator("type")
+    @classmethod
+    def _validate_type(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        if not ProductType.is_valid(value):
+            raise ValueError(
+                f"type {value!r} is not a valid product type "
+                f"(allowed: {ProductType.values()})."
+            )
+        return value
 
     @field_validator("iva_collected_factory")
     @classmethod

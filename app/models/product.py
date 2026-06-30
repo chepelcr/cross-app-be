@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
 from app.enums.product_status import ProductStatus
+from app.enums.product_type import ProductType
 
 
 class Product(Base, TimestampMixin):
@@ -37,8 +38,15 @@ class Product(Base, TimestampMixin):
     low_stock_threshold: Mapped[int] = mapped_column(Integer, nullable=False, default=10)
     track_inventory: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_service: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    type: Mapped[str] = mapped_column(String(20), nullable=False, default="product")
+    # First-class product kind: product | service | program. ``is_service`` is
+    # kept for backward compatibility (mirrors ``type == 'service'``).
+    type: Mapped[str] = mapped_column(
+        String(20), nullable=False, default=ProductType.PRODUCT.value, index=True
+    )
     on_sale: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Storefront "Oferta" flag — independent of the ``on_sale`` discount
+    # mechanic; flags a product/service the store wants to feature as an offer.
+    is_offer: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
     original_price: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     discount: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     duration: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)

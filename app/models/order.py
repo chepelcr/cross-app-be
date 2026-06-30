@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import List, Optional
 
-from sqlalchemy import BigInteger, ForeignKey, Index, Numeric, String
+from sqlalchemy import BigInteger, ForeignKey, Index, Integer, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -45,6 +45,24 @@ class Order(Base, AuditMixin):
     )
     confirmation_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     report_color: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, default="green")
+
+    # --- Storefront (anonymous) pedido fields (TSR-118 / W11) --------------
+    # A tracked order placed from a public storefront. The customer is a guest
+    # (no user account / no Client row required), so name/phone are captured
+    # inline alongside the structured CR address (W9: provincia / cantón /
+    # distrito / barrio + dirección exacta) and a public tracking number.
+    tracking_number: Mapped[Optional[str]] = mapped_column(
+        String(50), nullable=True, index=True
+    )
+    customer_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    customer_phone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    delivery_method: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    # Structured Costa Rica location cascade (data-be catalog ids).
+    state_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    county_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    district_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    neighborhood_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    delivery_address: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
     # Normalized FK columns
     client_id: Mapped[Optional[uuid.UUID]] = mapped_column(

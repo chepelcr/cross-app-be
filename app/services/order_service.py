@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import logging
+import secrets
+from datetime import datetime, timezone
 from io import BytesIO
 
 from app.dtos.files import ExcelDTO, ExcelAndColorDTO
 from app.dtos import OrderListResponse, OrderResponse, SelectColorDTO
+from app.dtos.requests.storefront_order_dto import CreateStorefrontOrderDTO
+from app.dtos.responses.storefront_order_dto import StorefrontOrderCreatedResponse
 from app.enums.report_color import ReportColorScheme, get_color_palette
 from app.dtos.responses.order_dto import PaginationResponse
 from app.mappers.orders_mapper import build_crossdocking_data, order_to_response
@@ -438,6 +442,105 @@ def update_order_status(organization_id: str, document_number: str, status_code:
         order.order_status = status
         order = repo.save(order)
         return order_to_response(order)
+
+
+def _generate_tracking_number() -> str:
+    """Generate a short, human-friendly public tracking number.
+
+    Format: ``TSU-YYYYMMDD-XXXXXX`` where the suffix is a random uppercase
+    alphanumeric token. Used as both the order document number and the public
+    tracking handle handed off to WhatsApp.
+    """
+    today = datetime.now(timezone.utc).strftime("%Y%m%d")
+    alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"  # no ambiguous chars
+    suffix = "".join(secrets.choice(alphabet) for _ in range(6))
+    return f"TSU-{today}-{suffix}"
+
+
+def create_storefront_order(
+    organization_id: str, dto: CreateStorefrontOrderDTO
+) -> StorefrontOrderCreatedResponse:
+    """Create an anonymous storefront pedido (tracked order, status 'pending').
+
+    Builds an Order from a guest customer (name/phone), a structured CR
+    address, a delivery method and line items referencing existing products.
+    Totals are computed from the products' net price. Returns the order id and
+    a public tracking number.
+    """
+    with OrderRepository() as repo:
+        product_repo = ProductRepository.from_session(repo.session)
+
+        # Generate a unique tracking/document number (retry on the rare clash).
+        tracking_number = _generate_tracking_number()
+        for _ in range(5):
+            if not repo.find_by_company_and_document(organization_id, tracking_number):
+                break
+            tracking_number = _generate_tracking_number()
+
+        address = dto.address
+        order = Order(
+            company_id=organization_id,
+            document_number=tracking_number,
+            tracking_number=tracking_number,
+            creation_date=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            order_status="pending",
+            order_type="storefront",
+            customer_name=dto.customer_name,
+            customer_phone=dto.customer_phone,
+            delivery_method=dto.delivery_method,
+            comment=dto.comment,
+            state_id=address.state_id if address else None,
+            county_id=address.county_id if address else None,
+            district_id=address.district_id if address else None,
+            neighborhood_id=address.neighborhood_id if address else None,
+            delivery_address=address.address if address else None,
+        )
+
+        subtotal = 0.0
+        total_quantities = 0
+        for idx, item in enumerate(dto.items, start=1):
+            product = product_repo.find_by_id_and_company(item.product_id, organization_id)
+            if not product:
+                raise LookupError(
+                    f"Product '{item.product_id}' not found for organization "
+                    f"{organization_id}"
+                )
+
+            unit_price = float(product.price or 0)
+            line_total = unit_price * item.quantity
+            subtotal += line_total
+            total_quantities += item.quantity
+
+            order.lines.append(
+                OrderLine(
+                    line_number=idx,
+                    quantity_ordered=item.quantity,
+                    units_ordered=item.quantity,
+                    unit_price=unit_price,
+                    discount=0,
+                    line_total=line_total,
+                    tax=0,
+                    product_id=product.id,
+                )
+            )
+
+        order.subtotal = subtotal
+        order.discounts = 0
+        order.net_total = subtotal
+        order.taxes = 0
+        order.grand_total = subtotal
+        order.total_quantities = total_quantities
+        order.line_count = len(order.lines)
+
+        order = repo.save(order)
+
+        return StorefrontOrderCreatedResponse(
+            order_id=order.order_id,
+            document_number=order.document_number,
+            tracking_number=order.tracking_number or order.document_number,
+            order_status=order.order_status or "pending",
+            grand_total=float(order.grand_total or 0),
+        )
 
 
 def _upsert_order_entities(
