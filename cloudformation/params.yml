@@ -20,32 +20,32 @@ Parameters:
   S3Bucket:
     Type: String
     Description: S3 bucket name for file uploads
-    Default: ""
+    Default: "tsuru-uploads-dev"
 
   PdfDomain:
     Type: String
-    Description: Public domain for serving PDF/file URLs (e.g. https://tsuru-uploads.jcampos.dev)
-    Default: ""
+    Description: Public domain for serving PDF/file URLs
+    Default: "https://uploads.tsuru.jcampos.dev"
 
   EmailSender:
     Type: String
     Description: SES verified sender address
-    Default: ""
+    Default: "tsuru@jcampos.dev"
 
   EmailRecipient:
     Type: String
     Description: Default email recipient
-    Default: ""
+    Default: "tsuru@jcampos.dev"
 
   ApiServicesUrl:
     Type: String
-    Description: Internal services API base URL
-    Default: ""
+    Description: Internal (data) services API base URL
+    Default: "https://data-api.tsuru.jcampos.dev"
 
   ApiOrganizationsUrl:
     Type: String
-    Description: Organizations API URL template (e.g. /api/organizations/%s)
-    Default: ""
+    Description: Organizations API URL template
+    Default: "https://api.tsuru.jcampos.dev/api/organizations/%s"
 
   # ── Optional parameters (guarded by Conditions) ───────────────────────
   CloudfrontDistributionId:

@@ -89,7 +89,7 @@ done
 # ── AWS profile ───────────────────────────────────────────────────────────
 PROFILE_ARG=""
 if [ "$USE_PROFILE" = true ]; then
-  PROFILE="J-CAMPOS"
+  PROFILE="PACIFIC-PROD"
   PROFILE_ARG="--profile $PROFILE"
 fi
 
@@ -109,7 +109,7 @@ fi
 # ============================================
 # Deploy SSM Parameters stack
 # ============================================
-PARAMS_STACK="jcampos-${ENVIRONMENT}-cd-backend-ssm-params"
+PARAMS_STACK="tsuru-${ENVIRONMENT}-cd-backend-ssm-params"
 
 echo ""
 echo "Deploying SSM Parameters: $PARAMS_STACK"
@@ -136,10 +136,10 @@ aws cloudformation deploy \
 
 echo ""
 echo "============================================"
-echo "Done! SSM parameters under /jcampos/${ENVIRONMENT}/cd-backend/"
+echo "Done! SSM parameters under /tsuru/${ENVIRONMENT}/cd-backend/"
 echo "  aws/stage                  -> $ENVIRONMENT"
 echo "  aws/region                 -> $REGION"
-echo "  aws/database               -> jcampos/${ENVIRONMENT}/database (shared secret, set by build-secrets.sh)"
+echo "  aws/database               -> tsuru/${ENVIRONMENT}/database (shared secret, set by build-secrets.sh)"
 echo "  s3/bucket                  -> ${S3_BUCKET:-<empty>}"
 echo "  pdf/domain                 -> ${PDF_DOMAIN:-<empty>}"
 echo "  email/sender               -> ${EMAIL_SENDER:-<empty>}"
