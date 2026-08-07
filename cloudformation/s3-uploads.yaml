@@ -1,20 +1,20 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'CloudFront distribution and S3 bucket for jmarkets file uploads'
+Description: 'CloudFront distribution and S3 bucket for Tsuru file uploads'
 
 Parameters:
   BucketName:
     Type: String
-    Default: 'tsuru-uploads-tsuru-dev'
+    Default: 'tsuru-uploads-dev'
     Description: 'Name for the S3 bucket'
   
   DomainName:
     Type: String
-    Default: 'tsuru-uploads.jcampos.dev'
+    Default: 'uploads.tsuru.jcampos.dev'
     Description: 'Custom domain name'
 
   FrontEndDomainName:
     Type: String
-    Default: 'admin.j-markets.jcampos.dev'
+    Default: 'app.tsuru.jcampos.dev'
     Description: 'Custom domain name'
   
   HostedZoneId:
@@ -22,9 +22,25 @@ Parameters:
     Description: 'Existing Route53 Hosted Zone ID for jcampos.dev'
 
 Resources:
+  # tsuru.jcampos.dev is a GitHub Pages CNAME. Define CAA at this exact
+  # subdomain so ACM does not inherit GitHub's certificate-authority policy.
+  UploadsCaaRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: CAA
+      TTL: 300
+      ResourceRecords:
+        - '0 issue "amazon.com"'
+        - '0 issue "amazonaws.com"'
+        - '0 issue "amazontrust.com"'
+        - '0 issue "awstrust.com"'
+
   # SSL Certificate
   SSLCertificate:
     Type: AWS::CertificateManager::Certificate
+    DependsOn: UploadsCaaRecord
     Properties:
       DomainName: !Ref DomainName
       ValidationMethod: DNS
@@ -35,6 +51,8 @@ Resources:
   # S3 Bucket
   S3Bucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Ref BucketName
       CorsConfiguration:

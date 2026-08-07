@@ -56,7 +56,7 @@ class FastApiConfig:
     def _configure_cors(self):
         self.app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],
+            allow_origins=["*", "https://uploads.tsuru.jcampos.dev"],
             # First-party FE surfaces (POS, dashboard, landing, template examples,
             # provisioned org storefronts) must stay allowed even if the wildcard
             # above is ever narrowed.
