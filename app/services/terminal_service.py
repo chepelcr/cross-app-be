@@ -91,7 +91,7 @@ def get_terminal_by_code(
 def create_terminal(
     organization_id: str,
     user_id: str,
-    branch_code: number,
+    branch_code: int,
     dto: TerminalCreateRequestDTO,
 ) -> TerminalResponse:
     with BranchRepository() as b_repo:

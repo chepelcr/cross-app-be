@@ -90,7 +90,9 @@ class TerminalsController:
             body: TerminalCreateRequestDTO,
         ):
             try:
-                return terminal_service.create_terminal(organization_id, x_user_id, body)
+                return terminal_service.create_terminal(
+                    organization_id, x_user_id, branch_code, body
+                )
             except HTTPException:
                 raise
             except ValueError as e:
