@@ -12,6 +12,7 @@ from app.models.order_line import OrderLine
 from app.models.crossdocking_sale_point import CrossDockingSalePoint
 from app.models.crossdocking_item import CrossDockingItem
 from app.models.branch import Branch
+from app.models.branch_type import BranchType
 from app.models.terminal import Terminal
 from app.models.session import Session
 from app.models.assignment import Assignment
@@ -33,6 +34,7 @@ __all__ = [
     "CrossDockingSalePoint",
     "CrossDockingItem",
     "Branch",
+    "BranchType",
     "Terminal",
     "Session",
     "Assignment",

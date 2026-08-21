@@ -487,6 +487,261 @@
         }
       }
     },
+    "/api/organizations/{organization_id}/branch-types": {
+      "get": {
+        "tags": [
+          "branch-types"
+        ],
+        "summary": "Get the organization's branch-type catalog",
+        "description": "Every branch type configured for the organization, in display order.\n\nBranch types replace the old hardcoded `stand`/`restaurant` enum: `code` is what gets\nstored on `branches.type`, and `name`/`icon`/`color` drive how the POS labels a branch.\n\nThe response is unpaginated — this is a small selector catalog.",
+        "operationId": "list_branch_types_api_organizations__organization_id__branch_types_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchTypeListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "branch-types"
+        ],
+        "summary": "Create a branch type",
+        "description": "Add a branch type to the organization's catalog.\n\n**Required fields:**\n- `code`: lowercase slug (`[a-z0-9][a-z0-9_-]*`) — unique within the organization. Stored\n  on `branches.type` and **immutable** afterwards.\n- `name`: display label shown in the POS\n\n**Optional fields:**\n- `icon`: icon name from the design-system icon set (e.g. `store`, `home`)\n- `color`: CSS-var color token name (e.g. `primary`, `info`)\n- `sort_order`: display order in selectors (defaults to 0)",
+        "operationId": "create_branch_type_api_organizations__organization_id__branch_types_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BranchTypeCreateRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchTypeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organization_id}/branch-types/{branch_type_id}": {
+      "put": {
+        "tags": [
+          "branch-types"
+        ],
+        "summary": "Update a branch type",
+        "description": "Update a branch type's presentation fields (`name`, `icon`, `color`, `sort_order`).\n\n`code` cannot be changed: branches reference it by value, so renaming it would orphan\nevery branch already using it. Delete the type (only possible while unused) and create\na new one instead.",
+        "operationId": "update_branch_type_api_organizations__organization_id__branch_types__branch_type_id__put",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "branch_type_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Branch type identifier",
+              "title": "Branch Type Id"
+            },
+            "description": "Branch type identifier"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BranchTypeUpdateRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchTypeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "branch-types"
+        ],
+        "summary": "Delete a branch type",
+        "description": "Remove a branch type from the catalog.\n\nRefused with 409 while any branch still uses the type's code — reassign those branches\nfirst.",
+        "operationId": "delete_branch_type_api_organizations__organization_id__branch_types__branch_type_id__delete",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "branch_type_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Branch type identifier",
+              "title": "Branch Type Id"
+            },
+            "description": "Branch type identifier"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User identifier from header",
+              "title": "X-User-Id"
+            },
+            "description": "User identifier from header"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/organizations/{organization_id}/branches": {
       "get": {
         "tags": [
@@ -3496,6 +3751,152 @@
         }
       }
     },
+    "/api/organizations/{organization_id}/orders": {
+      "post": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Create a storefront pedido (anonymous tracked order)",
+        "description": "Create a tracked order/pedido from a public storefront.\n\nThis endpoint is **anonymous** — it lives under `/api/organizations/` (no\n`x-user-id` required), so guest visitors of a deployed storefront can place an\norder without logging in.\n\n**Body**\n- `customer_name`, `customer_phone`: the guest customer\n- `delivery_method`: e.g. `delivery` / `pickup`\n- `address`: structured Costa Rica address — `state_id` (provincia),\n  `county_id` (cantón), `district_id` (distrito), `neighborhood_id` (barrio)\n  and `address` (dirección exacta)\n- `items`: `[{ product_id, quantity }]` referencing existing products\n\nThe order is created with `order_status = \"pending\"`; totals are computed from\neach product's net price. Returns the order id plus a public **tracking\nnumber** to hand off to WhatsApp.",
+        "operationId": "create_storefront_order_api_organizations__organization_id__orders_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStorefrontOrderDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorefrontOrderCreatedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Get all orders for an organization",
+        "description": "Get a paginated list of orders with optional search filters.\n\n**Search operators**\n- `:` = Equal\n- `!` = Not equal\n- `<` = Less than\n- `>` = Greater than\n- `~` = Like (contains)\n\n**Between (BETWEEN)**\n- `field:value1~value2` = Between values (e.g. `deliveryDate:01/02/2025~28/02/2025`)\n- `field!value1~value2` = Not between values\n\n**Search filters**\n- `documentNumber`: Document number (supports wildcards)\n- `clientName`: Client name (supports wildcards)\n- `supplierName`: Supplier name (supports wildcards)\n- `deliveryDate`: Delivery date — dd/mm/yyyy (supports between)\n- `creationDate`: Creation date — dd/mm/yyyy (supports between)\n- `orderStatus`: Order status (pending, processing, shipped, delivered, cancelled)\n- `deliverToCode`: Delivery place code\n- `deliverToName`: Delivery place name (supports wildcards)\n- `confirmationNumber`: Confirmation number (supports wildcards)\n\n**Separators**\nFilters are individual conditions separated by commas (,).\nLogical AND and OR conditions can be applied:\n- AND: All conditions separated by commas and outside parentheses are combined with AND\n- OR: To apply OR conditions, group them inside parentheses\n\n**Examples**\n- `clientName:*corp*,orderStatus:pending` → Orders where client name contains \"corp\" **and** status is pending\n- `(orderStatus:pending,orderStatus:processing)` → Orders with status pending **or** processing\n- `clientName:*test*,(orderStatus:pending,orderStatus:shipped)` → Client name contains \"test\" **and** (status pending **or** shipped)\n- `deliveryDate:01/02/2025~28/02/2025` → Orders with delivery date between Feb 1 and Feb 28\n\n**Wildcards**\n- `*ana*` = Contains (e.g. `clientName:*ana*` → Ariana, Melania)\n- `Al*` = Starts with (e.g. `clientName:Al*` → Alberto, Alana)\n- `*el` = Ends with (e.g. `clientName:*el` → Daniel, Miguel)\n\n**Note:** Fields that support wildcards (`documentNumber`, `clientName`, `supplierName`, `deliverToName`, `confirmationNumber`) automatically apply case-insensitive contains matching even without `*` wildcards.\n\n**Sorting**\n- `orderBy>field` (Ascending)\n- `orderBy<field` (Descending)\n- Sortable fields: `documentNumber`, `clientName`, `supplierName`, `deliveryDate`, `creationDate`, `orderStatus`, `createdOn`, `updatedOn`\n\n**Example with sorting:** `orderStatus:pending,orderBy>deliveryDate`",
+        "operationId": "get_orders_api_organizations__organization_id__orders_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Organization identifier",
+              "title": "Organization Id"
+            },
+            "description": "Organization identifier"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Use () for OR grouping. Example: clientName:*Test*,orderStatus:pending,orderBy>deliveryDate",
+              "examples": [
+                "orderStatus:pending,orderBy>deliveryDate"
+              ],
+              "title": "Search"
+            },
+            "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Use () for OR grouping. Example: clientName:*Test*,orderStatus:pending,orderBy>deliveryDate"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number (1-indexed)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 12,
+              "title": "Page Size"
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/organizations/{organization_id}/orders/parse": {
       "post": {
         "tags": [
@@ -3687,99 +4088,6 @@
         }
       }
     },
-    "/api/organizations/{organization_id}/orders": {
-      "get": {
-        "tags": [
-          "orders"
-        ],
-        "summary": "Get all orders for an organization",
-        "description": "Get a paginated list of orders with optional search filters.\n\n**Search operators**\n- `:` = Equal\n- `!` = Not equal\n- `<` = Less than\n- `>` = Greater than\n- `~` = Like (contains)\n\n**Between (BETWEEN)**\n- `field:value1~value2` = Between values (e.g. `deliveryDate:01/02/2025~28/02/2025`)\n- `field!value1~value2` = Not between values\n\n**Search filters**\n- `documentNumber`: Document number (supports wildcards)\n- `clientName`: Client name (supports wildcards)\n- `supplierName`: Supplier name (supports wildcards)\n- `deliveryDate`: Delivery date — dd/mm/yyyy (supports between)\n- `creationDate`: Creation date — dd/mm/yyyy (supports between)\n- `orderStatus`: Order status (pending, processing, shipped, delivered, cancelled)\n- `deliverToCode`: Delivery place code\n- `deliverToName`: Delivery place name (supports wildcards)\n- `confirmationNumber`: Confirmation number (supports wildcards)\n\n**Separators**\nFilters are individual conditions separated by commas (,).\nLogical AND and OR conditions can be applied:\n- AND: All conditions separated by commas and outside parentheses are combined with AND\n- OR: To apply OR conditions, group them inside parentheses\n\n**Examples**\n- `clientName:*corp*,orderStatus:pending` → Orders where client name contains \"corp\" **and** status is pending\n- `(orderStatus:pending,orderStatus:processing)` → Orders with status pending **or** processing\n- `clientName:*test*,(orderStatus:pending,orderStatus:shipped)` → Client name contains \"test\" **and** (status pending **or** shipped)\n- `deliveryDate:01/02/2025~28/02/2025` → Orders with delivery date between Feb 1 and Feb 28\n\n**Wildcards**\n- `*ana*` = Contains (e.g. `clientName:*ana*` → Ariana, Melania)\n- `Al*` = Starts with (e.g. `clientName:Al*` → Alberto, Alana)\n- `*el` = Ends with (e.g. `clientName:*el` → Daniel, Miguel)\n\n**Note:** Fields that support wildcards (`documentNumber`, `clientName`, `supplierName`, `deliverToName`, `confirmationNumber`) automatically apply case-insensitive contains matching even without `*` wildcards.\n\n**Sorting**\n- `orderBy>field` (Ascending)\n- `orderBy<field` (Descending)\n- Sortable fields: `documentNumber`, `clientName`, `supplierName`, `deliveryDate`, `creationDate`, `orderStatus`, `createdOn`, `updatedOn`\n\n**Example with sorting:** `orderStatus:pending,orderBy>deliveryDate`",
-        "operationId": "get_orders_api_organizations__organization_id__orders_get",
-        "parameters": [
-          {
-            "name": "organization_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "Organization identifier",
-              "title": "Organization Id"
-            },
-            "description": "Organization identifier"
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Use () for OR grouping. Example: clientName:*Test*,orderStatus:pending,orderBy>deliveryDate",
-              "examples": [
-                "orderStatus:pending,orderBy>deliveryDate"
-              ],
-              "title": "Search"
-            },
-            "description": "Search filter string. Syntax: field:value,field2:value2. Supports operators: : (equal), ! (not equal), > (greater), < (less), ~ (like). Use () for OR grouping. Example: clientName:*Test*,orderStatus:pending,orderBy>deliveryDate"
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "description": "Page number (1-indexed)",
-              "default": 1,
-              "title": "Page"
-            },
-            "description": "Page number (1-indexed)"
-          },
-          {
-            "name": "page_size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1,
-              "description": "Items per page",
-              "default": 12,
-              "title": "Page Size"
-            },
-            "description": "Items per page"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OrderListResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/organizations/{organization_id}/orders/{document_number}": {
       "get": {
         "tags": [
@@ -3904,7 +4212,7 @@
           "products"
         ],
         "summary": "Get all products for an organization",
-        "description": "Get a paginated list of products with optional search filters.\n\n**Search filters**\n- `description`: Product description (supports wildcards)\n- `code`: Product code lookup in codes JSONB array\n  - Format with code type: `code:01-123415` (searches for code_type_id \"01\" and number \"123415\")\n  - Format without code type: `code:123415` (searches all code types for number \"123415\")\n- `name`: Product name (supports wildcards)\n- `categoryId`: Filter by category ID (exact match)\n- `categoryName`: Filter by category name (supports wildcards)\n- `status`: Filter by product status (1=Active, 2=Inactive, 3=Deleted)\n- `price`: Filter by net price (supports between with `~`)\n  - Single value: `price:100` (exact match)\n  - Range: `price:50~150` (between 50 and 150)\n  - Greater than: `price>100`\n  - Less than: `price<100`\n- `salePrice`: Filter by sale price (supports between with `~`)\n  - Single value: `salePrice:100` (exact match)\n  - Range: `salePrice:50~150` (between 50 and 150)\n  - Greater than: `salePrice>100`\n  - Less than: `salePrice<100`\n\n**Sorting**\n- `orderBy>field` (Ascending)\n- `orderBy<field` (Descending)\n- Sortable fields: `description`, `name`, `price`, `salePrice`, `createdOn`, `updatedOn`\n\n**Examples:**\n- `name:*shampoo*,orderBy>name` - Products with \"shampoo\" in name, sorted by name\n- `categoryId:cat-123` - Products in specific category\n- `categoryName:*electronics*,status:1` - Active products in electronics category\n- `status:2` - Inactive products\n- `status:1` - Active products only\n- `price:50~150` - Products with net price between 50 and 150\n- `salePrice:50~150` - Products with sale price between 50 and 150\n- `price>100,orderBy>price` - Products over 100, sorted by net price\n- `categoryName:*beauty*,salePrice<50,orderBy>salePrice` - Beauty products under 50, sorted by sale price",
+        "description": "Get a paginated list of products with optional search filters.\n\n**Search filters**\n- `description`: Product description (supports wildcards)\n- `code`: Product code lookup in codes JSONB array\n  - Format with code type: `code:01-123415` (searches for code_type_id \"01\" and number \"123415\")\n  - Format without code type: `code:123415` (searches all code types for number \"123415\")\n- `name`: Product name (supports wildcards)\n- `categoryId`: Filter by category ID (exact match)\n- `categoryName`: Filter by category name (supports wildcards)\n- `status`: Filter by product status (1=Active, 2=Inactive, 3=Deleted)\n- `type`: Filter by product kind (`type:product`, `type:service`, `type:program`)\n- `isOffer`: Filter by storefront \"Oferta\" flag (`isOffer:true` / `isOffer:false`)\n- `price`: Filter by net price (supports between with `~`)\n  - Single value: `price:100` (exact match)\n  - Range: `price:50~150` (between 50 and 150)\n  - Greater than: `price>100`\n  - Less than: `price<100`\n- `salePrice`: Filter by sale price (supports between with `~`)\n  - Single value: `salePrice:100` (exact match)\n  - Range: `salePrice:50~150` (between 50 and 150)\n  - Greater than: `salePrice>100`\n  - Less than: `salePrice<100`\n\n**Sorting**\n- `orderBy>field` (Ascending)\n- `orderBy<field` (Descending)\n- Sortable fields: `description`, `name`, `price`, `salePrice`, `createdOn`, `updatedOn`\n\n**Examples:**\n- `name:*shampoo*,orderBy>name` - Products with \"shampoo\" in name, sorted by name\n- `categoryId:cat-123` - Products in specific category\n- `categoryName:*electronics*,status:1` - Active products in electronics category\n- `status:2` - Inactive products\n- `status:1` - Active products only\n- `type:product,isOffer:true` - Products flagged as offers (storefront \"Ofertas\")\n- `type:program` - Programs only\n- `price:50~150` - Products with net price between 50 and 150\n- `salePrice:50~150` - Products with sale price between 50 and 150\n- `price>100,orderBy>price` - Products over 100, sorted by net price\n- `categoryName:*beauty*,salePrice<50,orderBy>salePrice` - Beauty products under 50, sorted by sale price",
         "operationId": "list_products_api_organizations__organization_id__products_get",
         "parameters": [
           {
@@ -6592,6 +6900,226 @@
         "title": "BranchResponse",
         "description": "Branch response DTO."
       },
+      "BranchTypeCreateRequestDTO": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code",
+            "description": "Stable slug stored on branches.type; immutable once created"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "description": "Display label shown in the POS"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon",
+            "description": "Icon name from the design-system icon set"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color",
+            "description": "CSS-var color token name (e.g. 'primary', 'info')"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order",
+            "description": "Display order in selectors; defaults to 0"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "BranchTypeCreateRequestDTO",
+        "description": "Request DTO for creating a branch type."
+      },
+      "BranchTypeListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/BranchTypeResponse"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BranchTypeListResponse",
+        "description": "The org's branch-type catalog.\n\nUnpaginated on purpose — it is a small, fully-loaded selector catalog, and the\nPOS renders every entry at once."
+      },
+      "BranchTypeResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order",
+            "default": 0
+          },
+          "status": {
+            "type": "integer",
+            "title": "Status"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "organization_id",
+          "code",
+          "name",
+          "status"
+        ],
+        "title": "BranchTypeResponse",
+        "description": "Branch type response DTO.\n\nThe identifier is exposed as `id` (not `branch_type_id`) because that is the\nfield name in the POS `BranchTypeOption` contract this catalog feeds."
+      },
+      "BranchTypeUpdateRequestDTO": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "type": "object",
+        "title": "BranchTypeUpdateRequestDTO",
+        "description": "Request DTO for updating a branch type.\n\n`code` is intentionally absent: branches reference it by value, so renaming it\nhere would orphan every branch already using the old code. Delete the type (only\npossible while unused) and create a new one if the code itself is wrong."
+      },
       "BranchUpdateRequestDTO": {
         "properties": {
           "name": {
@@ -7931,6 +8459,74 @@
           "total_amount"
         ],
         "title": "CreateSaleDTO"
+      },
+      "CreateStorefrontOrderDTO": {
+        "properties": {
+          "customer_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Customer Name"
+          },
+          "customer_phone": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Customer Phone"
+          },
+          "delivery_method": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Method",
+            "description": "Delivery method (e.g. 'delivery', 'pickup')"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StorefrontOrderAddressDTO"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Structured CR delivery address"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StorefrontOrderItemDTO"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Items"
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_name",
+          "customer_phone",
+          "items"
+        ],
+        "title": "CreateStorefrontOrderDTO",
+        "description": "Anonymous storefront pedido create payload.\n\nPlaced by a guest visitor from a deployed storefront — no user account,\nno Client row. Builds a tracked Order with order_status='pending'."
       },
       "CrossDockingAttachmentsDTO": {
         "properties": {
@@ -10199,6 +10795,17 @@
             ],
             "title": "On Sale"
           },
+          "is_offer": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Offer"
+          },
           "original_price": {
             "anyOf": [
               {
@@ -10518,6 +11125,11 @@
           "on_sale": {
             "type": "boolean",
             "title": "On Sale",
+            "default": false
+          },
+          "is_offer": {
+            "type": "boolean",
+            "title": "Is Offer",
             "default": false
           },
           "original_price": {
@@ -12133,6 +12745,142 @@
           "store_code"
         ],
         "title": "StoreResponse"
+      },
+      "StorefrontOrderAddressDTO": {
+        "properties": {
+          "state_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Id",
+            "description": "Provincia id"
+          },
+          "county_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "County Id",
+            "description": "Cantón id"
+          },
+          "district_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "District Id",
+            "description": "Distrito id"
+          },
+          "neighborhood_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neighborhood Id",
+            "description": "Barrio id"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address",
+            "description": "Dirección exacta (free text)"
+          }
+        },
+        "type": "object",
+        "title": "StorefrontOrderAddressDTO",
+        "description": "Structured Costa Rica delivery address (data-be location cascade ids)."
+      },
+      "StorefrontOrderCreatedResponse": {
+        "properties": {
+          "order_id": {
+            "type": "integer",
+            "title": "Order Id",
+            "description": "Internal order identifier"
+          },
+          "document_number": {
+            "type": "string",
+            "title": "Document Number",
+            "description": "Generated order document number"
+          },
+          "tracking_number": {
+            "type": "string",
+            "title": "Tracking Number",
+            "description": "Public tracking number"
+          },
+          "order_status": {
+            "type": "string",
+            "title": "Order Status",
+            "description": "Order status",
+            "default": "pending"
+          },
+          "grand_total": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grand Total",
+            "description": "Order grand total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "order_id",
+          "document_number",
+          "tracking_number"
+        ],
+        "title": "StorefrontOrderCreatedResponse",
+        "description": "Returned after a storefront pedido is persisted.\n\nCarries the internal order id, the public document/tracking number the\ncustomer hands off to WhatsApp, and the resulting status."
+      },
+      "StorefrontOrderItemDTO": {
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Product Id"
+          },
+          "quantity": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Quantity",
+            "description": "Units ordered (must be > 0)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "product_id",
+          "quantity"
+        ],
+        "title": "StorefrontOrderItemDTO",
+        "description": "A single line in a storefront pedido — references an existing product."
       },
       "TaxAmountDTO": {
         "properties": {
