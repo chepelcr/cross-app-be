@@ -1,13 +1,22 @@
 from typing import Annotated, Optional
 
-from fastapi import Body, FastAPI, HTTPException, Path, Query
+from pydantic import ValidationError
+
+from fastapi import Body, FastAPI, Header, HTTPException, Path, Query
 
 from app.dtos.files import ExcelDTO, ExcelAndColorDTO
 from app.dtos import OrderListResponse, OrderResponse, SelectColorDTO
 from app.dtos.requests.status_request_dto import StatusRequestDTO
+from app.dtos.requests.manual_order_dto import CreateManualOrderDTO
 from app.dtos.requests.storefront_order_dto import CreateStorefrontOrderDTO
 from app.dtos.responses.storefront_order_dto import StorefrontOrderCreatedResponse
-from app.services import order_service
+from app.dtos.requests.invoice_link_dto import LinkOrderInvoiceDTO
+from app.dtos.requests.sale_point_request_dto import (
+    SalePointCreateDTO,
+    SalePointItemsDTO,
+    SalePointUpdateDTO,
+)
+from app.services import order_service, sale_point_service
 
 
 class OrdersController:
@@ -17,39 +26,135 @@ class OrdersController:
     def register_routes(self, app: FastAPI):
         @app.post(
             "/api/organizations/{organization_id}/orders",
-            response_model=StorefrontOrderCreatedResponse,
             status_code=201,
             tags=["orders"],
-            summary="Create a storefront pedido (anonymous tracked order)",
-            description="""Create a tracked order/pedido from a public storefront.
+            summary="Create a pedido — storefront (anonymous) or manual (POS)",
+            description="""Create a pedido. Two shapes share this route, told apart by `source`.
 
-This endpoint is **anonymous** — it lives under `/api/organizations/` (no
-`x-user-id` required), so guest visitors of a deployed storefront can place an
-order without logging in.
+**`source: "manual"` — a POS pedido manual** (see `docs/MANUAL_ORDERS.md`).
+Captured by hand in the document editor by an organization that does not (or
+cannot yet) issue electronic documents. Carries lines with CABYS, taxes and
+discounts, a client, a delivery target and optional payments.
 
-**Body**
-- `customer_name`, `customer_phone`: the guest customer
-- `delivery_method`: e.g. `delivery` / `pickup`
-- `address`: structured Costa Rica address — `state_id` (provincia),
-  `county_id` (cantón), `district_id` (distrito), `neighborhood_id` (barrio)
-  and `address` (dirección exacta)
-- `items`: `[{ product_id, quantity }]` referencing existing products
+- `document_number` is **user-writable**; omit it and the server assigns the
+  next `PM-000123`. A collision returns **409**.
+- `is_quote: true` opens the order in `quote` status — a proforma is an order in
+  an early status, never a separate document type.
+- `totals` in the body are a **hint**: the server recomputes every amount.
+- Send `Idempotency-Key` (the POS outbox id) and **reuse it on every retry** —
+  a pedido captured offline is replayed, and without the header it would become
+  two orders.
+- Delivery must resolve to either a registered `store_id` or a real address;
+  there is deliberately no free-text-only mode.
 
-The order is created with `order_status = "pending"`; totals are computed from
-each product's net price. Returns the order id plus a public **tracking
-number** to hand off to WhatsApp.
+**No `source` — an anonymous storefront pedido.** This route is unauthenticated
+(no `x-user-id`), so guest visitors of a deployed storefront can order. Returns
+the order id plus a public **tracking number** to hand off to WhatsApp.
 """,
         )
-        async def create_storefront_order(
+        async def create_order(
             organization_id: Annotated[str, Path(description="Organization identifier")],
-            body: CreateStorefrontOrderDTO = Body(...),
+            body: dict = Body(...),
+            idempotency_key: Annotated[
+                Optional[str],
+                Header(
+                    alias="Idempotency-Key",
+                    description="POS outbox id; reused on every retry to dedupe replays",
+                ),
+            ] = None,
+            x_user_id: Annotated[
+                Optional[str], Header(alias="x-user-id", description="Capturing user")
+            ] = None,
         ):
+            # Discriminated by hand rather than by a Pydantic Union so the
+            # storefront body — which predates `source` and never sends it —
+            # keeps validating exactly as before.
+            is_manual = body.get("source") == "manual"
             try:
-                return order_service.create_storefront_order(organization_id, body)
+                if is_manual:
+                    dto = CreateManualOrderDTO.model_validate(body)
+                    return order_service.create_manual_order(
+                        organization_id,
+                        dto,
+                        created_by=x_user_id,
+                        idempotency_key=idempotency_key,
+                    )
+                storefront_dto = CreateStorefrontOrderDTO.model_validate(body)
+                return order_service.create_storefront_order(
+                    organization_id, storefront_dto
+                )
+            except ValidationError as e:
+                raise HTTPException(status_code=422, detail=e.errors())
+            except FileExistsError as e:
+                raise HTTPException(status_code=409, detail=str(e))
             except LookupError as e:
                 raise HTTPException(status_code=404, detail=str(e))
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.post(
+            "/api/organizations/{organization_id}/orders/{document_number}/ticket",
+            response_model=OrderResponse,
+            tags=["orders"],
+            summary="Generate the order's 80mm thermal ticket",
+            description="""Render the order as a receipt-roll PDF and return the order with
+`attachments.ticket_url` set.
+
+Generated **server-side**, like the order's other documents — not printed from
+the browser — so the slip is identical however it is opened, and a reprint or an
+emailed copy matches the original exactly.
+
+Regenerating is intentional: a ticket reprinted after the order was invoiced
+picks up the consecutive number, document key and QR it did not have before.
+
+The heading names what the slip actually is: `PROFORMA` for a quote (with "no
+es un comprobante fiscal" under it), `ORDEN DE TRABAJO` for a taller OT,
+`PEDIDO` for a manual order.""",
+        )
+        async def generate_order_ticket(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            document_number: Annotated[str, Path(description="Order document number")],
+        ):
+            try:
+                return order_service.generate_order_ticket(organization_id, document_number)
+            except LookupError as e:
+                raise HTTPException(status_code=404, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.post(
+            "/api/organizations/{organization_id}/orders/{document_number}/invoice",
+            response_model=OrderResponse,
+            tags=["orders"],
+            summary="Record that a delivered order was billed",
+            description="""Link an order to the electronic document that billed it.
+
+Without this link the frontend cannot tell that a pedido is already invoiced,
+so nothing prevents a second factura for the same order. Returns **409** if the
+order is already linked to a different sale.
+""",
+        )
+        async def link_order_invoice(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            document_number: Annotated[str, Path(description="Order document number")],
+            body: LinkOrderInvoiceDTO = Body(...),
+        ):
+            try:
+                return order_service.link_order_invoice(
+                    organization_id,
+                    document_number,
+                    sale_id=body.sale_id,
+                    document_type=body.document_type,
+                    consecutive_number=body.consecutive_number,
+                    document_key=body.document_key,
+                    issued_on=body.issued_on,
+                )
+            except FileExistsError as e:
+                raise HTTPException(status_code=409, detail=str(e))
+            except LookupError as e:
+                raise HTTPException(status_code=404, detail=str(e))
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
@@ -69,6 +174,103 @@ number** to hand off to WhatsApp.
                 raise HTTPException(status_code=409, detail=str(e))
             except Exception as e:
                 raise HTTPException(status_code=422, detail=str(e))
+
+        @app.post(
+            "/api/organizations/{organization_id}/orders/{document_number}/crossdocking/sale-points",
+            response_model=OrderResponse,
+            status_code=201,
+            tags=["orders"],
+            summary="Capture a cross-docking sale point by hand",
+            description="""Add a distribution point to an order **without** an Excel file.
+
+Until now sale points could only be created by uploading a spreadsheet, so a
+supplier who had the figures — from an email, a portal, a phone call — but not
+the file could not record them. This is the same data by another route; the
+Excel importer is untouched and the two coexist, so a partial upload can be
+finished by hand.
+
+- A point either names a registered `store_id` (bringing its GLN and chain) or
+  carries a free `full_name`.
+- **Totals are derived**, never sent: boxes and units are computed from the
+  items and the product's `units_per_box`, the same way the parser does it, so a
+  hand-captured order reconciles against an imported one.
+- Allocating more of a product than the order line ordered returns **422**
+  naming the line — the check the spreadsheet path gets from its template.
+""",
+        )
+        async def create_sale_point(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            document_number: Annotated[str, Path(description="Order document number")],
+            body: SalePointCreateDTO = Body(...),
+        ):
+            try:
+                return sale_point_service.create_sale_point(organization_id, document_number, body)
+            except LookupError as e:
+                raise HTTPException(status_code=404, detail=str(e))
+            except ValueError as e:
+                raise HTTPException(status_code=422, detail=str(e))
+
+        @app.patch(
+            "/api/organizations/{organization_id}/orders/{document_number}/crossdocking/sale-points/{sale_point_id}",
+            response_model=OrderResponse,
+            tags=["orders"],
+            summary="Rename a sale point",
+            description="Works on any sale point, including one that came from an Excel upload — which is the natural fix for a typo in a supplier's file.",
+        )
+        async def update_sale_point(
+            organization_id: Annotated[str, Path()],
+            document_number: Annotated[str, Path()],
+            sale_point_id: Annotated[int, Path()],
+            body: SalePointUpdateDTO = Body(...),
+        ):
+            try:
+                return sale_point_service.update_sale_point(
+                    organization_id, document_number, sale_point_id, body
+                )
+            except LookupError as e:
+                raise HTTPException(status_code=404, detail=str(e))
+            except ValueError as e:
+                raise HTTPException(status_code=422, detail=str(e))
+
+        @app.put(
+            "/api/organizations/{organization_id}/orders/{document_number}/crossdocking/sale-points/{sale_point_id}/items",
+            response_model=OrderResponse,
+            tags=["orders"],
+            summary="Replace a sale point's item allocation",
+            description="Totals are re-derived from the items; send boxes only, units follow from the product's `units_per_box`.",
+        )
+        async def set_sale_point_items(
+            organization_id: Annotated[str, Path()],
+            document_number: Annotated[str, Path()],
+            sale_point_id: Annotated[int, Path()],
+            body: SalePointItemsDTO = Body(...),
+        ):
+            try:
+                return sale_point_service.set_sale_point_items(
+                    organization_id, document_number, sale_point_id, body
+                )
+            except LookupError as e:
+                raise HTTPException(status_code=404, detail=str(e))
+            except ValueError as e:
+                raise HTTPException(status_code=422, detail=str(e))
+
+        @app.delete(
+            "/api/organizations/{organization_id}/orders/{document_number}/crossdocking/sale-points/{sale_point_id}",
+            response_model=OrderResponse,
+            tags=["orders"],
+            summary="Remove a sale point and its items",
+        )
+        async def delete_sale_point(
+            organization_id: Annotated[str, Path()],
+            document_number: Annotated[str, Path()],
+            sale_point_id: Annotated[int, Path()],
+        ):
+            try:
+                return sale_point_service.delete_sale_point(
+                    organization_id, document_number, sale_point_id
+                )
+            except LookupError as e:
+                raise HTTPException(status_code=404, detail=str(e))
 
         @app.post(
             "/api/organizations/{organization_id}/orders/{document_number}/crossdocking/parse",

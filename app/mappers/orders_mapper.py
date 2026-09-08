@@ -34,7 +34,9 @@ def order_to_response(order: Order) -> OrderResponse:
                 internal_code=internal_code,
                 code=code,
                 client_article_code=client_article_code,
-                description=(p.description if p else "") or "",
+                # A manual line is not always a catalog product, so its own
+                # description wins over the product's.
+                description=(ln.description or (p.description if p else "") or ""),
                 units_per_box=(p.units_per_box if p else 0) or 0,
                 quantity_ordered=ln.quantity_ordered or 0,
                 units_ordered=ln.units_ordered or 0,
@@ -46,6 +48,12 @@ def order_to_response(order: Order) -> OrderResponse:
                 dispatch_rejection_reason=ln.dispatch_rejection_reason,
                 quantity_received=ln.quantity_received or 0,
                 article_code=ln.article_code or "",
+                # Needed to rebuild a cart when the order is billed later.
+                product_id=ln.product_id,
+                cabys=ln.cabys or (p.cabys.code if p and p.cabys else None),
+                net_price=float(ln.net_price) if ln.net_price is not None else None,
+                taxes=ln.taxes,
+                discounts=ln.discounts,
             )
         )
 
@@ -58,6 +66,10 @@ def order_to_response(order: Order) -> OrderResponse:
             total_quantity_dispatched=sum(ln.quantity_dispatched for ln in lines),
             total_quantity_received=sum(ln.quantity_received for ln in lines),
             subtotal=float(order.subtotal or 0),
+            # The model has carried these all along; the DTO simply never
+            # exposed them, so a caller could not reconcile a total.
+            discounts=float(order.discounts or 0),
+            taxes=float(order.taxes or 0),
             net_total=float(order.net_total or 0),
             grand_total=float(order.grand_total or 0),
         )
@@ -96,6 +108,14 @@ def order_to_response(order: Order) -> OrderResponse:
             latitude=order.latitude,
             longitude=order.longitude,
         )
+    elif order.delivery_location_name or order.delivery_address:
+        # A manual order whose delivery is the receiver's address or a
+        # hand-picked one has no Store row to name.
+        delivery_location_dto = LocationDTO(
+            name=order.delivery_location_name or order.delivery_address,
+            latitude=order.latitude,
+            longitude=order.longitude,
+        )
     elif order.latitude or order.longitude:
         delivery_location_dto = LocationDTO(
             latitude=order.latitude,
@@ -113,6 +133,21 @@ def order_to_response(order: Order) -> OrderResponse:
         )
 
     return OrderResponse(
+        source=order.source,
+        currency_code=order.currency_code,
+        exchange_rate=float(order.exchange_rate) if order.exchange_rate is not None else None,
+        is_quote=(order.order_status == "quote"),
+        invoice=(
+            {
+                "sale_id": order.invoice_sale_id,
+                "document_type": order.invoice_document_type,
+                "consecutive_number": order.invoice_consecutive_number,
+                "document_key": order.invoice_document_key,
+                "issued_on": order.invoice_issued_on,
+            }
+            if order.invoice_sale_id
+            else None
+        ),
         order_id=order.order_id,
         company_id=order.company_id,
         document_number=order.document_number,
@@ -138,6 +173,7 @@ def order_to_response(order: Order) -> OrderResponse:
         taxes=float(order.taxes or 0),
         grand_total=float(order.grand_total or 0),
         attachments=OrderAttachmentsDTO(
+            ticket_url=order.ticket_url,
             pdf_url=order.pdf_url,
             excel_url=order.excel_url,
             nuevo_reporte_url=order.nuevo_reporte_url,
@@ -179,7 +215,9 @@ def build_crossdocking_data(order: Order) -> CrossDockingData:
                 ItemResponse(
                     internal_code=internal_code,
                     original_code=original_code,
-                    description=(p.description if p else "") or "",
+                    # A manual line is not always a catalog product, so its own
+                # description wins over the product's.
+                description=(ln.description or (p.description if p else "") or ""),
                     quantity=it.quantity or 0,
                     units_per_box=(p.units_per_box if p else 0) or 0,
                     total_units=it.total_units or 0,

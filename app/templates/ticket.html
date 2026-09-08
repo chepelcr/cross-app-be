@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<style>
+  /* 80mm thermal roll. 72mm is the printable area once the printer's own
+     margins are taken off — wider and the right column clips. */
+  @page { size: 72mm auto; margin: 0; }
+  * { box-sizing: border-box; }
+  body {
+    width: 72mm;
+    margin: 0;
+    padding: 3mm;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 11px;
+    line-height: 1.35;
+    color: #000;
+    background: #fff;
+  }
+  .center { text-align: center; }
+  .right  { text-align: right; }
+  .bold   { font-weight: 700; }
+  .muted  { opacity: .8; }
+  .divider { border: 0; border-top: 1px dashed #000; margin: 5px 0; }
+  .row { display: flex; justify-content: space-between; gap: 6px; }
+  .total { font-size: 15px; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 1px 0; vertical-align: top; }
+  .qty { width: 26px; }
+  .amount { text-align: right; white-space: nowrap; }
+  .note { font-size: 10px; }
+  /* A page break mid-ticket splits a receipt across two slips. */
+  body, table, tr { page-break-inside: avoid; }
+  h1 { font-size: 13px; margin: 0 0 2px; }
+</style>
+</head>
+<body>
+
+  <div class="center">
+    {% if logo_url %}<img src="{{ logo_url }}" style="max-width:40mm;max-height:18mm;"><br>{% endif %}
+    <h1>{{ org_name }}</h1>
+    {% if org_id_number %}<div class="muted">Céd. {{ org_id_number }}</div>{% endif %}
+    {% if branch_name %}<div class="muted">{{ branch_name }}</div>{% endif %}
+  </div>
+
+  <hr class="divider">
+
+  {# The heading is the honest label for what this slip is. A proforma says so
+     in plain words: it is not a fiscal document and must not be mistaken for one. #}
+  <div class="center bold">{{ heading }}</div>
+  {% if is_quote %}
+    <div class="center note">No es un comprobante fiscal</div>
+  {% endif %}
+
+  <div class="row"><span>No.</span><span class="bold">{{ document_number }}</span></div>
+  <div class="row"><span>Fecha</span><span>{{ issued_on }}</span></div>
+  {% if cashier %}<div class="row"><span>Cajero</span><span>{{ cashier }}</span></div>{% endif %}
+  {% if terminal %}<div class="row"><span>Terminal</span><span>{{ terminal }}</span></div>{% endif %}
+  {% if client_name %}<div class="row"><span>Cliente</span><span>{{ client_name }}</span></div>{% endif %}
+
+  {# Restaurant: the table and, for a taller, the asset the work was done on. #}
+  {% if table_name %}<div class="row"><span>Mesa</span><span>{{ table_name }}</span></div>{% endif %}
+  {% if asset_label %}<div class="row"><span>Activo</span><span>{{ asset_label }}</span></div>{% endif %}
+  {% if odometer %}<div class="row"><span>Kilometraje</span><span>{{ odometer }}</span></div>{% endif %}
+
+  <hr class="divider">
+
+  <table>
+    {% for line in lines %}
+    <tr>
+      <td colspan="2">{{ line.description }}</td>
+    </tr>
+    <tr>
+      <td class="qty">{{ line.quantity }}</td>
+      <td>x {{ line.unit_price|format_currency }}</td>
+      <td class="amount">{{ line.line_total|format_currency }}</td>
+    </tr>
+    {% if line.modifiers %}
+    <tr>
+      <td></td>
+      <td colspan="2" class="note muted">{{ line.modifiers }}</td>
+    </tr>
+    {% endif %}
+    {% if line.discount and line.discount > 0 %}
+    <tr>
+      <td></td>
+      <td class="note">Descuento</td>
+      <td class="amount note">-{{ line.discount|format_currency }}</td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+  </table>
+
+  <hr class="divider">
+
+  <div class="row"><span>Subtotal</span><span>{{ subtotal|format_currency }}</span></div>
+  {% if discounts and discounts > 0 %}
+  <div class="row"><span>Descuentos</span><span>-{{ discounts|format_currency }}</span></div>
+  {% endif %}
+  {% if service_charge and service_charge > 0 %}
+  <div class="row"><span>Servicio</span><span>{{ service_charge|format_currency }}</span></div>
+  {% endif %}
+  <div class="row"><span>Impuestos</span><span>{{ taxes|format_currency }}</span></div>
+  <div class="row total"><span>TOTAL</span><span>{{ currency }} {{ grand_total|format_currency }}</span></div>
+
+  {% if payments %}
+  <hr class="divider">
+  {% for p in payments %}
+  <div class="row"><span>{{ p.label }}</span><span>{{ p.amount|format_currency }}</span></div>
+  {% endfor %}
+  {% if change and change > 0 %}
+  <div class="row bold"><span>Vuelto</span><span>{{ change|format_currency }}</span></div>
+  {% endif %}
+  {% endif %}
+
+  {# Delivery block — a pedido says where it is going; a sale does not. #}
+  {% if delivery_date or delivery_location or department %}
+  <hr class="divider">
+  {% if delivery_date %}<div class="row"><span>Entrega</span><span>{{ delivery_date }}</span></div>{% endif %}
+  {% if department %}<div class="row"><span>Depto.</span><span>{{ department }}</span></div>{% endif %}
+  {% if delivery_location %}<div class="note">{{ delivery_location }}</div>{% endif %}
+  {% endif %}
+
+  {% if comment %}
+  <hr class="divider">
+  <div class="note">{{ comment }}</div>
+  {% endif %}
+
+  {# Hacienda representación impresa: the consecutive, the key and the QR are
+     what make a printed slip traceable back to the electronic document. #}
+  {% if consecutive_number %}
+  <hr class="divider">
+  <div class="center note">
+    <div>Comprobante electrónico</div>
+    <div>{{ consecutive_number }}</div>
+    {% if document_key %}<div style="word-break:break-all">{{ document_key }}</div>{% endif %}
+  </div>
+  {% if qr_data_uri %}
+  <div class="center"><img src="{{ qr_data_uri }}" style="width:28mm;height:28mm;"></div>
+  {% endif %}
+  {% endif %}
+
+  <hr class="divider">
+  <div class="center note">{{ footer }}</div>
+
+</body>
+</html>

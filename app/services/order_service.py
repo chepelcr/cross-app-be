@@ -2,13 +2,26 @@ from __future__ import annotations
 
 import logging
 import secrets
+import uuid
 from datetime import datetime, timezone
+from decimal import ROUND_HALF_UP, Decimal
 from io import BytesIO
+from typing import Optional
+
+from sqlalchemy import select, text
 
 from app.dtos.files import ExcelDTO, ExcelAndColorDTO
 from app.dtos import OrderListResponse, OrderResponse, SelectColorDTO
+from app.dtos.requests.manual_order_dto import CreateManualOrderDTO
+from app.dtos.requests.product_request_dto import (
+    ProductDiscountDTO,
+    ProductTaxDTO,
+    TaxRateDTO,
+)
 from app.dtos.requests.storefront_order_dto import CreateStorefrontOrderDTO
 from app.dtos.responses.storefront_order_dto import StorefrontOrderCreatedResponse
+from app.enums.hacienda_codes import DiscountType
+from app.enums.order_status import ORDER_STATUS_CODES, can_transition
 from app.enums.report_color import ReportColorScheme, get_color_palette
 from app.dtos.responses.order_dto import PaginationResponse
 from app.mappers.orders_mapper import build_crossdocking_data, order_to_response
@@ -26,6 +39,7 @@ from app.enums.search_filters import SearchFilters
 from app.utils.search_utils import SearchUtils
 from app.services.excel_export_service import create_nuevo_reporte
 from app.services.excel_parser import parse_crossdocking_file
+from app.services.line_calculation_service import LineCalculator, LineInput
 from app.services.order_detail_parser import parse_order_detail_file
 from app.services.pdf_service import (
     _s3_key,
@@ -37,6 +51,10 @@ from app.services.pdf_service import (
 from app.utils.crossdocking_utils import decode_excel_file
 
 logger = logging.getLogger(__name__)
+
+#: Numeric status code → status name, inverted from the canonical map so the
+#: two can never drift.
+_STATUS_BY_CODE = {code: name for name, code in ORDER_STATUS_CODES.items()}
 
 _DEPT_COLOR_MAP = {
     "26": ReportColorScheme.GREEN_ALT.value,
@@ -172,6 +190,14 @@ def process_order_excel(organization_id: str, body: ExcelDTO) -> OrderResponse:
                     quantity_received=ln.quantity_received,
                     article_code=ln.article_code,
                     product_id=product.id,
+                    # Give the imported line the same structure a POS-captured
+                    # one has, so both sides of the Orders module are complete
+                    # and either can be billed later (TSR-152).
+                    description=ln.description,
+                    net_price=ln.unit_price,
+                    cabys=(product.cabys.code if product.cabys else None),
+                    discounts=_imported_line_discounts(ln.discount),
+                    taxes=_imported_line_taxes(product),
                 )
             )
 
@@ -426,19 +452,32 @@ def get_orders(
 
 
 def update_order_status(organization_id: str, document_number: str, status_code: int) -> OrderResponse:
-    """Update order status."""
-    status_map = {1: "pending", 2: "processing", 3: "shipped", 4: "delivered", 5: "cancelled"}
-    status = status_map.get(status_code)
+    """Move an order to a new status, refusing illegal jumps.
+
+    Code 0 is `quote` — a proforma (TSR-156). The guard matters most there: a
+    quote may only be **approved** into `pending` or cancelled. Letting it jump
+    straight to `delivered` would allow an unapproved cotización to be invoiced
+    as though the customer had agreed to it.
+    """
+    status = _STATUS_BY_CODE.get(status_code)
     if not status:
-        raise ValueError(f"Invalid status code: {status_code}")
-    
+        raise ValueError(
+            f"Invalid status code: {status_code} (expected one of {sorted(_STATUS_BY_CODE)})"
+        )
+
     with OrderRepository() as repo:
         order = repo.find_by_company_and_document(organization_id, document_number)
         if not order:
             raise LookupError(
                 f"Order {document_number} not found for organization {organization_id}"
             )
-        
+
+        if not can_transition(order.order_status, status):
+            raise ValueError(
+                f"Cannot move order {document_number} from "
+                f"'{order.order_status}' to '{status}'"
+            )
+
         order.order_status = status
         order = repo.save(order)
         return order_to_response(order)
@@ -541,6 +580,50 @@ def create_storefront_order(
             order_status=order.order_status or "pending",
             grand_total=float(order.grand_total or 0),
         )
+
+
+def _imported_line_discounts(discount_amount) -> list | None:
+    """Structured discount for a line that came from an Excel import.
+
+    The customer's spreadsheet carries a discount AMOUNT but no discount TYPE,
+    and we are not adding a column to it. Every such discount is therefore
+    recorded as **07 — Descuento Comercial**, which is the honest reading of a
+    supplier's trade discount and, unlike 99, needs no free-text reason.
+
+    Choosing 07 also matters fiscally: only 01 (regalía) and 03 (bonificación)
+    re-route IVA into `ImpuestoAsumidoEmisorFabrica` (Nota 20), so a commercial
+    discount stays a plain price reduction rather than becoming a factory-
+    assumed tax.
+    """
+    amount = float(discount_amount or 0)
+    if amount <= 0:
+        return None
+    return [
+        {
+            "discount_type_id": DiscountType.COMMERCIAL.value,
+            "is_amount": True,
+            "amount": amount,
+            "reason": None,  # 07 needs none; only 99 does.
+        }
+    ]
+
+
+def _imported_line_taxes(product) -> list | None:
+    """Carry the product's configured taxes onto the imported line.
+
+    The Excel has no tax structure either — only a total. Copying the product's
+    own `taxes` gives the line the same shape a POS-captured line has, which is
+    what lets an imported order be billed later without inventing a rate.
+
+    The stored JSONB is already ProductTaxDTO-shaped, so it is copied verbatim
+    rather than re-derived; the per-line `amount` stays whatever the import
+    computed, because on an imported order the customer's figures are the
+    authority we reconcile against.
+    """
+    taxes = getattr(product, "taxes", None)
+    if not taxes:
+        return None
+    return [dict(t) for t in taxes]
 
 
 def _upsert_order_entities(
@@ -695,3 +778,353 @@ def _generate_crossdocking_outputs(order: Order, color=None) -> None:
         logger.info(f"NuevoReporte generated: {nr_url}")
     except Exception as e:
         logger.warning(f"NuevoReporte generation failed: {e}")
+
+
+# ─── Manual orders / pedidos manuales (TSR-152) ─────────────────────────────
+
+#: Statuses a manual order may open in. A proforma is an order in an early
+#: status, NOT a separate document type — see docs/MANUAL_ORDERS.md.
+_QUOTE_STATUS = "quote"
+_PENDING_STATUS = "pending"
+
+#: Cross-docking uses order_type '73'. A manual order must never collide with
+#: it, or it would be pulled into a flow that expects sale points and bultos.
+_CROSSDOCKING_ORDER_TYPE = "73"
+
+
+def _round_money(value) -> float:
+    """Money is stored at 5 dp but reconciles at 2 — round once, at the edge."""
+    return float(Decimal(str(value or 0)).quantize(Decimal("0.00001"), ROUND_HALF_UP))
+
+
+def _generate_manual_document_number(repo: OrderRepository, organization_id: str) -> str:
+    """Next free `PM-000123` for this organization.
+
+    Prefixed so a hand-captured pedido is distinguishable at a glance from an
+    imported one, and scanned forward rather than counted, because imported
+    orders share the same table and the same uniqueness constraint.
+    """
+    existing = repo.session.execute(
+        text(
+            "SELECT document_number FROM crossdocking_orders "
+            "WHERE company_id = :org AND document_number LIKE 'PM-%' "
+            "ORDER BY document_number DESC LIMIT 1"
+        ),
+        {"org": organization_id},
+    ).scalar()
+
+    next_seq = 1
+    if existing:
+        try:
+            next_seq = int(str(existing).split("-", 1)[1]) + 1
+        except (IndexError, ValueError):
+            # A hand-typed "PM-foo" must not wedge the sequence.
+            next_seq = 1
+
+    for _ in range(50):
+        candidate = f"PM-{next_seq:06d}"
+        if not repo.find_by_company_and_document(organization_id, candidate):
+            return candidate
+        next_seq += 1
+
+    raise ValueError("Could not allocate a manual order number")
+
+
+def _line_amounts(line) -> tuple[float, float, float, float]:
+    """Authoritative (subtotal, discount, tax, line_total) for one line.
+
+    When the line carries a STRUCTURED tax/discount breakdown we recompute it
+    through the same `LineCalculator` a sale uses, so a pedido and the factura
+    it later becomes agree. When it carries only flat amounts — which is all an
+    imported line ever has — we recompute the arithmetic but take the caller's
+    tax figure, because there is nothing to derive it from.
+
+    Either way the ORDER totals are summed from these values and never read from
+    the request body.
+    """
+    gross = Decimal(str(line.unit_price or 0)) * Decimal(str(line.quantity or 0))
+
+    if line.taxes or line.discounts:
+        calc = LineCalculator()
+        computed = calc.compute(
+            LineInput(
+                price=Decimal(str(line.unit_price or 0)),
+                quantity=Decimal(str(line.quantity or 0)),
+                is_packaged=True,
+                detail_quantity=Decimal(str(line.quantity or 1)),
+                discounts=[
+                    ProductDiscountDTO(
+                        discount_type_id=d.code or "99",
+                        # Nota 20 requires a nature for code 99; the FE collects
+                        # it, and the calculator rejects the line without it.
+                        reason=d.nature,
+                        percentage=d.percentage,
+                        is_amount=d.percentage is None and d.amount is not None,
+                        amount=d.amount,
+                    )
+                    for d in (line.discounts or [])
+                ],
+                taxes=[
+                    ProductTaxDTO(
+                        tax_type_id=t.code or "01",
+                        tax_rate=(
+                            TaxRateDTO(percentage=t.rate, code=t.rate_code)
+                            if t.rate is not None
+                            else None
+                        ),
+                        is_amount=t.rate is None and t.amount is not None,
+                        amount=t.amount,
+                    )
+                    for t in (line.taxes or [])
+                ],
+            ),
+            cabys_code=line.cabys,
+        )
+        subtotal = computed.subtotal
+        discount = computed.discount.total_discount_amount
+        tax = computed.tax.net_tax
+        return (
+            _round_money(subtotal),
+            _round_money(discount),
+            _round_money(tax),
+            _round_money(subtotal + tax),
+        )
+
+    discount = Decimal(str(line.discount or 0))
+    tax = Decimal(str(line.tax or 0))
+    subtotal = gross - discount
+    return (
+        _round_money(subtotal),
+        _round_money(discount),
+        _round_money(tax),
+        _round_money(subtotal + tax),
+    )
+
+
+def create_manual_order(
+    organization_id: str,
+    dto: CreateManualOrderDTO,
+    created_by: Optional[str] = None,
+    idempotency_key: Optional[str] = None,
+) -> OrderResponse:
+    """Create a pedido captured by hand in the POS document editor.
+
+    Contract: docs/MANUAL_ORDERS.md §9. The rules that matter:
+
+    1. Totals in the body are a HINT. Everything is recomputed here.
+    2. `document_number` may be user-supplied; a collision is a 409, not a
+       silent overwrite.
+    3. `Idempotency-Key` is honoured, because a pedido captured offline is
+       replayed from the outbox and must not become two orders.
+    4. `order_type` never becomes '73' — that is cross-docking.
+    """
+    with OrderRepository() as repo:
+        # ── Idempotent replay ────────────────────────────────────────────
+        if idempotency_key:
+            existing = repo.session.execute(
+                select(Order).where(
+                    Order.company_id == organization_id,
+                    Order.idempotency_key == idempotency_key,
+                )
+            ).scalars().first()
+            if existing:
+                return order_to_response(existing)
+
+        client_repo = ClientRepository.from_session(repo.session)
+        store_repo = StoreRepository.from_session(repo.session)
+        dept_repo = DepartmentRepository.from_session(repo.session)
+
+        client = None
+        if dto.client_id:
+            client = client_repo.find_by_id_and_company(
+                uuid.UUID(dto.client_id), organization_id
+            )
+            if not client:
+                raise LookupError(f"Client '{dto.client_id}' not found")
+
+        # ── Delivery target ──────────────────────────────────────────────
+        loc = dto.delivery_location
+        store = None
+        if loc and loc.mode == "store" and loc.store_id:
+            store = store_repo.find_by_id_and_company(
+                uuid.UUID(loc.store_id), organization_id
+            )
+            if not store:
+                raise LookupError(f"Store '{loc.store_id}' not found")
+            if client and store.client_id != client.client_id:
+                raise ValueError("Delivery point does not belong to the selected client")
+
+        has_address = bool(loc and (loc.address or loc.state_id))
+        if not store and not has_address:
+            # The free-text blob that used to satisfy this is gone on purpose.
+            raise ValueError("A delivery point or an address is required")
+
+        department = None
+        if dto.department_id:
+            department = dept_repo.find_by_id_and_company(
+                uuid.UUID(dto.department_id), organization_id
+            )
+            if not department:
+                raise LookupError(f"Department '{dto.department_id}' not found")
+            if client and department.client_id != client.client_id:
+                raise ValueError("Department does not belong to the selected client")
+
+        # ── Document number ──────────────────────────────────────────────
+        if dto.document_number and dto.document_number.strip():
+            document_number = dto.document_number.strip()
+            if repo.find_by_company_and_document(organization_id, document_number):
+                raise FileExistsError(
+                    f"Order '{document_number}' already exists for this organization"
+                )
+        else:
+            document_number = _generate_manual_document_number(repo, organization_id)
+
+        order_type = dto.order_type or "manual"
+        if order_type == _CROSSDOCKING_ORDER_TYPE:
+            raise ValueError("order_type '73' is reserved for cross-docking")
+
+        order = Order(
+            company_id=organization_id,
+            document_number=document_number,
+            source="manual",
+            document_type=dto.document_type or "PM",
+            order_type=order_type,
+            order_status=_QUOTE_STATUS if dto.is_quote else _PENDING_STATUS,
+            creation_date=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            delivery_date=dto.delivery_date,
+            created_by=created_by,
+            idempotency_key=idempotency_key,
+            client_id=client.client_id if client else None,
+            deliver_to_store_id=store.store_id if store else None,
+            department_id=department.department_id if department else None,
+            delivery_location_name=(loc.name if loc else None),
+            # `receiver` / `custom` modes reuse the storefront pedido's columns
+            # rather than inventing a second address shape.
+            state_id=(loc.state_id if loc else None),
+            county_id=(loc.county_id if loc else None),
+            district_id=(loc.district_id if loc else None),
+            neighborhood_id=(loc.neighborhood_id if loc else None),
+            delivery_address=(loc.address if loc else None),
+            activity_code=dto.activity_code,
+            sale_condition=dto.sale_condition,
+            credit_term=dto.credit_term,
+            currency_code=dto.currency_code,
+            exchange_rate=dto.exchange_rate,
+            assignment_id=dto.assignment_id,
+            branch_number=dto.branch_number,
+            terminal_number=dto.terminal_number,
+            payments=[p.model_dump() for p in dto.payments] if dto.payments else [],
+            event=dto.event,
+            comment=dto.comment,
+            asset_id=uuid.UUID(dto.asset_id) if dto.asset_id else None,
+            odometer=dto.odometer,
+            reported_issue=dto.reported_issue,
+        )
+
+        # ── Lines + authoritative totals ─────────────────────────────────
+        subtotal = Decimal("0")
+        discounts = Decimal("0")
+        taxes = Decimal("0")
+        quantities = Decimal("0")
+
+        for line in dto.lines:
+            line_subtotal, line_discount, line_tax, line_total = _line_amounts(line)
+            subtotal += Decimal(str(line_subtotal)) + Decimal(str(line_discount))
+            discounts += Decimal(str(line_discount))
+            taxes += Decimal(str(line_tax))
+            quantities += Decimal(str(line.quantity or 0))
+
+            order.lines.append(
+                OrderLine(
+                    line_number=line.line_number,
+                    product_id=line.product_id,
+                    description=line.description,
+                    article_code=line.internal_code,
+                    quantity_ordered=int(line.quantity or 0),
+                    units_ordered=int(line.quantity or 0),
+                    unit_price=line.unit_price,
+                    net_price=line.unit_price,
+                    discount=line_discount,
+                    tax=line_tax,
+                    line_total=line_total,
+                    cabys=line.cabys,
+                    taxes=[t.model_dump() for t in line.taxes] if line.taxes else None,
+                    discounts=(
+                        [d.model_dump() for d in line.discounts] if line.discounts else None
+                    ),
+                )
+            )
+
+        order.subtotal = _round_money(subtotal)
+        order.discounts = _round_money(discounts)
+        order.net_total = _round_money(subtotal - discounts)
+        order.taxes = _round_money(taxes)
+        order.grand_total = _round_money(subtotal - discounts + taxes)
+        order.total_quantities = int(quantities)
+        order.line_count = len(order.lines)
+
+        if dto.totals and abs(float(order.grand_total) - float(dto.totals.grand_total)) > 0.01:
+            logger.warning(
+                "Manual order %s: client total %.5f != server total %.5f — server wins",
+                document_number,
+                dto.totals.grand_total,
+                order.grand_total,
+            )
+
+        order = repo.save(order)
+        return order_to_response(order)
+
+
+def generate_order_ticket(organization_id: str, document_number: str) -> OrderResponse:
+    """Render (or re-render) the order's 80mm ticket and return the order.
+
+    On demand rather than at creation: most orders are never printed, and
+    rendering a PDF per order would spend Lambda time on paper nobody asks for.
+    Re-rendering is deliberate too — a ticket reprinted after the order was
+    invoiced should show the consecutive and QR it did not have before.
+    """
+    from app.services.ticket_service import create_order_ticket
+
+    with OrderRepository() as repo:
+        order = repo.find_by_company_and_document(organization_id, document_number)
+        if not order:
+            raise LookupError(f"Order '{document_number}' not found")
+
+        order.ticket_url = create_order_ticket(order)
+        order = repo.save(order)
+        return order_to_response(order)
+
+
+def link_order_invoice(
+    organization_id: str,
+    document_number: str,
+    sale_id: str,
+    document_type: Optional[str] = None,
+    consecutive_number: Optional[str] = None,
+    document_key: Optional[str] = None,
+    issued_on: Optional[str] = None,
+) -> OrderResponse:
+    """Record that a delivered order was billed.
+
+    Without this the frontend cannot know a pedido is already invoiced, and
+    nothing stops a second factura being issued for the same order.
+    """
+    with OrderRepository() as repo:
+        order = repo.find_by_company_and_document(organization_id, document_number)
+        if not order:
+            raise LookupError(f"Order '{document_number}' not found")
+
+        if order.invoice_sale_id and order.invoice_sale_id != sale_id:
+            raise FileExistsError(
+                f"Order '{document_number}' is already invoiced as "
+                f"{order.invoice_consecutive_number or order.invoice_sale_id}"
+            )
+
+        order.invoice_sale_id = sale_id
+        order.invoice_document_type = document_type
+        order.invoice_consecutive_number = consecutive_number
+        order.invoice_document_key = document_key
+        order.invoice_issued_on = issued_on or datetime.now(timezone.utc).isoformat()
+
+        order = repo.save(order)
+        return order_to_response(order)

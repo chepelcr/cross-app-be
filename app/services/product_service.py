@@ -139,6 +139,20 @@ def get_product(organization_id: str, product_id: str) -> Optional[ProductRespon
         return _map_product(product)
 
 
+def get_product_by_any_code(organization_id: str, code: str) -> Optional[ProductResponse]:
+    """Resolve a scanned code to a product, whatever code type it is filed under.
+
+    Ungated on purpose (TSR-155): scanning is how a POS is used, so this rides
+    the `commercial/read/products` permission every organization already holds
+    rather than a vertical module.
+    """
+    with ProductRepository() as repo:
+        product = repo.find_by_company_and_any_code(organization_id, code)
+        if not product:
+            return None
+        return _map_product(product)
+
+
 def get_product_by_code(
     organization_id: str, hacienda_code: str, code: str
 ) -> Optional[ProductResponse]:

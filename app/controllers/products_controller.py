@@ -109,6 +109,38 @@ class ProductsController:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.get(
+            "/api/organizations/{organization_id}/products/by-code/{code}",
+            response_model=ProductResponse,
+            tags=["products"],
+            summary="Find a product by any of its codes (scanner lookup)",
+            description="""Resolve a scanned code to a product.
+
+Matches the code NUMBER against every entry in the product's `codes` array,
+whatever type it is filed under — a scanner hands over digits without saying
+whether they are the EAN, the internal code or the client's article code.
+
+**Not gated by business type.** Scanning is how a POS is used; a ferretería, a
+farmacia and a salón all do it. It rides the `commercial/read/products`
+permission every organization already holds.
+
+Returns **404** when nothing matches, so the caller can fall back to a normal
+filtered search.""",
+        )
+        async def get_product_by_code(
+            organization_id: Annotated[str, Path(description="Organization identifier")],
+            code: Annotated[str, Path(description="Scanned code (any code type)")],
+        ):
+            try:
+                result = product_service.get_product_by_any_code(organization_id, code)
+                if not result:
+                    raise HTTPException(status_code=404, detail="Product not found")
+                return result
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.get(
             "/api/organizations/{organization_id}/products/{product_id}",
             response_model=ProductResponse,
             tags=["products"],

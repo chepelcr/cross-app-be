@@ -24,3 +24,6 @@ example-files/*
 .vscode/
 .kiro/
 urgent/
+
+# Local virtualenv used to run alembic/pytest against the dev DB.
+.venv-migrate/

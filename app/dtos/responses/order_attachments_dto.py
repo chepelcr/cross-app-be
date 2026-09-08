@@ -13,3 +13,11 @@ class OrderAttachmentsDTO(AttachmentsDTO):
         None,
         description="URL to Nuevo Reporte Excel document"
     )
+
+    ticket_url: Optional[str] = Field(
+        None,
+        description=(
+            "80mm thermal ticket PDF (TSR-127). Generated server-side like the "
+            "other documents, so a re-print is byte-identical to the original."
+        )
+    )

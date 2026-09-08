@@ -47,6 +47,7 @@ class Client(Base, AuditMixin):
     # Relationships
     stores: Mapped[List["Store"]] = relationship(back_populates="client", cascade="all, delete-orphan")
     departments: Mapped[List["Department"]] = relationship(back_populates="client", cascade="all, delete-orphan")
+    assets: Mapped[List["ClientAsset"]] = relationship(back_populates="client", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("idx_client_company_gln_nationality", "company_id", "client_gln", "nationality", unique=True),

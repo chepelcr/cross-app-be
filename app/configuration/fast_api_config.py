@@ -4,6 +4,9 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.controllers.assignments_controller import AssignmentsController
 from app.controllers.branch_types_controller import BranchTypesController
+from app.controllers.restaurant_controller import RestaurantController
+from app.controllers.verticals_controller import VerticalsController
+from app.controllers.tables_controller import TablesController
 from app.controllers.branches_controller import BranchesController
 from app.controllers.categories_controller import CategoriesController
 from app.controllers.clients_controller import ClientsController
@@ -27,6 +30,9 @@ class FastApiConfig:
         self.app.add_middleware(UserIdMiddleware)
         AssignmentsController(self.app)
         BranchTypesController(self.app)
+        TablesController(self.app)
+        RestaurantController(self.app)
+        VerticalsController(self.app)
         BranchesController(self.app)
         CategoriesController(self.app)
         ClientsController(self.app)

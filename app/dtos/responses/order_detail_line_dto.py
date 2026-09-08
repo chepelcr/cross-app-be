@@ -116,3 +116,40 @@ class OrderDetailLineResponse(BaseModel):
         description="Article code",
         examples=["ART-001", "ARTICLE-456"]
     )
+
+    product_id: Optional[str] = Field(
+        None,
+        description=(
+            "Catalog product this line came from. REQUIRED to rebuild a cart "
+            "when billing the order later — lines are linked by product_id, "
+            "never by description."
+        ),
+        examples=["7f3d…", None]
+    )
+
+    cabys: Optional[str] = Field(
+        None,
+        description=(
+            "CABYS code captured with the line. Kept even though a pedido is "
+            "not fiscal: fabricating one later would put the wrong tax rate on "
+            "a real document."
+        ),
+        examples=["0161010150000", None]
+    )
+
+    net_price: Optional[float] = Field(
+        None,
+        description="Unit price before tax",
+        ge=0,
+        examples=[3500.00, None]
+    )
+
+    taxes: Optional[list] = Field(
+        None,
+        description="Per-line tax breakdown [{code, rate_code, rate, base, amount}]",
+    )
+
+    discounts: Optional[list] = Field(
+        None,
+        description="Per-line discount cascade [{code, nature, percentage, amount}]",
+    )

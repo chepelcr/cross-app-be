@@ -22,11 +22,23 @@ class DiscountType(str, Enum):
 
     Labels mirror the spec names so business logic reads naturally; the
     string values stay stable to preserve persisted JSONB payloads.
+
+    Mirrors the `discount_types` catalog served by data-be (country 188).
+    Only 01/03 re-route IVA to the factory — see
+    FACTORY_ASSUMED_DISCOUNT_NATURES below — and only 99 requires a free-text
+    reason, which is why COMMERCIAL (07) is the right default for an imported
+    line that carries a discount but no type.
     """
 
-    ROYALTY = "01"                     # Descuento por regalía
-    ROYALTY_BONUS_VAT_CUSTOMER = "02"  # Regalía / bonificación, IVA al cliente
-    BONUS = "03"                       # Descuento por bonificación
+    ROYALTY = "01"                     # Descuento por Regalía
+    ROYALTY_BONUS_VAT_CUSTOMER = "02"  # Regalía / bonificación, IVA cobrado al cliente
+    BONUS = "03"                       # Descuento por Bonificación
+    VOLUME = "04"                      # Descuento por volumen
+    SEASONAL = "05"                    # Descuento por Temporada (estacional)
+    PROMOTIONAL = "06"                 # Descuento promocional
+    COMMERCIAL = "07"                  # Descuento Comercial
+    FREQUENCY = "08"                   # Descuento por frecuencia
+    SUSTAINED = "09"                   # Descuento sostenido
     OTHER = "99"                       # Otros (requires reason)
 
 

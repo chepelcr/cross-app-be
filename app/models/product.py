@@ -52,6 +52,19 @@ class Product(Base, TimestampMixin):
     duration: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     difficulty: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
+    # ── Vertical flags (TSR-154 / 155 / 159 / 162) ────────────────────────
+    # A combo's price is its OWN price, never the sum of its parts; the parts
+    # live in `combo_items` and the POS explodes the line so each keeps its
+    # own CABYS and IVA rate.
+    is_combo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Licor / cigarrillos — prompts the cashier once per cart.
+    is_age_restricted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Pharmacy: needs a lot at the till, and/or a register entry before checkout.
+    is_lot_tracked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_controlled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Salón / taller: how long a service occupies a slot in the agenda.
+    duration_minutes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
     # Cross-docking column (kept for units per box)
     units_per_box: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True, default=0)
 

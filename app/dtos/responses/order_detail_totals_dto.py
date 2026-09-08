@@ -53,6 +53,20 @@ class OrderDetailTotals(BaseModel):
         examples=[1000.00, 5000.50, 10000.00]
     )
     
+    discounts: float = Field(
+        default=0,
+        description="Total discount amount across all lines",
+        ge=0,
+        examples=[0.0, 50.00, 100.00]
+    )
+
+    taxes: float = Field(
+        default=0,
+        description="Total tax amount across all lines",
+        ge=0,
+        examples=[0.0, 123.50, 1300.00]
+    )
+
     net_total: float = Field(
         ...,
         description="Net total (subtotal - discounts)",

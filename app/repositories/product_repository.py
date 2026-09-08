@@ -41,6 +41,40 @@ class ProductRepository(DatabaseConnection):
             logger.error(f"Error finding product {product_id} for company {company_id}: {e}", exc_info=True)
             raise
 
+    def find_by_company_and_any_code(
+        self, company_id: str, code: str
+    ) -> Optional[Product]:
+        """Find a product by code NUMBER, whatever code type it is filed under.
+
+        A scanner hands over digits with no indication of whether they are the
+        EAN, the internal code or the client's article code — so unlike
+        `find_by_company_and_code` this matches on the number alone.
+
+        JSONB containment matches partial objects, so probing with just
+        `{"number": ...}` hits any entry in the codes array regardless of its
+        `code_type_id`.
+        """
+        try:
+            from sqlalchemy import cast
+            from sqlalchemy.dialects.postgresql import JSONB
+
+            stmt = select(Product).where(
+                and_(
+                    Product.organization_id == company_id,
+                    Product.status != ProductStatus.DELETED,
+                    Product.codes.op("@>")(cast([{"number": code}], JSONB)),
+                )
+            )
+            # A code should be unique per org, but duplicates exist in real
+            # catalogs; first match beats raising at the till.
+            return self.session.execute(stmt).scalars().first()
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error finding product by code {code} for company {company_id}: {e}",
+                exc_info=True,
+            )
+            raise
+
     def find_by_company_and_code(
         self, company_id: str, hacienda_code: str, code: str, exclude_product_id: Optional[str] = None
     ) -> Optional[Product]:

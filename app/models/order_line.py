@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 from sqlalchemy import BigInteger, ForeignKey, Index, Numeric, String
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import AuditMixin, Base
@@ -26,6 +27,20 @@ class OrderLine(Base, AuditMixin):
     dispatch_rejection_reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     quantity_received: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True, default=0)
     article_code: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+
+    # --- Manual-order line detail (TSR-152) -------------------------------
+    # A hand-captured line is not always a catalog product, and billing the
+    # order later needs its CABYS — fabricating one would put the wrong rate on
+    # a fiscal document.
+    description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    cabys: Mapped[Optional[str]] = mapped_column(String(13), nullable=True)
+    #: Unit price BEFORE tax, distinct from `unit_price` on imported lines.
+    net_price: Mapped[Optional[float]] = mapped_column(Numeric(18, 5), nullable=True)
+    #: Per-line breakdowns, JSON rather than child tables: a pedido is not a
+    #: fiscal document and is excluded from the D-150 report, so nothing queries
+    #: these per tax code. Promote to `order_line_taxes` if that ever changes.
+    taxes: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    discounts: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
     # Normalized FK
     product_id: Mapped[Optional[str]] = mapped_column(

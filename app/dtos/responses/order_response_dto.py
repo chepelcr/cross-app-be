@@ -116,6 +116,42 @@ class OrderResponse(BaseModel):
         description="Delivery location information"
     )
     
+    source: Optional[str] = Field(
+        None,
+        description=(
+            "Where the order came from: 'import' (Excel), 'manual' (POS pedido "
+            "manual) or 'storefront'. The IVA report excludes manual orders — "
+            "a pedido is not a fiscal document."
+        ),
+        examples=["import", "manual", "storefront"]
+    )
+
+    currency_code: Optional[str] = Field(
+        None,
+        description="Currency the order was captured in",
+        examples=["CRC", "USD"]
+    )
+
+    exchange_rate: Optional[float] = Field(
+        None,
+        description="Exchange rate at capture time",
+        examples=[1, 512.35]
+    )
+
+    is_quote: Optional[bool] = Field(
+        None,
+        description="True while order_status is 'quote' (a proforma awaiting approval)",
+    )
+
+    invoice: Optional[dict] = Field(
+        None,
+        description=(
+            "The electronic document that billed this order, once linked. "
+            "Its presence is what lets the UI hide 'Facturar pedido' and stop "
+            "a second factura being issued."
+        ),
+    )
+
     event: Optional[str] = Field(
         None,
         description="Event identifier",
