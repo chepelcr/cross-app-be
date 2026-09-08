@@ -1,5 +1,17 @@
 """Order Status Enum."""
 
+# `can_transition` annotates `current: str | None`. PEP 604 unions are only
+# valid as *runtime* expressions on Python 3.10+, and this service deploys on
+# the python3.9 Lambda runtime — so without this import the annotation is
+# evaluated at def time and raises
+#   TypeError: unsupported operand type(s) for |: 'type' and 'NoneType'
+# at import. That crashed every cd-backend invocation (orders, branches,
+# terminals, sessions, assignments), which took the whole POS down: a cashier
+# could not load a puesto, so no shift could start and no document could be
+# created. Postponed evaluation keeps annotations as strings, so this is safe
+# on 3.9 and stays correct once the runtime moves.
+from __future__ import annotations
+
 from enum import Enum
 
 
