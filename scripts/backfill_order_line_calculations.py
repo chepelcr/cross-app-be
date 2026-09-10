@@ -12,8 +12,9 @@ This walks the existing rows and brings them up to what `order_service` now
 produces on import:
 
   1. lines missing their fiscal detail get it from the linked product (CABYS,
-     net price, the configured taxes) and from the order (the discount, as
-     **07 Descuento Comercial**);
+     net price, the configured taxes, the unit of measure and the rest of the
+     document line) and from the order (the discount, as **07 Descuento
+     Comercial**);
   2. an order whose lines all show a zero discount while the HEADER totals one
      has that discount allocated across the lines in proportion to their gross —
      the same rule the import applies;
@@ -95,6 +96,22 @@ def _allocate_over_lines(order: Order) -> dict[int, float]:
     return {k: float(v) for k, v in allocated.items() if v > 0}
 
 
+def _clear_bad_base_amounts(order: Order) -> None:
+    """Undo a `base_amount` copied from the product by an earlier run.
+
+    `OrderLine.base_amount` arrived with migration `bd0e1f2a3b4c` and is written
+    from exactly two places: a manual order that carries one in its payload, and
+    a briefly-shipped version of this script that wrongly copied the PRODUCT's
+    computed base. Only the second kind exists on an imported order, so clearing
+    it there restores the derived base without touching anything an operator set.
+    """
+    if (order.source or "").strip() == "manual":
+        return
+    for line in (order.lines or []):
+        if line.base_amount is not None:
+            line.base_amount = None
+
+
 def backfill_order(order: Order, product_repo: ProductRepository) -> dict:
     """Bring one order's lines up to date. Returns a before/after summary."""
     before = {
@@ -103,6 +120,7 @@ def backfill_order(order: Order, product_repo: ProductRepository) -> dict:
         "grand_total": float(order.grand_total or 0),
     }
 
+    _clear_bad_base_amounts(order)
     allocated = _allocate_over_lines(order)
 
     for line in (order.lines or []):
@@ -115,6 +133,32 @@ def backfill_order(order: Order, product_repo: ProductRepository) -> dict:
             line.net_price = _imported_line_net_price(line, product)
         if not line.taxes and product is not None:
             line.taxes = _imported_line_taxes(product)
+
+        # The rest of the document line (migration `bd0e1f2a3b4c`). These
+        # columns are new, so every existing line has them empty — including
+        # `unit_measure`, which Hacienda requires on every line and which the
+        # invoice would otherwise have to guess as "Unid".
+        #
+        # `base_amount` is deliberately NOT among them. The product column of
+        # that name is a computed OUTPUT (the IVA base at quantity 1), while the
+        # line column is the editable-base OVERRIDE the calculator prices off —
+        # copying one into the other pins a 23-unit line's tax to one unit's
+        # base. It is set per line, by the operator, for tax code 07 or
+        # IVACobradoFabrica 01, and nowhere else.
+        if product is not None:
+            if not line.unit_measure:
+                line.unit_measure = product.unit_measure
+            if not line.commercial_unit_measure:
+                line.commercial_unit_measure = product.commercial_unit_measure
+            if not line.customs_part:
+                line.customs_part = product.customs_part
+            if not line.iva_collected_factory:
+                line.iva_collected_factory = product.iva_collected_factory
+            if not line.codes and product.codes:
+                # The product's array is the only source for a line imported
+                # before the line carried its own codes. Newer imports write
+                # the LINE's codes and this is skipped.
+                line.codes = [dict(c) for c in product.codes]
         if not line.discounts:
             amount = float(line.discount or 0) or allocated.get(line.line_id, 0.0)
             if amount > 0:

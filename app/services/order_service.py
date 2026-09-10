@@ -948,7 +948,11 @@ def _rebuild_imported_lines(
             unit_measure=product.unit_measure,
             commercial_unit_measure=product.commercial_unit_measure,
             customs_part=product.customs_part,
-            base_amount=product.base_amount,
+            # NOT `product.base_amount`. That column is a computed OUTPUT —
+            # `product_service` overwrites it with the calculated IVA base at
+            # quantity 1 — while `OrderLine.base_amount` is the editable-base
+            # OVERRIDE the calculator prices off. Copying one into the other
+            # pins a 23-unit line's tax to a single unit's base.
             iva_collected_factory=product.iva_collected_factory,
         )
         _recompute_imported_line(line, product)
