@@ -16,7 +16,15 @@ from decimal import ROUND_HALF_UP, Decimal
 
 import pytest
 
-from app.dtos.requests.product_request_dto import ProductDiscountDTO, ProductTaxDTO
+from app.dtos.requests.manual_order_dto import ManualOrderLineDTO
+from app.dtos.requests.product_request_dto import (
+    ProductDiscountDTO,
+    ProductTaxDTO,
+    TaxAmountDTO,
+    TaxFactorDTO,
+    TaxRateDTO,
+    TaxSpecialFieldsDTO,
+)
 from app.enums.hacienda_codes import DiscountType
 from app.services.line_calculation_service import LineCalculator, LineInput
 
@@ -24,6 +32,8 @@ D = Decimal
 
 _HELPERS = {
     "_round_money",
+    "canonical_line_dtos",
+    "_line_amounts",
     "_normalize_tax_row",
     "_normalize_discount_row",
     "_imported_line_discounts",
@@ -54,6 +64,10 @@ def _load_helpers() -> dict:
         "DiscountType": DiscountType,
         "ProductDiscountDTO": ProductDiscountDTO,
         "ProductTaxDTO": ProductTaxDTO,
+        "TaxAmountDTO": TaxAmountDTO,
+        "TaxFactorDTO": TaxFactorDTO,
+        "TaxRateDTO": TaxRateDTO,
+        "TaxSpecialFieldsDTO": TaxSpecialFieldsDTO,
         "LineCalculator": LineCalculator,
         "LineInput": LineInput,
     }
@@ -252,3 +266,105 @@ class TestLegacyRowNormalization:
             "amount": 250.0,
             "is_amount": True,
         }
+
+
+class TestPosLineRoundTrip:
+    """A POS-captured excise line has to survive being stored and re-read.
+
+    The path is: POS payload -> canonical JSONB -> recompute (reprocess or
+    backfill) -> the invoice. Every hop has to produce the same money, or the
+    pedido the customer signed for and the factura they receive differ.
+    """
+
+    def _beer_line(self) -> ManualOrderLineDTO:
+        # 12 cans of 355 ml beer at 4.5%, ISEBA + 13% IVA, 10% trade discount.
+        return ManualOrderLineDTO(
+            line_number=1,
+            description="Cerveza 355ml",
+            quantity=12,
+            unit_price=1000,
+            cabys="2434001000000",
+            taxes=[
+                {
+                    "code": "04",
+                    "special_fields": {
+                        "quantity": 0.355,
+                        "percentage": 4.5,
+                        "tax_amount_id": 7,
+                        "tax_unit_amount": 3500,
+                    },
+                },
+                {"code": "01", "rate": 13.0, "rate_code": "08"},
+            ],
+            discounts=[{"code": "07", "percentage": 10.0}],
+        )
+
+    def test_excise_line_prices_correctly_at_capture(self) -> None:
+        subtotal, discount, tax, total = helpers["_line_amounts"](self._beer_line())
+
+        assert subtotal == pytest.approx(10800.0)   # 12 000 less 10%
+        assert discount == pytest.approx(1200.0)
+        # ISEBA: volume 0.355 rounds to 0.36 L, proportion 0.0162,
+        # 12 x 0.0162 x 3 500 = 680.40. The issuer absorbs it (-476), so it is
+        # NOT in the customer's tax — but it still builds the IVA base (-454):
+        # (10 800 + 680.40) x 13% = 1 492.452.
+        assert tax == pytest.approx(1492.452)
+        assert total == pytest.approx(12292.452)
+
+    def test_stored_shape_recomputes_to_the_same_numbers(self) -> None:
+        line = self._beer_line()
+        subtotal, discount, tax, total = helpers["_line_amounts"](line)
+
+        discount_dtos, tax_dtos = helpers["canonical_line_dtos"](line)
+        stored = Row(
+            quantity_ordered=12,
+            units_ordered=12,
+            unit_price=1000.0,
+            net_price=1000.0,
+            cabys="2434001000000",
+            discount=0.0,
+            tax=0.0,
+            line_total=0.0,
+            taxes=[t.model_dump() for t in tax_dtos],
+            discounts=[d.model_dump() for d in discount_dtos],
+        )
+        helpers["_recompute_imported_line"](stored)
+
+        assert stored.discount == pytest.approx(discount)
+        assert stored.tax == pytest.approx(tax)
+        assert stored.line_total == pytest.approx(total)
+
+    def test_special_fields_survive_the_round_trip(self) -> None:
+        """A per-unit excise cannot be recovered from a total.
+
+        If the volume, the degree and the per-unit amount do not reach storage,
+        billing the pedido later has no way back to the excise — which is why
+        the manual-order DTO carries them at all.
+        """
+        _, tax_dtos = helpers["canonical_line_dtos"](self._beer_line())
+        special = tax_dtos[0].special_fields
+        assert special is not None
+        assert special.quantity == 0.355
+        assert special.percentage == 4.5
+        assert special.tax_amount.amount == 3500.0
+
+    def test_a_legacy_row_still_computes(self) -> None:
+        """Rows written before the shapes were unified are still in the database.
+
+        They are precisely the ones a backfill exists to repair, so failing to
+        read them would skip the orders that need it most.
+        """
+        legacy = Row(
+            quantity_ordered=12,
+            units_ordered=12,
+            unit_price=1000.0,
+            net_price=1000.0,
+            cabys=None,
+            discount=0.0,
+            tax=0.0,
+            line_total=0.0,
+            taxes=[{"code": "01", "rate": 13.0, "rate_code": "08"}],
+            discounts=[{"code": "07", "percentage": 10.0, "nature": None}],
+        )
+        helpers["_recompute_imported_line"](legacy)
+        assert legacy.tax == pytest.approx(10800 * 0.13)

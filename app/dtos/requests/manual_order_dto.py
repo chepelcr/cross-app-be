@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -54,7 +54,10 @@ class ManualOrderTaxSpecialFieldsDTO(BaseModel):
     proportion: Optional[float] = Field(None, ge=0)
     volume_consumption: Optional[float] = Field(None, ge=0)
     #: data-api catalog id of the per-unit amount (`tax_amounts`).
-    tax_amount_id: Optional[str] = Field(None, max_length=50)
+    #: Accepts an int as well as a string: the FE types it as a number (the
+    #: catalog serves integer ids) while everything downstream keys on the
+    #: string, and a strict `str` here rejects the POS's own payload.
+    tax_amount_id: Optional[Union[str, int]] = Field(None)
     #: The per-unit amount itself, so the pedido can be recomputed offline.
     tax_unit_amount: Optional[float] = Field(None, ge=0)
 
