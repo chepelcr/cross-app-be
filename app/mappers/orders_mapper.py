@@ -215,9 +215,19 @@ def build_crossdocking_data(order: Order) -> CrossDockingData:
                 ItemResponse(
                     internal_code=internal_code,
                     original_code=original_code,
-                    # A manual line is not always a catalog product, so its own
-                # description wins over the product's.
-                description=(ln.description or (p.description if p else "") or ""),
+                    # A crossdocking item is always a catalog product — the
+                    # model has no description column of its own — so the
+                    # description comes from the product.
+                    #
+                    # This line was pasted from order_to_response, which
+                    # iterates `ln` over ORDER LINES and falls back to the
+                    # line's own description because a manual line need not be
+                    # a catalog product. Neither applies here: the stray `ln`
+                    # made every crossdocking order 500 with "NameError: name
+                    # 'ln' is not defined", and `it.description` would only
+                    # have traded it for an AttributeError. The mangled
+                    # indentation on these lines came from the same paste.
+                    description=(p.description if p else "") or "",
                     quantity=it.quantity or 0,
                     units_per_box=(p.units_per_box if p else 0) or 0,
                     total_units=it.total_units or 0,
