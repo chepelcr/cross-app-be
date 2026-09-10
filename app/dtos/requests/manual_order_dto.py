@@ -37,6 +37,28 @@ class ManualOrderDeliveryLocationDTO(BaseModel):
     address: Optional[str] = Field(None, max_length=500)
 
 
+class ManualOrderTaxSpecialFieldsDTO(BaseModel):
+    """Per-unit parameters for the specific excises (codes 03/04/05/06/12).
+
+    These taxes are not a rate on a base — each multiplies a per-unit amount by
+    a quantity, a volume or a proportion — so a line that omits them cannot be
+    recomputed at all, and an invoice built from the pedido later would have to
+    invent them. Mirrors `TaxSpecialFieldsDTO` on the product side, which is the
+    shape these are stored and recomputed in.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    quantity: Optional[float] = Field(None, ge=0)
+    percentage: Optional[float] = Field(None, ge=0)
+    proportion: Optional[float] = Field(None, ge=0)
+    volume_consumption: Optional[float] = Field(None, ge=0)
+    #: data-api catalog id of the per-unit amount (`tax_amounts`).
+    tax_amount_id: Optional[str] = Field(None, max_length=50)
+    #: The per-unit amount itself, so the pedido can be recomputed offline.
+    tax_unit_amount: Optional[float] = Field(None, ge=0)
+
+
 class ManualOrderTaxDTO(BaseModel):
     """Per-line tax breakdown. Kept structured so the server can recompute."""
 
@@ -48,6 +70,11 @@ class ManualOrderTaxDTO(BaseModel):
     base: Optional[float] = Field(None, ge=0)
     amount: Optional[float] = Field(None, ge=0)
     factory_assumed: Optional[bool] = False
+    #: Required when code = "99" (Otros).
+    other_tax_type: Optional[str] = Field(None, max_length=100)
+    #: `FactorCalculoIVA` for code "08" (régimen de bienes usados).
+    factor: Optional[float] = Field(None, ge=0)
+    special_fields: Optional[ManualOrderTaxSpecialFieldsDTO] = None
 
 
 class ManualOrderDiscountDTO(BaseModel):

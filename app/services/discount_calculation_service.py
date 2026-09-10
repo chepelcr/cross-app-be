@@ -4,9 +4,16 @@
 the *remaining* balance, never to the original (so 10% then 5% on 1000 yields
 1000 -> 900 -> 855, not 850). Royalty/bonus discounts (codes 01/03) set the
 `royalty_bonus_present` flag the tax calculator reads to route IVA into
-`ImpuestoAsumidoEmisorFabrica`. Code 02 (royalty/bonus with VAT to customer)
-sets `customer_pays_tax_on_original_base` — the IVA stays on the customer's
-tab but is computed on the pre-discount base.
+`ImpuestoAsumidoEmisorFabrica` and to price it on the pre-discount base.
+
+Code 02 ("Regalía/bonificación con IVA cobrado al cliente") is deliberately NOT
+special-cased. The analysis doc reads as though the customer pays a tax computed
+on the original total, but Hacienda rejects a document built that way, with -45
+("el monto del impuesto de la línea no corresponde al valor de multiplicar la
+base imponible por la tarifa") and -454 ("el cálculo del monto Base Imponible no
+concuerda con 'Subtotal' ...") together pinning the tax to the DISCOUNTED base.
+Filed at 3% and at 100%; rejected both times. So 02 cascades like any ordinary
+nature. Mirrors `jbiller_common.hacienda.services.discount_service`.
 """
 from __future__ import annotations
 
@@ -78,17 +85,12 @@ class DiscountCalculator:
         royalty_bonus_present = any(
             d.discount_type_id in FACTORY_ASSUMED_DISCOUNT_NATURES for d in discounts
         )
-        customer_pays_tax_on_original_base = any(
-            d.discount_type_id == DiscountType.ROYALTY_BONUS_VAT_CUSTOMER.value
-            for d in discounts
-        )
 
         return LineDiscountResult(
             subtotal_after_discount=remaining,
             total_discount_amount=total,
             per_discount=rows,
             royalty_bonus_present=royalty_bonus_present,
-            customer_pays_tax_on_original_base=customer_pays_tax_on_original_base,
             discounted_reasons=reasons,
         )
 

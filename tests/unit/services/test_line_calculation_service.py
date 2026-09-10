@@ -78,9 +78,11 @@ class TestLineCalculator:
         assert result.tax.factory_assumed_tax == D("130")
         assert result.sale_price == D("900")
 
-    def test_combined_isebec_alcoholic_plus_iva(self) -> None:
-        # ISEBEC (alcoholic): qty 2 × volume 3 × unit 50 = 300; grows base from
-        # 1000 to 1300. Then 13% IVA × 1300 = 169. Sale = 1000 + 300 + 169 = 1469.
+    def test_combined_isebec_beverage_plus_iva(self) -> None:
+        # ISEBEC on a beverage: detail (1) × CantidadUM (2) × (unit 50 / vol 3)
+        # = 33.33333. It grows the IVA base to 1033.33333, so IVA is 134.33333.
+        # ISEBEC itself is issuer-assumed (-476), so it leaves `net_tax`: the
+        # customer pays only the IVA, and sale_price = 1000 + 134.33333.
         line = LineInput(
             price=D("1000"),
             quantity=D("1"),
@@ -104,16 +106,17 @@ class TestLineCalculator:
                 ),
             ],
         )
-        # CABYS code with NO 2202 prefix -> alcoholic branch.
+        # Any CABYS that is not toilet soap takes the volume formula.
         result = self.calc.compute(line, cabys_code="9999")
-        assert result.tax.other_tax_total == D("300")
-        assert result.tax.iva_tax_total == D("169")
-        assert result.tax.base_amount == D("1300")
-        assert result.tax.net_tax == D("469")
-        assert result.sale_price == D("1469")
+        assert result.tax.factory_assumed_tax == D("33.33333")
+        assert result.tax.base_amount == D("1033.33333")
+        assert result.tax.iva_tax_total == D("134.33333")
+        assert result.tax.net_tax == D("134.33333")
+        assert result.sale_price == D("1134.33333")
 
-    def test_isebec_non_alcoholic_branch_via_cabys_prefix(self) -> None:
-        # 2202* CABYS forces non-alcoholic branch: detail (1) × qty (2) × (10/2=5) = 10.
+    def test_isebec_toilet_soap_branch_via_cabys_prefix(self) -> None:
+        # Toilet soap prices per GRAM: detail (1) × volume 2 g × unit 10 = 20,
+        # and the issuer absorbs it, so the customer pays nothing on top.
         line = LineInput(
             price=D("500"),
             quantity=D("1"),
@@ -133,10 +136,11 @@ class TestLineCalculator:
         )
         result = self.calc.compute(
             line,
-            cabys_code=CabysSpecialPrefix.ISEBEC_NON_ALCOHOLIC.value + "0001",
+            cabys_code=CabysSpecialPrefix.ISEBEC_TOILET_SOAP.value + "01",
         )
-        assert result.tax.other_tax_total == D("10")
-        assert result.sale_price == D("510")
+        assert result.tax.factory_assumed_tax == D("20")
+        assert result.tax.net_tax == D("0")
+        assert result.sale_price == D("500")
 
     def test_royalty_plus_isc_plus_iva_end_to_end(self) -> None:
         # §7.1 + §7.6 end-to-end:
@@ -178,11 +182,11 @@ class TestLineCalculator:
         # sale_price = post-discount subtotal (900) + net_tax (90) = 990
         assert result.sale_price == D("990")
 
-    def test_code_02_discount_iva_on_pre_discount_to_customer(self) -> None:
-        # §7.2 end-to-end:
-        # 1000 net, 10% code-02 discount -> subtotal 900.
-        # IVA 13% must compute on monto_total_original (=1000) = 130, and the
-        # customer pays it (net_tax += 130), NOT factory_assumed.
+    def test_code_02_discount_is_an_ordinary_discount(self) -> None:
+        # 1000 net, 10% code-02 discount -> subtotal 900, IVA 13% × 900 = 117,
+        # paid by the customer. The un-eroded reading of nature 02 is gone —
+        # Hacienda rejects it with -45 and -454 together; see the discount
+        # service docstring.
         line = LineInput(
             price=D("1000"),
             quantity=D("1"),
@@ -205,10 +209,10 @@ class TestLineCalculator:
         )
         result = self.calc.compute(line)
         assert result.subtotal == D("900")
-        assert result.tax.iva_tax_total == D("130")
+        assert result.tax.iva_tax_total == D("117")
         assert result.tax.factory_assumed_tax == D("0")
-        assert result.tax.net_tax == D("130")
-        assert result.sale_price == D("1030")
+        assert result.tax.net_tax == D("117")
+        assert result.sale_price == D("1017")
 
     def test_packaged_line_uses_quantity_for_total(self) -> None:
         # is_packaged True + price 100 × qty 5 = 500 total before discounts/taxes.

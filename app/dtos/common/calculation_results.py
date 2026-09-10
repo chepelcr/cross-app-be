@@ -55,16 +55,11 @@ class LineDiscountResult(BaseModel):
     subtotal_after_discount: Decimal = Field(...)
     total_discount_amount: Decimal = Field(default=Decimal("0"))
     per_discount: List[DiscountLineRow] = Field(default_factory=list)
-    # Hacienda Nota 20: codes 01 (royalty) / 03 (bonus) reroute the IVA into
-    # `ImpuestoAsumidoEmisorFabrica`. The discount calc decides this; the tax
-    # calc only consumes the boolean.
+    # Hacienda Nota 20: codes 01 (royalty) / 03 (bonus) leave the IVA base
+    # un-eroded AND reroute the tax into `ImpuestoAsumidoEmisorFabrica`. The
+    # discount calc decides this; the tax calc only consumes the boolean.
+    # Nature 02 is NOT one of them — see `discount_calculation_service`.
     royalty_bonus_present: bool = Field(default=False)
-    # Hacienda Nota 20: code 02 (Regalía / bonificación, IVA al cliente) keeps
-    # the IVA on the customer but computes it on the pre-discount base, NOT on
-    # the eroded subtotal. Distinct from `royalty_bonus_present` because the
-    # tax still hits `net_tax` (the customer pays) instead of
-    # `factory_assumed_tax` (the issuer absorbs).
-    customer_pays_tax_on_original_base: bool = Field(default=False)
     # Free-form reasons (one per discount), preserved for auditing / XML
     # serializers; not consumed by the tax math.
     discounted_reasons: List[str] = Field(default_factory=list)

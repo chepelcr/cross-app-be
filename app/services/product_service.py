@@ -355,8 +355,9 @@ def _apply_fiscal_fields(product: Product, dto: ProductRequestDTO, repo) -> None
     discount_dtos = list(dto.discounts or [])
     tax_dtos = list(dto.taxes or [])
 
-    # CABYS code drives ISEBEC (2202/3401 prefix) branching — pull from the
-    # linked row since the request only carries the FK.
+    # The CABYS code decides which ISEBEC (05) formula applies — toilet soap
+    # prices per gram, everything else per volume — so it has to be resolved
+    # from the linked row; the request only carries the FK.
     cabys_code_for_calc: Optional[str] = None
     if product.cabys_id is not None:
         cabys_row = cabys_service.get_by_id(str(product.cabys_id), session=repo.session)
@@ -364,8 +365,9 @@ def _apply_fiscal_fields(product: Product, dto: ProductRequestDTO, repo) -> None
             cabys_code_for_calc = cabys_row.code
 
     # Pre-discount line subtotal = price × quantity for packaged products,
-    # else just price (qty 1). The tax service uses this as the IVA base when
-    # royalty/bonus codes 01/03 OR code 02 (VAT-to-customer) are present.
+    # else just price (qty 1). The tax service uses this as the IVA base when a
+    # royalty (01) or bonus (03) discount is present — Nota 20 leaves those
+    # natures' base un-eroded.
     line_quantity = Decimal(str(product.quantity or 1))
     line_price = Decimal(str(product.price))
     monto_total_original = (
@@ -383,6 +385,11 @@ def _apply_fiscal_fields(product: Product, dto: ProductRequestDTO, repo) -> None
             Decimal(str(dto.base_amount)) if dto.base_amount is not None else None
         ),
         monto_total_original=monto_total_original,
+        # `IVACobradoFabrica` 01 means the issuer absorbs this product's IVA,
+        # so its `sale_price` must not include it. Without this the catalog
+        # price carried tax the customer never pays, and every order line
+        # copied from the product inherited the discrepancy.
+        iva_collected_factory=product.iva_collected_factory,
     )
     result = LineCalculator().compute(line_input, cabys_code=cabys_code_for_calc)
 
@@ -409,11 +416,24 @@ def _hydrate_discount_jsonb(dtos, rows):
 
 
 def _hydrate_tax_jsonb(dtos, rows):
-    """Merge per-row computed `amount` into the tax JSONB payload."""
+    """Merge each computed `amount` back onto the tax row it belongs to.
+
+    Matched by tax CODE, not by position. `compute_line_taxes` returns its rows
+    in Hacienda's evaluation order — specific excises, then 99, then the IVA
+    family — which is NOT the order the request listed them in. Zipping the two
+    put the ISC amount on the IVA row (and vice versa) for any product that
+    declared its IVA first, which is the usual way round.
+    """
+    by_code: dict[str, list] = {}
+    for row in rows:
+        by_code.setdefault(row.tax_type_id, []).append(row)
+
     out = []
-    for dto, row in zip(dtos, rows):
+    for dto in dtos:
         payload = dto.model_dump()
-        payload["amount"] = float(row.amount)
+        queue = by_code.get(dto.tax_type_id)
+        if queue:
+            payload["amount"] = float(queue.pop(0).amount)
         out.append(payload)
     return out
 

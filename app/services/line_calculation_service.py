@@ -45,10 +45,15 @@ class LineInput(BaseModel):
     manual_base_amount: Optional[Decimal] = Field(default=None)
     # Pre-discount line subtotal (`unit_price × detail_quantity` for line
     # carts; `price × quantity` for packaged-product previews). Hacienda Nota
-    # 20 requires this as the IVA base when royalty/bonus codes 01/03 OR code
-    # 02 (VAT-to-customer) are present. When None, the orchestrator derives it
-    # from the same numbers used to compute `total_amount`.
+    # 20 requires this as the IVA base when a royalty (01) or bonus (03)
+    # discount is present. When None, the orchestrator derives it from the same
+    # numbers used to compute `total_amount`.
     monto_total_original: Optional[Decimal] = Field(default=None)
+    # `IVACobradoFabrica`. Code "01" means the VAT was settled at the factory,
+    # so the ISSUER absorbs the line's IVA exactly as a royalty does — Hacienda
+    # answers -451 when it is not honoured. It rides on the line rather than on
+    # a tax row because it is a property of the product, not of one tax.
+    iva_collected_factory: Optional[str] = Field(default=None)
 
 
 class LineCalculator:
@@ -89,13 +94,11 @@ class LineCalculator:
             detail_quantity=_d(line.detail_quantity) or ONE,
             cabys_code=cabys_code,
             royalty_bonus_present=discount_result.royalty_bonus_present,
-            customer_pays_tax_on_original_base=(
-                discount_result.customer_pays_tax_on_original_base
-            ),
             monto_total_original=monto_total_original,
             ivace_base_override=_d(line.manual_base_amount)
             if line.manual_base_amount is not None
             else None,
+            iva_collected_factory=line.iva_collected_factory,
         )
 
         # The buyer-paid total only includes net (factory-assumed is owed

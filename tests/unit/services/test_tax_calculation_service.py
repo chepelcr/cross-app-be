@@ -1,7 +1,13 @@
 """Per-Hacienda-code unit tests for `TaxCalculator`.
 
-One method per code (01–08, 12, 99) + the ISEBEC non-alcoholic branch driven
-by the CABYS prefix.
+One method per code (01–08, 12, 99), plus the two rules that decide who PAYS
+each row: the factory-assumed excises (03/04/05/12, always the issuer) and the
+line-level assumption (royalty/bonus natures, `IVACobradoFabrica` 01).
+
+The expected numbers here are written from the Hacienda rules and from what the
+biller (`jbiller_common.hacienda.services.tax_service`) files, not derived from
+this implementation — a divergence between the two means an order and the
+invoice it becomes disagree.
 """
 from __future__ import annotations
 
@@ -103,8 +109,9 @@ class TestTaxCalculator:
         assert result.other_tax_total == D("100")
         assert result.base_amount == D("1100")
 
-    def test_iuc_03_per_unit(self) -> None:
-        # 5 units × 200 = 1000; IUC does not touch base.
+    def test_iuc_03_per_unit_and_is_issuer_assumed(self) -> None:
+        # 5 units × 200 = 1000; IUC does not build the IVA base (-454 names
+        # 02/04/05/12, not 03), and the ISSUER absorbs it (-476).
         result = _run(
             self.calc,
             [_make_tax(TaxType.IUC, sf_quantity=D("5"), sf_amount=D("200"))],
@@ -112,6 +119,8 @@ class TestTaxCalculator:
         )
         assert result.per_tax[0].amount == D("1000")
         assert result.base_amount == D("1000")
+        assert result.factory_assumed_tax == D("1000")
+        assert result.net_tax == D("0")
 
     def test_iseba_04_with_detail_quantity(self) -> None:
         # detail_quantity (2) × (qty 4 × pct 50% / 100) × unit 100 = 2 × 2 × 100 = 400.
@@ -129,27 +138,48 @@ class TestTaxCalculator:
             detail_quantity=D("2"),
         )
         assert result.per_tax[0].amount == D("400")
-        # ISEBA grows the base.
+        # ISEBA grows the base (-454) but is absorbed by the issuer (-476), so
+        # it never reaches what the customer owes.
         assert result.base_amount == D("1400")
+        assert result.factory_assumed_tax == D("400")
+        assert result.net_tax == D("0")
 
-    def test_isebec_05_alcoholic_default_branch(self) -> None:
-        # No CABYS prefix → alcoholic formula: qty × volume × unit = 2 × 3 × 50 = 300.
+    def test_iseba_04_rounds_the_volume_to_two_decimals_first(self) -> None:
+        """The millilitre trap.
+
+        `CantidadUnidadMedida` allows 2 fraction digits, not 5, so a 355 ml can
+        is declared as 0.36 L — and `Proporcion` has to be derived from THAT,
+        or the declared quantity and the declared proportion disagree and
+        Hacienda recomputes a different amount.
+
+            0.36 × 4.5 / 100 = 0.0162      (not 0.355 × 4.5 / 100 = 0.015975)
+            12 × 0.0162 × 3500 = 680.40    (not 670.95)
+        """
         result = _run(
             self.calc,
             [
                 _make_tax(
-                    TaxType.ISEBEC,
-                    sf_quantity=D("2"),
-                    sf_volume=D("3"),
-                    sf_amount=D("50"),
+                    TaxType.ISEBA,
+                    sf_quantity=D("0.355"),
+                    sf_percentage=D("4.5"),
+                    sf_amount=D("3500"),
                 )
             ],
             subtotal=D("1000"),
+            detail_quantity=D("12"),
         )
-        assert result.per_tax[0].amount == D("300")
+        assert result.per_tax[0].amount == D("680.40000")
 
-    def test_isebec_05_non_alcoholic_via_cabys_2202(self) -> None:
-        # 2202* CABYS triggers: detail_quantity (4) × qty (2) × (unit/volume) (10/2=5) = 40.
+    def test_isebec_05_beverage_divides_by_the_consumption_volume(self) -> None:
+        """The DEFAULT formula, per the Hacienda calculation rules for code 05.
+
+            Monto = Cantidad × CantidadUnidadMedida
+                    × (ImpuestoUnidad / VolumenUnidadConsumo)
+
+        4 × 2 × (10 / 2) = 40. This branch used to be gated on CABYS "2202", a
+        Harmonized System heading that matches no CABYS at all, so it never ran
+        and every code-05 line took the soap formula instead.
+        """
         result = _run(
             self.calc,
             [
@@ -161,10 +191,35 @@ class TestTaxCalculator:
                 )
             ],
             subtotal=D("1000"),
-            cabys=CabysSpecialPrefix.ISEBEC_NON_ALCOHOLIC.value + "12345",
+            cabys=CabysSpecialPrefix.ISEBEC_PACKAGED_BEVERAGE.value + "001000000",
             detail_quantity=D("4"),
         )
         assert result.per_tax[0].amount == D("40")
+
+    def test_isebec_05_toilet_soap_multiplies_by_the_volume_field(self) -> None:
+        """Soap is the exception, and it is the one that inverts.
+
+            Monto = Cantidad × VolumenUnidadConsumo × ImpuestoUnidad
+
+        The volume field holds GRAMS here, `CantidadUnidadMedida` is unused, and
+        the unit amount MULTIPLIES the volume where a beverage divides by it:
+        6 × 90 g × 1.5 = 810.
+        """
+        result = _run(
+            self.calc,
+            [
+                _make_tax(
+                    TaxType.ISEBEC,
+                    sf_quantity=D("1"),
+                    sf_volume=D("90"),
+                    sf_amount=D("1.5"),
+                )
+            ],
+            subtotal=D("1000"),
+            cabys=CabysSpecialPrefix.ISEBEC_TOILET_SOAP.value + "01",
+            detail_quantity=D("6"),
+        )
+        assert result.per_tax[0].amount == D("810.00000")
 
     def test_ipt_06_per_unit_with_detail_quantity(self) -> None:
         # detail_quantity (3) × qty (4) × unit (5) = 60. IPT does not adjust base.
@@ -219,17 +274,23 @@ class TestTaxCalculator:
         assert result.per_tax[0].amount == D("50")
         assert result.base_amount == D("1050")
 
-    def test_others_99_uses_updated_base(self) -> None:
-        # ISC (10% of 1000 = 100) grows base to 1100; then OTHERS 5% × 1100 = 55.
+    def test_others_99_prices_off_the_subtotal_not_the_excise_base(self) -> None:
+        """99 is rate-driven, and every rate-driven code bills the SUBTOTAL.
+
+        ISC still grows the IVA base to 1100, but OTHERS is 5% × 1000 = 50, not
+        5% × 1100. The excise-inclusive base belongs to the IVA family alone —
+        the biller builds 02/12/99 against `line_subtotal` — and -45 checks the
+        amount against the base the row itself declares.
+        """
         taxes = [
             _make_tax(TaxType.ISC, rate=D("10")),
             _make_tax(TaxType.OTHERS, rate=D("5")),
         ]
         result = _run(self.calc, taxes, subtotal=D("1000"))
-        # Find the OTHERS row.
         others_rows = [r for r in result.per_tax if r.tax_type_id == TaxType.OTHERS.value]
         assert len(others_rows) == 1
-        assert others_rows[0].amount == D("55")
+        assert others_rows[0].amount == D("50")
+        assert others_rows[0].base_amount == D("1000")
         assert result.base_amount == D("1100")
 
     def test_royalty_bonus_routes_iva_to_factory_assumed(self) -> None:
@@ -262,28 +323,50 @@ class TestTaxCalculator:
         assert result.per_tax[0].amount == D("130")
         assert result.per_tax[0].base_amount == D("1000")
 
-    def test_code_02_uses_pre_discount_base_but_keeps_iva_on_customer(self) -> None:
-        # §7.2: code 02 (royalty/bonus VAT-to-customer) — IVA on
-        # monto_total_original (=1000), result goes to net_tax (customer pays),
-        # NOT to factory_assumed_tax.
+    def test_iva_collected_at_factory_is_assumed_without_any_discount(self) -> None:
+        """`IVACobradoFabrica` 01 routes the IVA exactly like a royalty does.
+
+        No discount is involved: the VAT was settled at the factory, so the
+        issuer declares it as assumed. Hacienda answers -451 when it is not —
+        "al usar el código 01 del IVA cobrado a nivel de fábrica ... se deben
+        asumir los impuestos IVA en el campo ImpuestoAsumidoEmisorFabrica".
+        """
+        result = self.calc.compute_line_taxes(
+            taxes=[_make_tax(TaxType.IVA, rate=D("13"))],
+            subtotal=D("1000"),
+            detail_quantity=D("1"),
+            cabys_code=None,
+            monto_total_original=D("1000"),
+            iva_collected_factory="01",
+        )
+        assert result.net_tax == D("0")
+        assert result.factory_assumed_tax == D("130")
+
+    def test_nature_02_taxes_the_discounted_base_and_the_customer_pays(self) -> None:
+        """Nature 02 has no special base any more.
+
+        It used to price the IVA on `monto_total_original` while still charging
+        the customer. Hacienda rejects that: -45 pins the tax to `base imponible
+        × tarifa` and -454 pins the base to the discounted subtotal, so a
+        customer-paid tax on the ORIGINAL amount cannot be expressed. The
+        calculator simply never sets the flag now, so 900 × 13% = 117.
+        """
         result = self.calc.compute_line_taxes(
             taxes=[_make_tax(TaxType.IVA, rate=D("13"))],
             subtotal=D("900"),
             detail_quantity=D("1"),
             cabys_code=None,
             royalty_bonus_present=False,
-            customer_pays_tax_on_original_base=True,
             monto_total_original=D("1000"),
         )
-        assert result.iva_tax_total == D("130")
+        assert result.net_tax == D("117")
         assert result.factory_assumed_tax == D("0")
-        assert result.net_tax == D("130")
-        assert result.per_tax[0].base_amount == D("1000")
+        assert result.per_tax[0].base_amount == D("900")
 
-    def test_royalty_bonus_does_not_reroute_special_taxes(self) -> None:
-        # §7.6: royalty/bonus only affects the IVA family. ISC (10% × 1000 =
-        # 100) must stay in `other_tax_total` and `net_tax`, never re-route
-        # into `factory_assumed_tax`. IVA on the other hand routes correctly.
+    def test_royalty_bonus_does_not_reroute_the_collected_excises(self) -> None:
+        # Royalty/bonus re-routes the IVA family only. ISC (02) is a COLLECTED
+        # excise — it is not in FACTORY_ASSUMED_EXCISES — so 10% × 1000 = 100
+        # stays in `other_tax_total` and in `net_tax` even on a royalty line.
         result = self.calc.compute_line_taxes(
             taxes=[
                 _make_tax(TaxType.ISC, rate=D("10")),

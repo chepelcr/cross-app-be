@@ -1,8 +1,8 @@
 """Unit tests for `DiscountCalculator`.
 
-Cover the sequential cascade, royalty/bonus flag wiring, the
-`customer_pays_tax_on_original_base` flag for code 02, and the
-reason-required validation on type 99.
+Cover the sequential cascade, royalty/bonus flag wiring, the fact that nature
+02 is an ORDINARY discount (Hacienda rejects the un-eroded reading — see the
+service docstring), and the reason-required validation on type 99.
 """
 from __future__ import annotations
 
@@ -68,8 +68,6 @@ class TestDiscountCalculator:
                 D("1000"), [_disc(type_id=code, percentage=D("10"))]
             )
             assert result.royalty_bonus_present is True
-            # Code 01/03 alone does NOT set the code-02 flag.
-            assert result.customer_pays_tax_on_original_base is False
 
     def test_royalty_bonus_flag_off_when_only_02_present(self) -> None:
         result = self.calc.calculate(
@@ -78,19 +76,21 @@ class TestDiscountCalculator:
         )
         assert result.royalty_bonus_present is False
 
-    def test_customer_pays_tax_on_original_base_flag_set_for_02(self) -> None:
+    def test_02_cascades_like_an_ordinary_nature(self) -> None:
+        """Nature 02 erodes the base like any other discount.
+
+        It used to raise a flag that priced the IVA on the PRE-discount amount
+        while still charging the customer. Hacienda rejects a document built
+        that way — -45 pins the tax to `base imponible x tarifa` and -454 pins
+        the base to the discounted subtotal, so the combination is
+        unrepresentable. Filed at 3% and at 100%; rejected both times.
+        """
         result = self.calc.calculate(
             D("1000"),
             [_disc(type_id=DiscountType.ROYALTY_BONUS_VAT_CUSTOMER, percentage=D("10"))],
         )
-        assert result.customer_pays_tax_on_original_base is True
-
-    def test_customer_pays_tax_flag_off_when_no_02_present(self) -> None:
-        for code in (DiscountType.ROYALTY, DiscountType.BONUS):
-            result = self.calc.calculate(
-                D("1000"), [_disc(type_id=code, percentage=D("10"))]
-            )
-            assert result.customer_pays_tax_on_original_base is False
+        assert result.subtotal_after_discount == D("900")
+        assert result.royalty_bonus_present is False
 
     def test_reason_required_for_99(self) -> None:
         # Pydantic-level validator already raises a ValueError on the DTO build,
@@ -121,4 +121,3 @@ class TestDiscountCalculator:
         assert result.subtotal_after_discount == D("500")
         assert result.total_discount_amount == D("0")
         assert result.royalty_bonus_present is False
-        assert result.customer_pays_tax_on_original_base is False

@@ -13,6 +13,7 @@ from app.dtos import (
     CrossDockingAttachmentsDTO,
 )
 from app.dtos.responses.department_dto import DepartmentDTO
+from app.dtos.responses.party_dto import PartyIdentificationDTO
 from app.models.order import Order
 from app.utils.crossdocking_utils import build_summaries
 from app.utils.product_codes import find_code_number as _get_code_from_array
@@ -84,6 +85,18 @@ def order_to_response(order: Order) -> OrderResponse:
         client_dto = PartyDTO(
             name=order.client.client_name,
             gln=order.client.client_gln,
+            # The identification travels with the order so the invoice built
+            # from it can identify the receiver, and so the POS can tell
+            # whether this customer is a retail chain that needs extra fields
+            # on its documents. Both are keyed on the NUMBER, never the name.
+            identification=(
+                PartyIdentificationDTO(
+                    code=order.client.identification_code,
+                    number=order.client.identification_number,
+                )
+                if (order.client.identification_code or order.client.identification_number)
+                else None
+            ),
         )
 
     # Build supplier DTO from organization relationship
@@ -160,6 +173,7 @@ def order_to_response(order: Order) -> OrderResponse:
         delivery_date=order.delivery_date,
         order_status=order.order_status or "pending",
         client=client_dto,
+        client_id=str(order.client_id) if order.client_id else None,
         supplier=supplier_dto,
         delivery_location=delivery_location_dto,
         event=order.event,

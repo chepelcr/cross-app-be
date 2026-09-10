@@ -16,7 +16,10 @@ from app.dtos.requests.manual_order_dto import CreateManualOrderDTO
 from app.dtos.requests.product_request_dto import (
     ProductDiscountDTO,
     ProductTaxDTO,
+    TaxAmountDTO,
+    TaxFactorDTO,
     TaxRateDTO,
+    TaxSpecialFieldsDTO,
 )
 from app.dtos.requests.storefront_order_dto import CreateStorefrontOrderDTO
 from app.dtos.responses.storefront_order_dto import StorefrontOrderCreatedResponse
@@ -164,42 +167,10 @@ def process_order_excel(organization_id: str, body: ExcelDTO) -> OrderResponse:
             department_id=department_entity.department_id if department_entity else None,
         )
 
-        for ln in parsed.lines:
-            # Upsert product for each line
-            product = product_repo.upsert_by_internal_code(
-                company_id=organization_id,
-                internal_code=ln.internal_code,
-                description=ln.description,
-                code=ln.code,
-                client_article_code=ln.client_article_code,
-                units_per_box=ln.units_per_box,
-                price=ln.unit_price,
-            )
-
-            order.lines.append(
-                OrderLine(
-                    line_number=ln.line_number,
-                    quantity_ordered=ln.quantity_ordered,
-                    units_ordered=ln.units_ordered,
-                    unit_price=ln.unit_price,
-                    discount=ln.discount,
-                    line_total=ln.line_total,
-                    tax=ln.tax,
-                    quantity_dispatched=ln.quantity_dispatched,
-                    dispatch_rejection_reason=ln.dispatch_rejection_reason,
-                    quantity_received=ln.quantity_received,
-                    article_code=ln.article_code,
-                    product_id=product.id,
-                    # Give the imported line the same structure a POS-captured
-                    # one has, so both sides of the Orders module are complete
-                    # and either can be billed later (TSR-152).
-                    description=ln.description,
-                    net_price=ln.unit_price,
-                    cabys=(product.cabys.code if product.cabys else None),
-                    discounts=_imported_line_discounts(ln.discount),
-                    taxes=_imported_line_taxes(product),
-                )
-            )
+        # Lines are built and costed by the shared builder — see
+        # `_rebuild_imported_lines`. It also re-adds the order's totals from
+        # the recomputed lines, superseding the header figures assigned above.
+        _rebuild_imported_lines(order, parsed, organization_id, product_repo)
 
         order = repo.save(order)
 
@@ -323,7 +294,18 @@ def get_order(organization_id: str, document_number: str) -> OrderResponse:
 
 
 def reprocess_order(organization_id: str, document_number: str, color=None) -> OrderResponse:
-    """Re-download and re-parse order + crossdocking Excel files, regenerate all outputs."""
+    """Re-parse the stored Excel files, recompute the money, regenerate outputs.
+
+    Three things happen, in order, and each is independently useful:
+
+    1. the order and crossdocking spreadsheets are re-parsed from S3 when they
+       are stored, so a change to the parser reaches an existing order;
+    2. **every line's amounts are recomputed through the current discount/tax
+       engine** and the order totals re-added from them — this runs even with no
+       spreadsheet on file, which is what makes the button a repair tool for
+       orders captured before an engine fix;
+    3. the PDF, the crossdocking PDF and the Nuevo Reporte are regenerated.
+    """
     logger.info(f"[REPROCESS] START order={document_number} org={organization_id} color={color}")
     with OrderRepository() as repo:
         logger.info(f"[REPROCESS] DB session open — finding order")
@@ -367,6 +349,32 @@ def reprocess_order(organization_id: str, document_number: str, color=None) -> O
                 logger.warning(f"Failed to re-parse order Excel for {document_number}: {e}", exc_info=True)
         else:
             logger.info(f"[REPROCESS] No order Excel URL — skipping Excel re-parse")
+
+        # Recompute every line's money from its own fiscal detail, and re-add
+        # the order totals from the result.
+        #
+        # This runs whether or not the spreadsheet was re-parsed, and that is
+        # the point of the button: an order captured before a fix to the
+        # discount/tax engine — or before imported lines carried any structured
+        # detail at all — is brought up to what the current code computes,
+        # without needing the original file. Lines with no structured detail are
+        # left alone (see `_recompute_imported_line`), so a hand-captured order
+        # the user edited is never silently re-priced.
+        logger.info(f"[REPROCESS] Recomputing line amounts with the current engine")
+        try:
+            for line in (order.lines or []):
+                _recompute_imported_line(line, line.product)
+            _resum_order_totals(order)
+            order = repo.save(order)
+            logger.info(
+                f"[REPROCESS] Recomputed {len(order.lines or [])} line(s); "
+                f"grand_total={order.grand_total}"
+            )
+        except Exception as e:
+            logger.warning(
+                f"Failed to recompute line amounts for {document_number}: {e}",
+                exc_info=True,
+            )
 
         # Resolve color: use provided color, or fall back to stored value
         if color is not None:
@@ -615,15 +623,283 @@ def _imported_line_taxes(product) -> list | None:
     own `taxes` gives the line the same shape a POS-captured line has, which is
     what lets an imported order be billed later without inventing a rate.
 
-    The stored JSONB is already ProductTaxDTO-shaped, so it is copied verbatim
-    rather than re-derived; the per-line `amount` stays whatever the import
-    computed, because on an imported order the customer's figures are the
-    authority we reconcile against.
+    The stored JSONB is already ProductTaxDTO-shaped, so it is copied verbatim;
+    the per-row `amount` is dropped, because the product's figure was computed
+    against the PRODUCT's own price and quantity and says nothing about this
+    line's. `_recompute_imported_line` derives the real amounts from the order
+    quantity.
     """
     taxes = getattr(product, "taxes", None)
     if not taxes:
         return None
-    return [dict(t) for t in taxes]
+    out = []
+    for t in taxes:
+        row = dict(t)
+        row.pop("amount", None)
+        out.append(row)
+    return out
+
+
+def _imported_line_net_price(parsed_line, product) -> float:
+    """Unit price BEFORE tax for an imported line.
+
+    The product's configured `unit_price` wins when it has one: that is the
+    fiscal net price the org maintains in its catalog, and it is the number the
+    taxes on the very same product were configured against. The spreadsheet's
+    unit price is the fallback — on a chain order it is the negotiated price and
+    is already net of tax, which is why it is usable at all.
+    """
+    catalog_net = getattr(product, "unit_price", None)
+    if catalog_net is not None and float(catalog_net) > 0:
+        return float(catalog_net)
+    return float(parsed_line.unit_price or 0)
+
+
+def _allocate_header_discount(parsed) -> dict[int, float]:
+    """Spread an order-level discount across the lines that have none.
+
+    Real Walmart spreadsheets routinely carry `0` in every line's discount
+    column while the header totals a discount for the whole order. Taken
+    literally that produces lines summing to more than the order, and an invoice
+    built from them overcharges the customer by exactly the missing discount.
+
+    So when NO line declares a discount and the header does, the header amount
+    is allocated across the lines in proportion to their gross — the same
+    apportionment the chain applies at their end — and the remainder from
+    rounding lands on the largest line, so the parts add back to the whole
+    exactly. Returned keyed by line number; empty when the lines already carry
+    their own discounts, which are then authoritative and left alone.
+    """
+    header_discount = Decimal(str(getattr(parsed, "discounts", 0) or 0))
+    if header_discount <= 0:
+        return {}
+
+    lines = list(parsed.lines or [])
+    if any(float(ln.discount or 0) > 0 for ln in lines):
+        return {}
+
+    gross_by_line = {
+        ln.line_number: Decimal(str(ln.unit_price or 0))
+        * Decimal(str(ln.quantity_ordered or ln.units_ordered or 0))
+        for ln in lines
+    }
+    total_gross = sum(gross_by_line.values())
+    if total_gross <= 0:
+        return {}
+    # A header discount larger than the order itself is bad data, not a 100%
+    # discount; capping keeps a line from going negative.
+    if header_discount > total_gross:
+        header_discount = total_gross
+
+    allocated: dict[int, Decimal] = {}
+    for line_number, gross in gross_by_line.items():
+        allocated[line_number] = (header_discount * gross / total_gross).quantize(
+            Decimal("0.00001"), ROUND_HALF_UP
+        )
+
+    remainder = header_discount - sum(allocated.values())
+    if remainder and allocated:
+        biggest = max(gross_by_line, key=lambda k: gross_by_line[k])
+        allocated[biggest] += remainder
+
+    return {k: float(v) for k, v in allocated.items() if v > 0}
+
+
+def _normalize_tax_row(row: dict) -> dict:
+    """Accept either stored spelling of a line tax and return the canonical one.
+
+    Manual orders used to persist the REQUEST shape (`code` / `rate` /
+    `rate_code`) while imported orders persisted the canonical
+    `ProductTaxDTO` dump (`tax_type_id` / `tax_rate: {...}`). New writes are all
+    canonical — `canonical_line_dtos` sees to that — but rows written before it
+    are still in the database, and a reprocess or backfill has to be able to
+    read them or the very orders that most need repairing are the ones it skips.
+    """
+    if "tax_type_id" in row:
+        return row
+
+    normalized: dict = {"tax_type_id": row.get("code") or "01"}
+    if row.get("rate") is not None:
+        normalized["tax_rate"] = {
+            "id": str(row.get("rate_code") or "0"),
+            "percentage": row.get("rate"),
+            "code": row.get("rate_code"),
+        }
+    if row.get("other_tax_type") is not None:
+        normalized["other_tax_type"] = row["other_tax_type"]
+    if row.get("special_fields") is not None:
+        normalized["special_fields"] = row["special_fields"]
+    if row.get("amount") is not None:
+        normalized["amount"] = row["amount"]
+        normalized["is_amount"] = row.get("rate") is None
+    return normalized
+
+
+def _normalize_discount_row(row: dict) -> dict:
+    """The discount counterpart of `_normalize_tax_row`."""
+    if "discount_type_id" in row:
+        return row
+    return {
+        "discount_type_id": row.get("code") or "99",
+        "reason": row.get("nature"),
+        "percentage": row.get("percentage"),
+        "amount": row.get("amount"),
+        "is_amount": row.get("percentage") is None and row.get("amount") is not None,
+    }
+
+
+def _line_input_from_structured(line) -> LineInput:
+    """`LineInput` for a line that carries structured taxes/discounts JSONB.
+
+    One builder for every caller — the imported path, the reprocess path and the
+    backfill all have to produce the SAME numbers, and each having its own
+    translation from JSONB to DTO is how they stopped agreeing before.
+
+    Reads the canonical stored shape so nothing is re-derived: the discount
+    natures, rates and special fields are taken as written, and only the
+    arithmetic is redone. Legacy rows are normalized on the way in.
+    """
+    quantity = Decimal(str(line.quantity_ordered or line.units_ordered or 0))
+    net_price = Decimal(str(line.net_price if line.net_price is not None else (line.unit_price or 0)))
+
+    return LineInput(
+        price=net_price,
+        quantity=quantity,
+        is_packaged=True,
+        # An excise priced per unit multiplies by the ORDER quantity, not by 1.
+        detail_quantity=quantity or Decimal("1"),
+        discounts=[
+            ProductDiscountDTO(**_normalize_discount_row(d))
+            for d in (line.discounts or [])
+        ],
+        taxes=[ProductTaxDTO(**_normalize_tax_row(t)) for t in (line.taxes or [])],
+    )
+
+
+def _recompute_imported_line(line, product=None) -> None:
+    """Recompute one order line's money from its own fiscal detail, in place.
+
+    `discount`, `tax` and `line_total` on an imported line used to be whatever
+    the spreadsheet said, with no structure behind them — which meant an order
+    could not be billed without re-deriving the tax from scratch at invoice
+    time, on numbers that had never been checked against each other.
+
+    Now the line carries the full breakdown (the product's taxes, the discount
+    as 07 Comercial) and this runs the SAME `LineCalculator` a sale runs, over
+    the ORDER quantity. A pedido and the factura it becomes therefore agree by
+    construction rather than by coincidence.
+
+    A line with no structured detail is left exactly as the spreadsheet had it:
+    there is nothing to derive a tax from, and inventing a rate would be worse
+    than carrying the customer's own figure.
+    """
+    if not (line.taxes or line.discounts):
+        return
+
+    computed = LineCalculator().compute(
+        _line_input_from_structured(line),
+        cabys_code=line.cabys or (product.cabys.code if product and product.cabys else None),
+    )
+    line.discount = _round_money(computed.discount.total_discount_amount)
+    line.tax = _round_money(computed.tax.net_tax)
+    line.line_total = _round_money(computed.subtotal + computed.tax.net_tax)
+
+
+def _resum_order_totals(order: Order) -> None:
+    """Re-add the order's totals from its lines.
+
+    The header figures the spreadsheet carries are the chain's, and once the
+    lines have been recomputed they are the only numbers that reconcile. Summed
+    here rather than trusted so `grand_total` always equals what the lines say —
+    the invoice is built from the lines, and a header that disagrees with them
+    is a discrepancy the user only discovers at Hacienda.
+    """
+    lines = list(order.lines or [])
+    if not lines:
+        return
+
+    gross = sum(
+        Decimal(str(ln.unit_price or 0))
+        * Decimal(str(ln.quantity_ordered or ln.units_ordered or 0))
+        for ln in lines
+    )
+    discounts = sum(Decimal(str(ln.discount or 0)) for ln in lines)
+    taxes = sum(Decimal(str(ln.tax or 0)) for ln in lines)
+
+    order.subtotal = _round_money(gross)
+    order.discounts = _round_money(discounts)
+    order.net_total = _round_money(gross - discounts)
+    order.taxes = _round_money(taxes)
+    order.grand_total = _round_money(gross - discounts + taxes)
+    order.line_count = len(lines)
+    order.total_quantities = sum(
+        int(ln.quantity_ordered or ln.units_ordered or 0) for ln in lines
+    )
+
+
+def _rebuild_imported_lines(
+    order: Order,
+    parsed,
+    organization_id: str,
+    product_repo: ProductRepository,
+) -> None:
+    """Replace an order's lines from a parsed spreadsheet, fully costed.
+
+    An imported line is rebuilt into the same shape a POS-captured one has —
+    CABYS, net price, structured taxes, structured discounts — so the pedido can
+    be billed later without re-deriving anything, and so the totals shown on it
+    are the ones the invoice will carry. The spreadsheet supplies the quantities
+    and the negotiated price; the PRODUCT supplies the fiscal configuration,
+    because that is where the org maintains it.
+
+    Shared by the first import and by every reprocess. They each had their own
+    copy of this loop and the copies had already diverged — one carried the
+    product's taxes, the other did not — so an order's fiscal detail depended on
+    whether anyone had happened to reprocess it.
+    """
+    allocated_discounts = _allocate_header_discount(parsed)
+
+    order.lines.clear()
+    for ln in parsed.lines:
+        product = product_repo.upsert_by_internal_code(
+            company_id=organization_id,
+            internal_code=ln.internal_code,
+            description=ln.description,
+            code=ln.code,
+            client_article_code=ln.client_article_code,
+            units_per_box=ln.units_per_box,
+            price=ln.unit_price,
+        )
+        # The line's own discount wins; the header allocation only fills in for
+        # a spreadsheet that left every line at zero — see
+        # `_allocate_header_discount`.
+        discount_amount = float(ln.discount or 0) or allocated_discounts.get(
+            ln.line_number, 0.0
+        )
+
+        line = OrderLine(
+            line_number=ln.line_number,
+            quantity_ordered=ln.quantity_ordered,
+            units_ordered=ln.units_ordered,
+            unit_price=ln.unit_price,
+            discount=discount_amount,
+            line_total=ln.line_total,
+            tax=ln.tax,
+            quantity_dispatched=ln.quantity_dispatched,
+            dispatch_rejection_reason=ln.dispatch_rejection_reason,
+            quantity_received=ln.quantity_received,
+            article_code=ln.article_code,
+            product_id=product.id,
+            description=ln.description,
+            cabys=(product.cabys.code if product.cabys else None),
+            net_price=_imported_line_net_price(ln, product),
+            taxes=_imported_line_taxes(product),
+            discounts=_imported_line_discounts(discount_amount),
+        )
+        _recompute_imported_line(line, product)
+        order.lines.append(line)
+
+    _resum_order_totals(order)
 
 
 def _upsert_order_entities(
@@ -662,38 +938,18 @@ def _upsert_order_entities(
         )
         order.department_id = dept.department_id
 
-    # Upsert products and set FKs on lines
-    order.lines.clear()
-    for ln in parsed.lines:
-        product = product_repo.upsert_by_internal_code(
-            company_id=organization_id,
-            internal_code=ln.internal_code,
-            description=ln.description,
-            code=ln.code,
-            client_article_code=ln.client_article_code,
-            units_per_box=ln.units_per_box,
-            price=ln.unit_price,
-        )
-        order.lines.append(
-            OrderLine(
-                line_number=ln.line_number,
-                quantity_ordered=ln.quantity_ordered,
-                units_ordered=ln.units_ordered,
-                unit_price=ln.unit_price,
-                discount=ln.discount,
-                line_total=ln.line_total,
-                tax=ln.tax,
-                quantity_dispatched=ln.quantity_dispatched,
-                dispatch_rejection_reason=ln.dispatch_rejection_reason,
-                quantity_received=ln.quantity_received,
-                article_code=ln.article_code,
-                product_id=product.id,
-            )
-        )
+    _rebuild_imported_lines(order, parsed, organization_id, product_repo)
 
 
 def _update_order_from_parsed(order: Order, parsed) -> None:
-    """Update order entity fields from a parsed result (without touching lines — handled by _upsert_order_entities)."""
+    """Update order entity fields from a parsed result.
+
+    Lines are handled by `_upsert_order_entities`. The money totals written here
+    are the spreadsheet's, and they are immediately superseded by
+    `_resum_order_totals`, which re-adds them from the recomputed lines — see
+    the call site. They are still assigned first so an order whose lines carry
+    no fiscal detail at all keeps the chain's own figures.
+    """
     order.creation_date = parsed.creation_date
     order.delivery_date = parsed.delivery_date
     order.subtotal = parsed.subtotal
@@ -830,14 +1086,85 @@ def _generate_manual_document_number(repo: OrderRepository, organization_id: str
     raise ValueError("Could not allocate a manual order number")
 
 
+def canonical_line_dtos(line) -> tuple[list[ProductDiscountDTO], list[ProductTaxDTO]]:
+    """Translate a manual-order line's taxes/discounts into the CANONICAL shape.
+
+    There is one storage shape for `order_line.taxes` / `.discounts` across the
+    whole module — the `ProductTaxDTO` / `ProductDiscountDTO` dump, which is
+    also what the product catalog stores, what the FE line detail sends and what
+    the invoice reads. The manual-order request DTO has its own flatter spelling
+    (`code`/`rate`/`nature`), and persisting THAT verbatim meant a POS-captured
+    pedido and an imported one carried the same column in two different shapes:
+    nothing could read both, and `ProductTaxDTO(**row)` raised on one of them.
+
+    So the request shape is translated once, here, and the canonical DTOs are
+    used for BOTH the arithmetic and the persisted JSONB.
+    """
+    discounts = [
+        ProductDiscountDTO(
+            discount_type_id=d.code or "99",
+            # Nota 20 requires a nature for code 99; the FE collects it, and
+            # the calculator rejects the line without it.
+            reason=d.nature,
+            percentage=d.percentage,
+            is_amount=d.percentage is None and d.amount is not None,
+            amount=d.amount,
+        )
+        for d in (line.discounts or [])
+    ]
+
+    taxes = []
+    for t in (line.taxes or []):
+        sf = getattr(t, "special_fields", None)
+        taxes.append(
+            ProductTaxDTO(
+                tax_type_id=t.code or "01",
+                tax_rate=(
+                    TaxRateDTO(percentage=t.rate, code=t.rate_code)
+                    if t.rate is not None
+                    else None
+                ),
+                tax_factor=(
+                    TaxFactorDTO(id=str(t.rate_code or "factor"), factor=t.factor)
+                    if getattr(t, "factor", None) is not None
+                    else None
+                ),
+                other_tax_type=getattr(t, "other_tax_type", None),
+                special_fields=(
+                    TaxSpecialFieldsDTO(
+                        quantity=sf.quantity,
+                        percentage=sf.percentage,
+                        proportion=sf.proportion,
+                        volume_consumption=sf.volume_consumption,
+                        tax_amount=(
+                            TaxAmountDTO(
+                                id=str(sf.tax_amount_id or "0"),
+                                amount=sf.tax_unit_amount,
+                            )
+                            if sf.tax_unit_amount is not None
+                            or sf.tax_amount_id is not None
+                            else None
+                        ),
+                    )
+                    if sf is not None
+                    else None
+                ),
+                is_amount=t.rate is None and t.amount is not None,
+                amount=t.amount,
+            )
+        )
+
+    return discounts, taxes
+
+
 def _line_amounts(line) -> tuple[float, float, float, float]:
     """Authoritative (subtotal, discount, tax, line_total) for one line.
 
     When the line carries a STRUCTURED tax/discount breakdown we recompute it
     through the same `LineCalculator` a sale uses, so a pedido and the factura
-    it later becomes agree. When it carries only flat amounts — which is all an
-    imported line ever has — we recompute the arithmetic but take the caller's
-    tax figure, because there is nothing to derive it from.
+    it later becomes agree. When it carries only flat amounts we recompute the
+    arithmetic but take the caller's tax figure, because there is nothing to
+    derive it from.
 
     Either way the ORDER totals are summed from these values and never read from
     the request body.
@@ -845,38 +1172,16 @@ def _line_amounts(line) -> tuple[float, float, float, float]:
     gross = Decimal(str(line.unit_price or 0)) * Decimal(str(line.quantity or 0))
 
     if line.taxes or line.discounts:
-        calc = LineCalculator()
-        computed = calc.compute(
+        discount_dtos, tax_dtos = canonical_line_dtos(line)
+        computed = LineCalculator().compute(
             LineInput(
                 price=Decimal(str(line.unit_price or 0)),
                 quantity=Decimal(str(line.quantity or 0)),
                 is_packaged=True,
+                # A per-unit excise multiplies by the line quantity, not by 1.
                 detail_quantity=Decimal(str(line.quantity or 1)),
-                discounts=[
-                    ProductDiscountDTO(
-                        discount_type_id=d.code or "99",
-                        # Nota 20 requires a nature for code 99; the FE collects
-                        # it, and the calculator rejects the line without it.
-                        reason=d.nature,
-                        percentage=d.percentage,
-                        is_amount=d.percentage is None and d.amount is not None,
-                        amount=d.amount,
-                    )
-                    for d in (line.discounts or [])
-                ],
-                taxes=[
-                    ProductTaxDTO(
-                        tax_type_id=t.code or "01",
-                        tax_rate=(
-                            TaxRateDTO(percentage=t.rate, code=t.rate_code)
-                            if t.rate is not None
-                            else None
-                        ),
-                        is_amount=t.rate is None and t.amount is not None,
-                        amount=t.amount,
-                    )
-                    for t in (line.taxes or [])
-                ],
+                discounts=discount_dtos,
+                taxes=tax_dtos,
             ),
             cabys_code=line.cabys,
         )
@@ -1029,6 +1334,7 @@ def create_manual_order(
 
         for line in dto.lines:
             line_subtotal, line_discount, line_tax, line_total = _line_amounts(line)
+            line_discount_dtos, line_tax_dtos = canonical_line_dtos(line)
             subtotal += Decimal(str(line_subtotal)) + Decimal(str(line_discount))
             discounts += Decimal(str(line_discount))
             taxes += Decimal(str(line_tax))
@@ -1048,10 +1354,11 @@ def create_manual_order(
                     tax=line_tax,
                     line_total=line_total,
                     cabys=line.cabys,
-                    taxes=[t.model_dump() for t in line.taxes] if line.taxes else None,
-                    discounts=(
-                        [d.model_dump() for d in line.discounts] if line.discounts else None
-                    ),
+                    # Stored in the canonical shape, NOT the request's — see
+                    # `canonical_line_dtos`. One shape per column is what lets
+                    # reprocess, backfill and billing read every order's lines.
+                    taxes=([t.model_dump() for t in line_tax_dtos] or None),
+                    discounts=([d.model_dump() for d in line_discount_dtos] or None),
                 )
             )
 

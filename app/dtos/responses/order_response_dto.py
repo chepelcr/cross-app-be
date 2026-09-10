@@ -105,6 +105,16 @@ class OrderResponse(BaseModel):
         None,
         description="Client information"
     )
+
+    # The catalog client row, not just its name. Billing a pedido has to select
+    # the very same customer the order was captured for — and departments and
+    # delivery points are scoped to that client id, so without it the invoice
+    # cannot offer either. It was omitted here while `client` (a display-only
+    # name/GLN pair) was returned, so every order looked like it had no client.
+    client_id: Optional[str] = Field(
+        None,
+        description="Catalog client id this order belongs to",
+    )
     
     supplier: Optional[PartyDTO] = Field(
         None,

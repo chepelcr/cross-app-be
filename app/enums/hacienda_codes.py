@@ -81,12 +81,31 @@ class IvaCollectedFactory(str, Enum):
 class CabysSpecialPrefix(str, Enum):
     """CABYS code prefixes that trigger special-tax branching.
 
-    Used by `tax_calculation_service.apply_isebec` to pick between the
-    non-alcoholic (water/soft-drinks) and alcoholic formulas.
+    Used by `tax_calculation_service.apply_isebec` to pick between the toilet-
+    soap formula (per gram) and the packaged-beverage one (per volume).
+
+    The previous values — "2202" and "3401" — are Harmonized System headings,
+    NOT CABYS. No CABYS code begins with either, so both branches were dead and
+    every code-05 line fell through to the soap formula, including beverages.
+    Verified against the live catalog (20 501 rows); mirrors
+    `fe/pos-system/src/lib/specialTaxes.ts`.
+
+    CABYS is its own 13-digit taxonomy::
+
+        3532101010101  Jabón medicinal de tocador, en barras...
+        3532101010199  Jabón de tocador n.c.p., en barras...
+        3532101010200  Jabón PARA LAVAR   <- same family, NOT "de tocador"
+        2449001000000  Bebidas gaseosas azucaradas, edulcoradas...
+
+    Note the third row: a short "3532" prefix over-matches into laundry soap,
+    which the excise does not cover, so the soap prefix is the narrower
+    ``35321010101``.
     """
 
-    ISEBEC_NON_ALCOHOLIC = "2202"  # Bebidas envasadas no alcohólicas
-    ISEBEC_ALCOHOLIC = "3401"      # Bebidas alcohólicas
+    #: Jabón de tocador — ISEBEC (05) priced per GRAM.
+    ISEBEC_TOILET_SOAP = "35321010101"
+    #: Bebidas envasadas no alcohólicas — ISEBEC (05) priced per volume.
+    ISEBEC_PACKAGED_BEVERAGE = "2449"
 
 
 # Discount natures that re-route the line's IVA into
@@ -95,4 +114,40 @@ class CabysSpecialPrefix(str, Enum):
 FACTORY_ASSUMED_DISCOUNT_NATURES: tuple[str, ...] = (
     DiscountType.ROYALTY.value,
     DiscountType.BONUS.value,
+)
+
+
+# Specific excises the ISSUER absorbs rather than charging the customer.
+# Hacienda -476 spells out what `ImpuestoAsumidoEmisorFabrica` must add up to:
+#
+#   "la sumatoria de los impuestos calculados a productos definidos como
+#    regalias o bonificaciones o impuestos especificos a los combustibles,
+#    Bebidas Alcoholicas, sin contenido alcoholico, jabon y cemento"
+#
+# That enumerates combustibles (03), bebidas alcohólicas (04), bebidas sin
+# contenido alcohólico y jabón (05) and cemento (12). It does NOT include the
+# selectivo de consumo (02) or tabaco (06), which are ordinary collected taxes
+# — and empirically those two are exactly the ones Hacienda accepted while
+# 03/04/05/12 were rejected with -476 and -488.
+#
+# Assumption is per TAX ROW, not per line: a line can carry an issuer-assumed
+# excise and a customer-paid IVA at the same time.
+FACTORY_ASSUMED_EXCISES: tuple[str, ...] = (
+    TaxType.IUC.value,
+    TaxType.ISEBA.value,
+    TaxType.ISEBEC.value,
+    TaxType.ISEC.value,
+)
+
+
+# The excises Hacienda folds into `BaseImponible` before IVA is applied (-454):
+# "el cálculo del monto Base Imponible no concuerda con 'Subtotal', más el ISC
+# (02), ISEBA (04) e ISEBEC (05) ... según corresponda". 12 (cemento) belongs
+# here too — a cement line with BaseImponible == Subtotal is rejected by that
+# same check. 03 (combustibles) and 06 (tabaco) do NOT.
+BASE_BUILDING_EXCISES: tuple[str, ...] = (
+    TaxType.ISC.value,
+    TaxType.ISEBA.value,
+    TaxType.ISEBEC.value,
+    TaxType.ISEC.value,
 )
