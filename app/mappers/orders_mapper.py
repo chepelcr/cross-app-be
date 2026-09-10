@@ -24,10 +24,19 @@ def order_to_response(order: Order) -> OrderResponse:
     lines = []
     for ln in (order.lines or []):
         p = ln.product
-        # Extract codes from JSONB array
-        internal_code = _get_code_from_array(p.codes if p else [], "04")
-        code = _get_code_from_array(p.codes if p else [], "03")
-        client_article_code = _get_code_from_array(p.codes if p else [], "02")
+        # The LINE's own codes win over the product's.
+        #
+        # A chain assigns its own buyer article code, and the product's `codes`
+        # array holds only what the most recent import wrote — so two customers
+        # ordering the same product overwrite each other there, and an order
+        # could display a different customer's codes entirely. The line carries
+        # the codes that came with THIS order; the product is the fallback for
+        # rows written before the line had a column of its own.
+        line_codes = ln.codes or []
+        product_codes = p.codes if p else []
+        internal_code = _get_code_from_array(line_codes, "04") or _get_code_from_array(product_codes, "04")
+        code = _get_code_from_array(line_codes, "03") or _get_code_from_array(product_codes, "03")
+        client_article_code = _get_code_from_array(line_codes, "02") or _get_code_from_array(product_codes, "02")
         
         lines.append(
             OrderDetailLineResponse(
@@ -55,6 +64,19 @@ def order_to_response(order: Order) -> OrderResponse:
                 net_price=float(ln.net_price) if ln.net_price is not None else None,
                 taxes=ln.taxes,
                 discounts=ln.discounts,
+                codes=ln.codes,
+                # The rest of the document line, so an invoice built from this
+                # order needs no second lookup — `unit_measure` above all, which
+                # Hacienda requires on every line.
+                unit_measure=ln.unit_measure or (p.unit_measure if p else None),
+                commercial_unit_measure=(
+                    ln.commercial_unit_measure or (p.commercial_unit_measure if p else None)
+                ),
+                customs_part=ln.customs_part or (p.customs_part if p else None),
+                base_amount=float(ln.base_amount) if ln.base_amount is not None else None,
+                iva_collected_factory=(
+                    ln.iva_collected_factory or (p.iva_collected_factory if p else None)
+                ),
             )
         )
 

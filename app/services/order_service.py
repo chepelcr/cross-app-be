@@ -23,7 +23,7 @@ from app.dtos.requests.product_request_dto import (
 )
 from app.dtos.requests.storefront_order_dto import CreateStorefrontOrderDTO
 from app.dtos.responses.storefront_order_dto import StorefrontOrderCreatedResponse
-from app.enums.hacienda_codes import DiscountType
+from app.enums.hacienda_codes import DiscountType, ProductCodeType
 from app.enums.order_status import ORDER_STATUS_CODES, can_transition
 from app.enums.report_color import ReportColorScheme, get_color_palette
 from app.dtos.responses.order_dto import PaginationResponse
@@ -52,6 +52,7 @@ from app.services.pdf_service import (
     upload_file_to_s3,
 )
 from app.utils.crossdocking_utils import decode_excel_file
+from app.utils.money import allocate_money, q_money, round_money, sum_money, to_decimal
 
 logger = logging.getLogger(__name__)
 
@@ -640,6 +641,33 @@ def _imported_line_taxes(product) -> list | None:
     return out
 
 
+def _imported_line_codes(parsed_line) -> list | None:
+    """The LINE's own product codes, in the canonical shape.
+
+    The spreadsheet gives every line three codes — the supplier's internal code,
+    the manufacturer's, and the buyer's article code — and they belong to THIS
+    order, not to the catalog product. The product's `codes` array holds only
+    whatever the most recent import wrote, so two customers ordering the same
+    product overwrite one another there and an order could display a different
+    customer's article code.
+
+    Canonical `[{code_type_id, number}]`, the same shape the document line and
+    the product both use, per Hacienda Nota 6:
+        01 vendedor · 02 comprador · 03 fabricante · 04 uso interno · 99 otros
+    """
+    codes = [
+        (ProductCodeType.INTERNAL, getattr(parsed_line, "internal_code", None)),
+        (ProductCodeType.MANUFACTURER, getattr(parsed_line, "code", None)),
+        (ProductCodeType.BUYER, getattr(parsed_line, "client_article_code", None)),
+    ]
+    rows = [
+        {"code_type_id": code_type.value, "number": str(number).strip()}
+        for code_type, number in codes
+        if number and str(number).strip()
+    ]
+    return rows or None
+
+
 def _imported_line_net_price(parsed_line, product) -> float:
     """Unit price BEFORE tax for an imported line.
 
@@ -670,7 +698,7 @@ def _allocate_header_discount(parsed) -> dict[int, float]:
     exactly. Returned keyed by line number; empty when the lines already carry
     their own discounts, which are then authoritative and left alone.
     """
-    header_discount = Decimal(str(getattr(parsed, "discounts", 0) or 0))
+    header_discount = q_money(getattr(parsed, "discounts", 0))
     if header_discount <= 0:
         return {}
 
@@ -679,8 +707,10 @@ def _allocate_header_discount(parsed) -> dict[int, float]:
         return {}
 
     gross_by_line = {
-        ln.line_number: Decimal(str(ln.unit_price or 0))
-        * Decimal(str(ln.quantity_ordered or ln.units_ordered or 0))
+        ln.line_number: q_money(
+            to_decimal(ln.unit_price)
+            * to_decimal(ln.quantity_ordered or ln.units_ordered or 0)
+        )
         for ln in lines
     }
     total_gross = sum(gross_by_line.values())
@@ -691,18 +721,9 @@ def _allocate_header_discount(parsed) -> dict[int, float]:
     if header_discount > total_gross:
         header_discount = total_gross
 
-    allocated: dict[int, Decimal] = {}
-    for line_number, gross in gross_by_line.items():
-        allocated[line_number] = (header_discount * gross / total_gross).quantize(
-            Decimal("0.00001"), ROUND_HALF_UP
-        )
-
-    remainder = header_discount - sum(allocated.values())
-    if remainder and allocated:
-        biggest = max(gross_by_line, key=lambda k: gross_by_line[k])
-        allocated[biggest] += remainder
-
-    return {k: float(v) for k, v in allocated.items() if v > 0}
+    # `allocate_money` rounds each share and gives the remainder to the largest
+    # line, so the shares add back to the header amount exactly.
+    return {k: float(v) for k, v in allocate_money(header_discount, gross_by_line).items()}
 
 
 def _normalize_tax_row(row: dict) -> dict:
@@ -761,6 +782,7 @@ def _line_input_from_structured(line) -> LineInput:
     """
     quantity = Decimal(str(line.quantity_ordered or line.units_ordered or 0))
     net_price = Decimal(str(line.net_price if line.net_price is not None else (line.unit_price or 0)))
+    base_amount = getattr(line, "base_amount", None)
 
     return LineInput(
         price=net_price,
@@ -773,6 +795,14 @@ def _line_input_from_structured(line) -> LineInput:
             for d in (line.discounts or [])
         ],
         taxes=[ProductTaxDTO(**_normalize_tax_row(t)) for t in (line.taxes or [])],
+        # The two cases where the taxable base legitimately departs from the
+        # subtotal, both now carried on the line. Without them a code-07 line
+        # was silently re-priced off its subtotal, and a factory-collected one
+        # charged the customer IVA the issuer is meant to absorb (-451).
+        manual_base_amount=(
+            to_decimal(base_amount) if base_amount is not None else None
+        ),
+        iva_collected_factory=getattr(line, "iva_collected_factory", None),
     )
 
 
@@ -800,9 +830,15 @@ def _recompute_imported_line(line, product=None) -> None:
         _line_input_from_structured(line),
         cabys_code=line.cabys or (product.cabys.code if product and product.cabys else None),
     )
-    line.discount = _round_money(computed.discount.total_discount_amount)
-    line.tax = _round_money(computed.tax.net_tax)
-    line.line_total = _round_money(computed.subtotal + computed.tax.net_tax)
+    # Round the parts, then add the ROUNDED parts — so the line's own total is
+    # the sum of the figures shown beside it, and the order total (summed from
+    # these) is the sum of the line totals. Rounding only the total instead
+    # leaves the arithmetic on screen visibly wrong by a céntimo.
+    subtotal = q_money(computed.subtotal)
+    tax = q_money(computed.tax.net_tax)
+    line.discount = round_money(computed.discount.total_discount_amount)
+    line.tax = float(tax)
+    line.line_total = float(subtotal + tax)
 
 
 def _resum_order_totals(order: Order) -> None:
@@ -818,19 +854,26 @@ def _resum_order_totals(order: Order) -> None:
     if not lines:
         return
 
-    gross = sum(
-        Decimal(str(ln.unit_price or 0))
-        * Decimal(str(ln.quantity_ordered or ln.units_ordered or 0))
+    # Summed from the ROUNDED line values, never from raw ones. Each line is
+    # rounded by `_recompute_imported_line`; adding the rounded parts is what
+    # makes the total equal what the lines display. Summing unrounded values and
+    # rounding the result diverges by a céntimo on roughly half of all
+    # multi-line orders with a discount — the lines then visibly fail to add up.
+    gross = sum_money(
+        q_money(
+            to_decimal(ln.unit_price)
+            * to_decimal(ln.quantity_ordered or ln.units_ordered or 0)
+        )
         for ln in lines
     )
-    discounts = sum(Decimal(str(ln.discount or 0)) for ln in lines)
-    taxes = sum(Decimal(str(ln.tax or 0)) for ln in lines)
+    discounts = sum_money(ln.discount for ln in lines)
+    taxes = sum_money(ln.tax for ln in lines)
 
-    order.subtotal = _round_money(gross)
-    order.discounts = _round_money(discounts)
-    order.net_total = _round_money(gross - discounts)
-    order.taxes = _round_money(taxes)
-    order.grand_total = _round_money(gross - discounts + taxes)
+    order.subtotal = float(gross)
+    order.discounts = float(discounts)
+    order.net_total = float(gross - discounts)
+    order.taxes = float(taxes)
+    order.grand_total = float(gross - discounts + taxes)
     order.line_count = len(lines)
     order.total_quantities = sum(
         int(ln.quantity_ordered or ln.units_ordered or 0) for ln in lines
@@ -895,6 +938,18 @@ def _rebuild_imported_lines(
             net_price=_imported_line_net_price(ln, product),
             taxes=_imported_line_taxes(product),
             discounts=_imported_line_discounts(discount_amount),
+            # The line's OWN codes — see `_imported_line_codes`.
+            codes=_imported_line_codes(ln),
+            # The rest of the document line comes from the product, which is
+            # where the org maintains it. Carried onto the order so billing it
+            # later needs no second lookup and cannot silently fall back:
+            # `unit_measure` in particular is required on every document line,
+            # and defaulting it to "Unid" misdeclares anything sold by weight.
+            unit_measure=product.unit_measure,
+            commercial_unit_measure=product.commercial_unit_measure,
+            customs_part=product.customs_part,
+            base_amount=product.base_amount,
+            iva_collected_factory=product.iva_collected_factory,
         )
         _recompute_imported_line(line, product)
         order.lines.append(line)
@@ -1049,8 +1104,14 @@ _CROSSDOCKING_ORDER_TYPE = "73"
 
 
 def _round_money(value) -> float:
-    """Money is stored at 5 dp but reconciles at 2 — round once, at the edge."""
-    return float(Decimal(str(value or 0)).quantize(Decimal("0.00001"), ROUND_HALF_UP))
+    """Order money, at the stored precision. See `app.utils.money`.
+
+    This used to quantize at 5 dp while its own docstring said 2 — which is how
+    an order came to carry figures like 4903.63104 for a line priced in whole
+    colones, and how the displayed lines stopped adding up to the displayed
+    total (measured at ~47% of multi-line orders with a header discount).
+    """
+    return round_money(value)
 
 
 def _generate_manual_document_number(repo: OrderRepository, organization_id: str) -> str:
@@ -1182,27 +1243,34 @@ def _line_amounts(line) -> tuple[float, float, float, float]:
                 detail_quantity=Decimal(str(line.quantity or 1)),
                 discounts=discount_dtos,
                 taxes=tax_dtos,
+                # The two editable-base cases, same as the imported path.
+                manual_base_amount=(
+                    to_decimal(line.base_amount)
+                    if getattr(line, "base_amount", None) is not None
+                    else None
+                ),
+                iva_collected_factory=getattr(line, "iva_collected_factory", None),
             ),
             cabys_code=line.cabys,
         )
-        subtotal = computed.subtotal
-        discount = computed.discount.total_discount_amount
-        tax = computed.tax.net_tax
+        # Round the parts, then add the ROUNDED parts — see `app.utils.money`.
+        subtotal = q_money(computed.subtotal)
+        tax = q_money(computed.tax.net_tax)
         return (
-            _round_money(subtotal),
-            _round_money(discount),
-            _round_money(tax),
-            _round_money(subtotal + tax),
+            float(subtotal),
+            round_money(computed.discount.total_discount_amount),
+            float(tax),
+            float(subtotal + tax),
         )
 
-    discount = Decimal(str(line.discount or 0))
-    tax = Decimal(str(line.tax or 0))
-    subtotal = gross - discount
+    discount = q_money(line.discount)
+    tax = q_money(line.tax)
+    subtotal = q_money(gross) - discount
     return (
-        _round_money(subtotal),
-        _round_money(discount),
-        _round_money(tax),
-        _round_money(subtotal + tax),
+        float(subtotal),
+        float(discount),
+        float(tax),
+        float(subtotal + tax),
     )
 
 
@@ -1359,6 +1427,15 @@ def create_manual_order(
                     # reprocess, backfill and billing read every order's lines.
                     taxes=([t.model_dump() for t in line_tax_dtos] or None),
                     discounts=([d.model_dump() for d in line_discount_dtos] or None),
+                    # The rest of the document line, carried so billing this
+                    # pedido reads what was captured rather than re-deriving it
+                    # from a catalog that may have moved since.
+                    codes=([c.model_dump() for c in (line.codes or [])] or None),
+                    unit_measure=line.unit_measure,
+                    commercial_unit_measure=line.commercial_unit_measure,
+                    customs_part=line.customs_part,
+                    base_amount=line.base_amount,
+                    iva_collected_factory=line.iva_collected_factory,
                 )
             )
 

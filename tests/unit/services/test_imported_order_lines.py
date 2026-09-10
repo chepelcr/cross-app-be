@@ -6,7 +6,10 @@ discounts either, so the import has to derive both. Getting either wrong is
 silent: the order looks right and the invoice built from it overcharges.
 
 The helpers under test are pure, so they are loaded out of `order_service`
-without importing the module (which pulls in SQLAlchemy, boto3 and S3).
+without importing the module — which reaches for boto3, S3 and a wkhtmltopdf
+binary that no unit-test environment should need. The dependencies they DO use
+(`app.utils.money`, the calculators, the DTOs) are bound from the real modules,
+so these tests exercise the shipped code rather than a copy of it.
 """
 from __future__ import annotations
 
@@ -26,7 +29,15 @@ from app.dtos.requests.product_request_dto import (
     TaxSpecialFieldsDTO,
 )
 from app.enums.hacienda_codes import DiscountType
+from app.enums.hacienda_codes import ProductCodeType
 from app.services.line_calculation_service import LineCalculator, LineInput
+from app.utils.money import (
+    allocate_money,
+    q_money,
+    round_money,
+    sum_money,
+    to_decimal,
+)
 
 D = Decimal
 
@@ -40,6 +51,7 @@ _HELPERS = {
     "_imported_line_taxes",
     "_imported_line_net_price",
     "_allocate_header_discount",
+    "_imported_line_codes",
     "_line_input_from_structured",
     "_recompute_imported_line",
     "_resum_order_totals",
@@ -70,6 +82,13 @@ def _load_helpers() -> dict:
         "TaxSpecialFieldsDTO": TaxSpecialFieldsDTO,
         "LineCalculator": LineCalculator,
         "LineInput": LineInput,
+        "ManualOrderLineDTO": ManualOrderLineDTO,
+        "ProductCodeType": ProductCodeType,
+        "allocate_money": allocate_money,
+        "q_money": q_money,
+        "round_money": round_money,
+        "sum_money": sum_money,
+        "to_decimal": to_decimal,
     }
     exec(compile(module, "order_service_helpers", "exec"), namespace)
     return namespace
@@ -307,9 +326,10 @@ class TestPosLineRoundTrip:
         # ISEBA: volume 0.355 rounds to 0.36 L, proportion 0.0162,
         # 12 x 0.0162 x 3 500 = 680.40. The issuer absorbs it (-476), so it is
         # NOT in the customer's tax — but it still builds the IVA base (-454):
-        # (10 800 + 680.40) x 13% = 1 492.452.
-        assert tax == pytest.approx(1492.452)
-        assert total == pytest.approx(12292.452)
+        # (10 800 + 680.40) x 13% = 1 492.452, stored at the order's two
+        # decimals as 1 492.45.
+        assert tax == pytest.approx(1492.45)
+        assert total == pytest.approx(12292.45)
 
     def test_stored_shape_recomputes_to_the_same_numbers(self) -> None:
         line = self._beer_line()
@@ -368,3 +388,152 @@ class TestPosLineRoundTrip:
         )
         helpers["_recompute_imported_line"](legacy)
         assert legacy.tax == pytest.approx(10800 * 0.13)
+
+
+class TestOrderMoneyPrecision:
+    """Order money is two decimals, and the parts have to add up to the whole.
+
+    The colón has no sub-céntimo, the spreadsheets these orders come from carry
+    whole colones, and every surface formats at two. Storing five decimals made
+    the stored figures disagree with the displayed ones — and, worse, made the
+    lines stop adding up to the total, because a total rounded at the end is not
+    the sum of the lines rounded individually.
+    """
+
+    def test_line_money_is_stored_at_two_decimals(self) -> None:
+        line = Row(
+            quantity_ordered=3,
+            units_ordered=3,
+            unit_price=1495.0,
+            net_price=1495.0,
+            cabys=None,
+            discount=0.0,
+            tax=0.0,
+            line_total=0.0,
+            discounts=helpers["_imported_line_discounts"](145.5035),
+            taxes=[
+                {
+                    "tax_type_id": "01",
+                    "tax_rate": {"id": "r", "percentage": 13.0, "code": "08"},
+                }
+            ],
+        )
+        helpers["_recompute_imported_line"](line)
+
+        for value in (line.discount, line.tax, line.line_total):
+            assert value == round(value, 2), f"{value} carries sub-céntimo noise"
+
+    def test_a_line_total_equals_its_own_rounded_parts(self) -> None:
+        # 4 903.63104 stored as 4 903.63 — and it must equal the rounded
+        # subtotal plus the rounded tax, not the rounded sum of raw ones.
+        line = Row(
+            quantity_ordered=3,
+            units_ordered=3,
+            unit_price=1495.0,
+            net_price=1495.0,
+            cabys=None,
+            discount=0.0,
+            tax=0.0,
+            line_total=0.0,
+            discounts=helpers["_imported_line_discounts"](145.5035),
+            taxes=[
+                {
+                    "tax_type_id": "01",
+                    "tax_rate": {"id": "r", "percentage": 13.0, "code": "08"},
+                }
+            ],
+        )
+        helpers["_recompute_imported_line"](line)
+        subtotal = round(3 * 1495.0 - line.discount, 2)
+        assert line.line_total == pytest.approx(subtotal + line.tax)
+
+    def test_order_total_equals_the_sum_of_the_line_totals(self) -> None:
+        """The regression this whole change exists for.
+
+        With a header discount allocated across lines and tax applied to each,
+        summing raw values and rounding the result diverged from the sum of the
+        rounded lines on ~47% of randomly generated multi-line orders. On screen
+        that reads as an order whose lines do not add up.
+        """
+        parsed = Row(
+            discounts=1000.0,
+            lines=[
+                _parsed_line(1, 1495.0, 3),
+                _parsed_line(2, 2350.0, 7),
+                _parsed_line(3, 899.0, 11),
+            ],
+        )
+        allocated = helpers["_allocate_header_discount"](parsed)
+
+        lines = []
+        for parsed_line in parsed.lines:
+            line = Row(
+                quantity_ordered=parsed_line.quantity_ordered,
+                units_ordered=parsed_line.units_ordered,
+                unit_price=parsed_line.unit_price,
+                net_price=parsed_line.unit_price,
+                cabys=None,
+                discount=allocated[parsed_line.line_number],
+                tax=0.0,
+                line_total=0.0,
+                discounts=helpers["_imported_line_discounts"](
+                    allocated[parsed_line.line_number]
+                ),
+                taxes=[
+                    {
+                        "tax_type_id": "01",
+                        "tax_rate": {"id": "r", "percentage": 13.0, "code": "08"},
+                    }
+                ],
+            )
+            helpers["_recompute_imported_line"](line)
+            lines.append(line)
+
+        order = Row(
+            lines=lines,
+            subtotal=0, discounts=0, net_total=0, taxes=0, grand_total=0,
+            line_count=0, total_quantities=0,
+        )
+        helpers["_resum_order_totals"](order)
+
+        assert order.grand_total == pytest.approx(
+            round(sum(line.line_total for line in lines), 2)
+        )
+        assert order.discounts == pytest.approx(1000.0)
+        assert order.taxes == pytest.approx(round(sum(line.tax for line in lines), 2))
+
+    def test_allocation_shares_are_whole_centimos(self) -> None:
+        parsed = Row(
+            discounts=1000.0,
+            lines=[_parsed_line(1, 1495.0, 3), _parsed_line(2, 2350.0, 7)],
+        )
+        for share in helpers["_allocate_header_discount"](parsed).values():
+            assert share == round(share, 2)
+
+
+class TestLineCodes:
+    """The line's own codes, not the product's."""
+
+    def test_builds_the_canonical_shape_from_the_spreadsheet_line(self) -> None:
+        parsed = Row(
+            internal_code="INT-1",
+            code="MFR-9",
+            client_article_code="WM-777",
+        )
+        assert helpers["_imported_line_codes"](parsed) == [
+            {"code_type_id": "04", "number": "INT-1"},
+            {"code_type_id": "03", "number": "MFR-9"},
+            {"code_type_id": "02", "number": "WM-777"},
+        ]
+
+    def test_omits_codes_the_line_does_not_carry(self) -> None:
+        parsed = Row(internal_code="INT-1", code="", client_article_code=None)
+        assert helpers["_imported_line_codes"](parsed) == [
+            {"code_type_id": "04", "number": "INT-1"}
+        ]
+
+    def test_a_line_with_no_codes_at_all_stores_none(self) -> None:
+        # None rather than [] so the mapper can fall back to the product for
+        # rows written before the line had a column of its own.
+        parsed = Row(internal_code=None, code=None, client_article_code="   ")
+        assert helpers["_imported_line_codes"](parsed) is None

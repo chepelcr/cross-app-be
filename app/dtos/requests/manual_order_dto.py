@@ -91,7 +91,28 @@ class ManualOrderDiscountDTO(BaseModel):
     amount: Optional[float] = Field(None, ge=0)
 
 
+class ManualOrderLineCodeDTO(BaseModel):
+    """One product code on a line, per Hacienda Nota 6.
+
+    01 vendedor · 02 comprador · 03 fabricante · 04 uso interno · 99 otros.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    code_type_id: str = Field(..., max_length=2)
+    number: str = Field(..., max_length=100)
+
+
 class ManualOrderLineDTO(BaseModel):
+    """A pedido line, shaped like the document line it may become.
+
+    The field set mirrors `DetalleLinea` (jbiller_common `CommonDetailDTO`) on
+    purpose. A pedido is not a fiscal document, but the invoice built from one
+    is, and anything the POS knew that this DTO had no field for was simply lost
+    at capture and had to be guessed back at billing time — from the catalog,
+    which may have changed since the customer agreed to the order.
+    """
+
     model_config = ConfigDict(populate_by_name=True)
 
     line_number: int = Field(..., ge=1)
@@ -109,6 +130,19 @@ class ManualOrderLineDTO(BaseModel):
     cabys: Optional[str] = Field(None, max_length=13)
     taxes: Optional[List[ManualOrderTaxDTO]] = None
     discounts: Optional[List[ManualOrderDiscountDTO]] = None
+    #: The line's own codes. `internal_code` above stays for the crossdocking
+    #: reports that read it directly; this is the full canonical set.
+    codes: Optional[List[ManualOrderLineCodeDTO]] = None
+    #: Hacienda `UnidadMedida` — required on every document line, so a pedido
+    #: that omits it forces a fallback to "Unid" when it is billed.
+    unit_measure: Optional[str] = Field(None, max_length=20)
+    commercial_unit_measure: Optional[str] = Field(None, max_length=50)
+    customs_part: Optional[str] = Field(None, max_length=50)
+    #: Editable taxable base — legal only alongside tax code 07 or
+    #: `iva_collected_factory == "01"`.
+    base_amount: Optional[float] = Field(None, ge=0)
+    #: `IVACobradoFabrica`: "01" settled at factory, "02" exempt by regime.
+    iva_collected_factory: Optional[str] = Field(None, max_length=2)
 
 
 class ManualOrderPaymentDTO(BaseModel):

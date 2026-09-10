@@ -153,3 +153,50 @@ class OrderDetailLineResponse(BaseModel):
         None,
         description="Per-line discount cascade [{code, nature, percentage, amount}]",
     )
+
+    # ── The rest of the document line ────────────────────────────────────
+    # An order line now mirrors `DetalleLinea` field for field, so billing a
+    # pedido reads what the order says instead of guessing it back from the
+    # catalog. Each of these was previously lost between the two.
+
+    codes: Optional[list] = Field(
+        None,
+        description=(
+            "The LINE's own product codes [{code_type_id, number}] — Nota 6: "
+            "01 vendedor, 02 comprador, 03 fabricante, 04 uso interno, 99 otros. "
+            "Distinct from the product's: a chain assigns its own buyer article "
+            "code, and the product's array only holds the latest import's."
+        ),
+    )
+
+    unit_measure: Optional[str] = Field(
+        None,
+        description="Hacienda UnidadMedida — required on every document line",
+        examples=["Unid", "kg", "Sp"],
+    )
+
+    commercial_unit_measure: Optional[str] = Field(
+        None,
+        description="Free-text commercial unit shown to the customer",
+        examples=["Caja de 12"],
+    )
+
+    customs_part: Optional[str] = Field(
+        None,
+        description="Partida arancelaria, for imported goods",
+    )
+
+    base_amount: Optional[float] = Field(
+        None,
+        description=(
+            "Editable taxable base. Legal only for tax code 07 (IVA cálculo "
+            "especial) or IVACobradoFabrica '01'; rejected elsewhere."
+        ),
+        ge=0,
+    )
+
+    iva_collected_factory: Optional[str] = Field(
+        None,
+        description="IVACobradoFabrica: '01' settled at factory, '02' exempt by regime",
+        examples=["01", "02"],
+    )

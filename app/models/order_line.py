@@ -42,6 +42,26 @@ class OrderLine(Base, AuditMixin):
     taxes: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     discounts: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
+    # --- The rest of the document line (migration `bd0e1f2a3b4c`) ----------
+    #: The LINE's own product codes, canonical `[{code_type_id, number}]`.
+    #:
+    #: Not the product's. A chain assigns its own buyer article code, the
+    #: product's `codes` array holds whatever the last import wrote, and two
+    #: customers ordering the same product overwrite each other there — so an
+    #: order could display a different customer's codes. The spreadsheet gives
+    #: every line its own; those are the ones that belong to this order.
+    codes: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    #: Hacienda `UnidadMedida`. Required on every document line, so without it
+    #: billing the pedido has to fall back to "Unid".
+    unit_measure: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    commercial_unit_measure: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    #: Editable taxable base — legal only for tax code 07 or
+    #: `iva_collected_factory == "01"`, and validated as such downstream.
+    base_amount: Mapped[Optional[float]] = mapped_column(Numeric(18, 5), nullable=True)
+    #: `IVACobradoFabrica`: "01" VAT settled at factory, "02" exempt by regime.
+    iva_collected_factory: Mapped[Optional[str]] = mapped_column(String(2), nullable=True)
+    customs_part: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+
     # Normalized FK
     product_id: Mapped[Optional[str]] = mapped_column(
         String, ForeignKey("products.id"), nullable=True
