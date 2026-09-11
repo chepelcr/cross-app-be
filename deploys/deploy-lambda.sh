@@ -13,15 +13,26 @@ echo "Profile      -> $PROFILE"
 echo ""
 
 # ── SAM CLI via local venv ─────────────────────────────────────────────────────
-VENV_DIR=".venv-sam"
-if [ ! -f "${VENV_DIR}/bin/sam" ] && [ ! -f "${VENV_DIR}/Scripts/sam" ]; then
-  echo "Installing aws-sam-cli in ${VENV_DIR}..."
-  py -3 -m venv "$VENV_DIR" 2>/dev/null || python3 -m venv "$VENV_DIR"
-  source "${VENV_DIR}/Scripts/activate" 2>/dev/null || source "${VENV_DIR}/bin/activate"
-  pip install --quiet aws-sam-cli
-else
-  source "${VENV_DIR}/Scripts/activate" 2>/dev/null || source "${VENV_DIR}/bin/activate"
+# Prefer a sam already on PATH (install once with: brew install aws-sam-cli).
+# Fall back to a local venv only when there isn't one. This bootstrap used to
+# run unconditionally and reach for the Windows `py -3` launcher, which does
+# not exist on macOS/Linux — so it printed "Installing aws-sam-cli..." and then
+# left no sam behind, and the deploy died on the next line.
+if ! command -v sam >/dev/null 2>&1; then
+  VENV_DIR=".venv-sam"
+  if [ ! -x "${VENV_DIR}/bin/sam" ] && [ ! -x "${VENV_DIR}/Scripts/sam" ]; then
+    echo "No sam on PATH; installing aws-sam-cli into ${VENV_DIR}..."
+    python3 -m venv "$VENV_DIR" || { echo "ERROR: could not create $VENV_DIR"; exit 1; }
+    # shellcheck disable=SC1091
+    source "${VENV_DIR}/Scripts/activate" 2>/dev/null || source "${VENV_DIR}/bin/activate"
+    pip install --quiet aws-sam-cli || { echo "ERROR: could not install aws-sam-cli"; exit 1; }
+  else
+    # shellcheck disable=SC1091
+    source "${VENV_DIR}/Scripts/activate" 2>/dev/null || source "${VENV_DIR}/bin/activate"
+  fi
 fi
+command -v sam >/dev/null 2>&1 || {
+  echo "ERROR: sam not found. Install it with: brew install aws-sam-cli"; exit 1; }
 echo "SAM CLI: $(sam --version)"
 echo ""
 
