@@ -88,6 +88,33 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
 
+  # Keep-warm ping: container-image Lambdas idle for ~14 days lose their cached
+  # image, and the next invoke fails with a 409 CodeArtifactUserPendingException
+  # that API Gateway surfaces to callers as a 500. This ping keeps the image
+  # cache alive; the handler short-circuits on the constant Input below, so each
+  # ping costs one init and runs no application work.
+  KeepWarmRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "cd-backend-${Environment}-keepwarm"
+      Description: "Periodic ping that keeps the container image cache warm"
+      ScheduleExpression: "rate(5 days)"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt CrossDockingBackendFunction.Arn
+          Id: KeepWarmPing
+          Input: '{"warmup": true}'
+
+  # Allow EventBridge to invoke the Lambda
+  KeepWarmLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CrossDockingBackendFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt KeepWarmRule.Arn
+
+
 Outputs:
   CrossDockingBackendFunctionArn:
     Description: "Cross-Docking Backend Lambda Function ARN"

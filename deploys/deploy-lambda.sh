@@ -2,7 +2,7 @@
 set -e
 
 ENVIRONMENT=${1:-dev}
-PROFILE=${2:-J-CAMPOS}
+PROFILE=${2:-PACIFIC-PROD}
 REGION=${3:-us-east-1}
 
 STACK_NAME="cd-backend-${ENVIRONMENT}-lambda"

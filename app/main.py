@@ -9,6 +9,7 @@ load_dotenv()
 from mangum import Mangum
 
 from app.configuration.fast_api_config import FastApiConfig
+from app.utils.lambda_utils import is_warmup_event, warmup_response
 
 app = FastApiConfig().get_app()
 
@@ -18,6 +19,9 @@ handler = Mangum(app)
 
 def lambda_handler(event, context):
     """AWS Lambda entry point — routes HTTP events through Mangum/FastAPI."""
+    if is_warmup_event(event):
+        return warmup_response()
+
     return handler(event, context)
 
 
