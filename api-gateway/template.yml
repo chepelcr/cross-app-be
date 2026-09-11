@@ -21,7 +21,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/apigateway/tsuru-${Environment}-cd-backend-api"
-      RetentionInDays: 14
+      RetentionInDays: 30
 
   ApiGatewayAccount:
     Type: AWS::ApiGateway::Account

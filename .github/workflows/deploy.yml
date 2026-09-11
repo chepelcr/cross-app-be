@@ -17,6 +17,16 @@ name: Deploy backend service
 on:
   push:
     branches: [develop]      # CodePipeline tracked this repo's default branch
+    paths-ignore:
+      # These cannot change the built images or the deployed infrastructure, so
+      # a commit touching only them should not rebuild every service image.
+      # NOTE: scripts/** is deliberately NOT here — CI executes
+      # scripts/pipeline-*.sh and scripts/build-one.sh, so changes there must
+      # still trigger a run.
+      - 'deploys/**'
+      - 'docs/**'
+      - '**/*.md'
+      - '.gitignore'
   workflow_dispatch:
     inputs:
       environment:

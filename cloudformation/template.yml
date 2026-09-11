@@ -78,7 +78,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/cd-backend-${Environment}-lambda"
-      RetentionInDays: 7
+      RetentionInDays: 30
 
   CrossDockingBackendLambdaPermission:
     Type: AWS::Lambda::Permission
