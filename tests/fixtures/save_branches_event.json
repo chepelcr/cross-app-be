@@ -1,0 +1,44 @@
+{
+  "_type": "OrganizationBranchesEvent",
+  "data": {
+    "branches": [
+      {
+        "email": "registered@example.test",
+        "name": "Sucursal 1",
+        "number": 1,
+        "phone": {
+          "countryCode": "506",
+          "number": "89890512"
+        },
+        "residence": {
+          "address": "De la Escuela Mora y Canas 150m oeste y 75m sur",
+          "cantonCode": 1,
+          "countryCode": "188",
+          "districtCode": 1,
+          "neighborhoodCode": 4,
+          "provinceCode": 6
+        },
+        "terminals": [
+          {
+            "consecutives": [
+              {
+                "currentNumber": 42,
+                "documentType": "01"
+              },
+              {
+                "currentNumber": 7,
+                "documentType": "04"
+              }
+            ],
+            "name": "Terminal 1",
+            "number": 1
+          }
+        ]
+      }
+    ],
+    "organizationId": "d09b299b-f42e-4dc6-94ee-7db39479f996"
+  },
+  "eventType": "SAVE_BRANCHES",
+  "id": "11111111-2222-3333-4444-555555555555",
+  "occurredAt": "2026-09-12T00:00:00Z"
+}

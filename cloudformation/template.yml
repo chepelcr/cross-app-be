@@ -39,12 +39,21 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "cd-backend-${Environment}-lambda"
-      Description: "Cross-Docking Backend API"
+      Description: "Cross-Docking Backend API and Hacienda branch discovery consumer"
       PackageType: Image
       ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRImageURIParam}:latest"
       Role: !GetAtt LambdaRole.Arn
       SnapStart:
         ApplyOn: None
+      Events:
+        OrganizationBranches:
+          Type: SQS
+          Properties:
+            Queue: !ImportValue
+              'Fn::Sub': "tsuru-${Environment}-organization-branches-queue-arn"
+            BatchSize: 10
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
 
   LambdaRole:
     Type: AWS::IAM::Role
@@ -73,6 +82,18 @@ Resources:
           'Fn::Sub': "tsuru-${Environment}-ecr-policy-arn"
         - !ImportValue
           'Fn::Sub': "tsuru-${Environment}-s3-policy-arn"
+      Policies:
+        - PolicyName: OrganizationBranchesConsumer
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                Resource: !ImportValue
+                  'Fn::Sub': "tsuru-${Environment}-organization-branches-queue-arn"
 
   CrossDockingBackendLogGroup:
     Type: AWS::Logs::LogGroup

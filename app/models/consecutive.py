@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-from sqlalchemy import ForeignKey, Index, Integer, String, UniqueConstraint
+from sqlalchemy import BigInteger, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -27,7 +27,7 @@ class Consecutive(Base, TimestampMixin):
         ForeignKey("document_types.id", ondelete="RESTRICT"),
         nullable=False,
     )
-    current_number: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    current_number: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     created_by: Mapped[str] = mapped_column(String(255), nullable=False)
 
     __table_args__ = (

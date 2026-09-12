@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -14,7 +14,11 @@ class BranchCreateRequestDTO(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=255)
     code: int = Field(..., ge=1, description="Numeric branch code, unique per organization (Hacienda requirement)")
-    type: Literal['stand', 'restaurant'] = Field(...)
+    # A branch_types.code slug, not a fixed pair. TSR-139 replaced the two
+    # hardcoded kinds with a per-org catalog and dropped the CHECK constraint;
+    # this Literal was the leftover that made a swept branch (which carries the
+    # org's own first branch type) un-saveable through this same API.
+    type: str = Field(..., min_length=1, max_length=50)
     location: Optional[LocationRequestDTO] = Field(None)
     phone: Optional[str] = Field(None, max_length=50)
 
@@ -33,7 +37,7 @@ class BranchUpdateRequestDTO(BaseModel):
 
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     code: Optional[int] = Field(None, ge=1)
-    type: Optional[Literal['stand', 'restaurant']] = Field(None)
+    type: Optional[str] = Field(None, min_length=1, max_length=50)
     is_active: Optional[bool] = Field(None)
     location: Optional[LocationRequestDTO] = Field(None)
     phone: Optional[str] = Field(None, max_length=50)

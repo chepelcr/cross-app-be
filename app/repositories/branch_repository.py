@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Tuple
 import uuid
 
 from sqlalchemy import func, select, and_
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.configuration.database_connection import DatabaseConnection
@@ -17,6 +18,19 @@ class BranchRepository(DatabaseConnection):
 
     def __init__(self):
         super().__init__()
+
+    def insert_from_history(self, **values) -> Branch:
+        """Insert a discovered branch without overwriting operator-owned fields.
+
+        ON CONFLICT also handles concurrent deliveries and HTTP branch creation;
+        the following SELECT sees the winner after the insert has waited for it.
+        Codes remain integers; Hacienda formats them to three digits at issuance.
+        """
+        stmt = insert(Branch).values(**values).on_conflict_do_nothing(
+            index_elements=[Branch.organization_id, Branch.code],
+        )
+        self.session.execute(stmt)
+        return self.find_by_code_and_organization(values["code"], values["organization_id"])
 
     def find_by_id_and_organization(
         self, branch_id: str, organization_id: str

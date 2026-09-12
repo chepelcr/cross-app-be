@@ -6,6 +6,7 @@ import uuid
 from typing import List, Optional, Tuple
 
 from sqlalchemy import func, select, and_, text, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.configuration.database_connection import DatabaseConnection
@@ -18,6 +19,41 @@ class ConsecutiveRepository(DatabaseConnection):
 
     def __init__(self):
         super().__init__()
+
+    def raise_from_history(
+        self, organization_id: str, terminal_id: str, document_type_id: int,
+        current_number: int,
+    ) -> Consecutive:
+        """Atomically apply the greatest last-used counter, without allocating one.
+
+        PostgreSQL's ON CONFLICT UPDATE acquires the same row write lock as the
+        sales allocator's SELECT FOR UPDATE. GREATEST is evaluated after waiting
+        for that lock, so a concurrent sale or newer sweep cannot be rewound.
+        Deleted rows still reserve the fiscal sequence and must also be raised.
+        """
+        stmt = insert(Consecutive).values(
+            organization_id=organization_id,
+            terminal_id=uuid.UUID(str(terminal_id)),
+            document_type_id=document_type_id,
+            current_number=current_number,
+            created_by="hacienda-history",
+        )
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[Consecutive.terminal_id, Consecutive.document_type_id],
+            set_={
+                "current_number": func.greatest(
+                    Consecutive.current_number, stmt.excluded.current_number,
+                ),
+                "updated_on": func.now(),
+            },
+            where=Consecutive.organization_id == organization_id,
+        ).returning(Consecutive)
+        row = self.session.execute(
+            stmt, execution_options={"populate_existing": True},
+        ).scalar_one_or_none()
+        if row is None:
+            raise ValueError("Consecutive belongs to a different organization")
+        return row
 
     def find_by_id_and_org(self, consecutive_id: str, organization_id: str) -> Optional[Consecutive]:
         try:

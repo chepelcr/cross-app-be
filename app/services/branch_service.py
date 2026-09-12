@@ -15,6 +15,7 @@ from app.dtos.responses.terminal_dto import TerminalResponse
 from app.enums.branch_search_filters import BranchSearchFilters
 from app.models.branch import Branch
 from app.repositories.branch_repository import BranchRepository
+from app.repositories.branch_type_repository import BranchTypeRepository
 from app.repositories.terminal_repository import TerminalRepository
 from app.utils.search_utils import SearchUtils
 
@@ -82,12 +83,38 @@ def get_branch(
     return _map_branch(branch)
 
 
+def _validate_branch_type(organization_id: str, code: Optional[str]) -> None:
+    """Reject a branch type that is not in the organization's own catalog.
+
+    The DTO used to pin this to Literal['stand','restaurant']. TSR-139 replaced
+    those two kinds with a per-org `branch_types` catalog and dropped the CHECK
+    constraint, which left the Literal both too narrow (a swept branch carries
+    the org's first catalog code, e.g. 'shop', and could not be saved back
+    through this API) and the only validation there was. Validate against the
+    catalog instead, so the check follows the data rather than a frozen pair.
+    """
+    if code is None:
+        return
+    with BranchTypeRepository() as type_repo:
+        allowed = {row.code for row in type_repo.find_all_by_organization(organization_id)}
+    # An org with no catalog yet keeps the two legacy defaults, matching the
+    # seed in migration z6b7c8d9e0f1.
+    if not allowed:
+        allowed = {"stand", "restaurant"}
+    if code not in allowed:
+        raise ValueError(
+            f"Branch type '{code}' is not in this organization's catalog "
+            f"({', '.join(sorted(allowed))})"
+        )
+
+
 def create_branch(
     organization_id: str,
     user_id: str,
     dto: BranchCreateRequestDTO,
 ) -> BranchResponse:
     """Create a new branch."""
+    _validate_branch_type(organization_id, dto.type)
     with BranchRepository() as repo:
         # Check code uniqueness within organization
         existing = repo.find_by_code_and_organization(dto.code, organization_id)
@@ -125,6 +152,7 @@ def update_branch(
     dto: BranchUpdateRequestDTO,
 ) -> Optional[BranchResponse]:
     """Update an existing branch by integer code."""
+    _validate_branch_type(organization_id, dto.type)
     with BranchRepository() as repo:
         branch = repo.find_by_code_and_organization(branch_code, organization_id)
         if not branch:

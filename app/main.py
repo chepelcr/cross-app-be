@@ -9,18 +9,23 @@ load_dotenv()
 from mangum import Mangum
 
 from app.configuration.fast_api_config import FastApiConfig
+from app.handlers.sqs_handler import SqsHandler
 from app.utils.lambda_utils import is_warmup_event, warmup_response
 
 app = FastApiConfig().get_app()
 
 # Mangum handler for AWS Lambda (API Gateway events)
 handler = Mangum(app)
+sqs_handler = SqsHandler()
 
 
 def lambda_handler(event, context):
-    """AWS Lambda entry point — routes HTTP events through Mangum/FastAPI."""
+    """AWS Lambda entry point for API Gateway and branch discovery SQS events."""
     if is_warmup_event(event):
         return warmup_response()
+
+    if "Records" in event:
+        return sqs_handler.handle(event, context)
 
     return handler(event, context)
 

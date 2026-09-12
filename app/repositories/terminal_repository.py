@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Tuple
 import uuid
 
 from sqlalchemy import func, select, and_
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.configuration.database_connection import DatabaseConnection
@@ -17,6 +18,25 @@ class TerminalRepository(DatabaseConnection):
 
     def __init__(self):
         super().__init__()
+
+    def insert_from_history(self, **values) -> Terminal:
+        """Preserve terminal codes and metadata, rejecting cross-branch collisions.
+
+        The current schema makes a code unique across the organization. A code
+        already assigned to another branch cannot safely receive that branch's
+        counters: neither merging nor renumbering preserves its fiscal identity.
+        Raising rolls back this message so it can be retried or reviewed in DLQ.
+        """
+        stmt = insert(Terminal).values(**values).on_conflict_do_nothing(
+            index_elements=[Terminal.organization_id, Terminal.code],
+        )
+        self.session.execute(stmt)
+        terminal = self.find_by_code_and_organization(values["code"], values["organization_id"])
+        if str(terminal.branch_id) != str(values["branch_id"]):
+            raise ValueError(
+                f"Terminal code {values['code']} is already assigned to another branch"
+            )
+        return terminal
 
     def find_by_id_and_organization(
         self, terminal_id: str, organization_id: str
